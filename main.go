@@ -296,9 +296,12 @@ func (c *MessageController) setupClientConnection(conn *websocket.Conn) {
 	}()
 
 	for {
+		fmt.Println("GOT CONNECTION")
 		// read in a message
 		_, p, err := conn.ReadMessage()
 
+		fmt.Println("GOT MESSAGE")
+		fmt.Println(string(p))
 		// check to see if connection has been closed
 		if err != nil && websocket.IsCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 			break

@@ -158,9 +158,82 @@ func TestSetClientSocketInfo(t *testing.T) {
 		// read the second text message
 		msgEventIn = readTextMessage(t, tomWS)
 		assert.Equal(t, msgEventOut.MessageText, msgEventIn.MessageText)
+
+		// send the third text message
+		msgEventOut = &types.ChatMessageEvent{
+			FromUserUUID:       &tomUUID,
+			FromConnectionUUID: tomClient.ConnectionUUID,
+			RoomUUID:           tOpenRoomResp.Room.UUID,
+			EventType:          utils.ToStrPtr("EVENT_CHAT_TEXT"),
+			MessageText:        utils.ToStrPtr("Message 3"),
+		}
+		sendTextMessage(t, tomWS, msgEventOut)
+
+		// read the third text message
+		msgEventIn = readTextMessage(t, jerryWS)
+		assert.Equal(t, msgEventOut.MessageText, msgEventIn.MessageText)
+
+		// send the fourth text message
+		msgEventOut = &types.ChatMessageEvent{
+			FromUserUUID:       &jerryUUID,
+			FromConnectionUUID: jerryClient.ConnectionUUID,
+			RoomUUID:           jOpenRoomResp.Room.UUID,
+			EventType:          utils.ToStrPtr("EVENT_CHAT_TEXT"),
+			MessageText:        utils.ToStrPtr("Message 4"),
+		}
+		sendTextMessage(t, jerryWS, msgEventOut)
+
+		// read the fourth text message
+		msgEventIn = readTextMessage(t, tomWS)
+		assert.Equal(t, msgEventOut.MessageText, msgEventIn.MessageText)
 	})
 
-	// EVENT_CHAT_TEXT
+	t.Run("test send messages across a room between two users with multiple connections", func(t *testing.T) {
+		tomUUID := uuid.New().String()
+		jerryUUID := uuid.New().String()
+
+		tomMobileResp, tomMobileWS := setupClientConnection(t, tomUUID)
+		_, tomWebWS := setupClientConnection(t, tomUUID)
+		_, jerryMobileWS := setupClientConnection(t, jerryUUID)
+		_, jerryWebWS := setupClientConnection(t, jerryUUID)
+
+		// create a room
+		openRoomEvent := &types.OpenRoomRequest{
+			FromUUID: utils.ToStrPtr(tomUUID),
+			ToUUID:   utils.ToStrPtr(jerryUUID),
+		}
+		openRoom(t, openRoomEvent)
+
+		tMobileOpenRoomResp := readOpenRoomResponse(t, tomMobileWS)
+		readOpenRoomResponse(t, tomWebWS)
+		readOpenRoomResponse(t, jerryMobileWS)
+		readOpenRoomResponse(t, jerryWebWS)
+
+		roomUUID := tMobileOpenRoomResp.Room.UUID
+
+		// send first text message
+		msgEventOut := &types.ChatMessageEvent{
+			FromUserUUID:       &tomUUID,
+			FromConnectionUUID: tomMobileResp.ConnectionUUID,
+			RoomUUID:           roomUUID,
+			EventType:          utils.ToStrPtr("EVENT_CHAT_TEXT"),
+			MessageText:        utils.ToStrPtr("Message 1"),
+		}
+		sendTextMessage(t, tomMobileWS, msgEventOut)
+
+		// make sure all connections in the room got the same message
+		// read the first text message
+		msgEventIn := readTextMessage(t, tomWebWS)
+		assert.Equal(t, msgEventOut.MessageText, msgEventIn.MessageText)
+
+		// read the first text message
+		msgEventIn = readTextMessage(t, jerryMobileWS)
+		assert.Equal(t, msgEventOut.MessageText, msgEventIn.MessageText)
+
+		// read the first text message
+		msgEventIn = readTextMessage(t, jerryWebWS)
+		assert.Equal(t, msgEventOut.MessageText, msgEventIn.MessageText)
+	})
 }
 
 func readOpenRoomResponse(t *testing.T, conn *websocket.Conn) *types.OpenRoomEvent {

@@ -7,6 +7,7 @@ import (
 
 	redisClient "chatapi/redis"
 	"chatapi/types"
+	"chatapi/utils"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -64,7 +65,8 @@ func (c *MessageController) handleIncomingTextMessageFromRedis(msg string) error
 		panic(err)
 	}
 
-	room, ok := c.ActiveChannels[chatMessage.RoomUUID]
+	roomUUID := utils.ToStr(chatMessage.RoomUUID)
+	room, ok := c.ActiveChannels[roomUUID]
 	if !ok {
 		return nil
 	}
@@ -75,7 +77,7 @@ func (c *MessageController) handleIncomingTextMessageFromRedis(msg string) error
 
 		connections := c.UserConnections[participantUUID]
 		for connUUID := range connections {
-			if connUUID != chatMessage.FromConnectionUUID {
+			if connUUID != utils.ToStr(chatMessage.FromConnectionUUID) {
 				connection, ok := c.Connections[connUUID]
 				if !ok {
 					continue
@@ -124,45 +126,50 @@ func (c *MessageController) handleIncomingServerEventFromRedis(event string) err
 		}
 
 		var listOfFromConnections, listOfToConnections map[string]bool
-		_listOfFromConnections, ok := c.UserConnections[openRoomEvent.FromUUID]
+		fromUUID := utils.ToStr(openRoomEvent.FromUUID)
+		toUUID := utils.ToStr(openRoomEvent.ToUUID)
+
+		_listOfFromConnections, ok := c.UserConnections[fromUUID]
 		if ok {
 			listOfFromConnections = _listOfFromConnections
 		}
-		_listOfToConnections, ok := c.UserConnections[openRoomEvent.FromUUID]
+		_listOfToConnections, ok := c.UserConnections[toUUID]
 		if ok {
 			listOfToConnections = _listOfToConnections
 		}
 
+		roomUUID := utils.ToStr(openRoomEvent.Room.UUID)
 		for connUUID := range listOfFromConnections {
-			channel, ok := c.ActiveChannels[openRoomEvent.Room.UUID]
+			channel, ok := c.ActiveChannels[roomUUID]
 			if !ok {
-				roomSubscriber := c.RedisClient.SetupChannel(openRoomEvent.Room.UUID)
+				roomSubscriber := c.RedisClient.SetupChannel(roomUUID)
 				go c.subscribeToRedisChannel(roomSubscriber, c.handleIncomingTextMessageFromRedis)
 
 				channel = &types.Channel{
-					Subscriber: roomSubscriber,
-					UUID:       openRoomEvent.Room.UUID,
+					Subscriber:           roomSubscriber,
+					UUID:                 openRoomEvent.Room.UUID,
+					ParticipantsOnServer: map[string]bool{},
 				}
-				c.ActiveChannels[openRoomEvent.Room.UUID] = channel
+				c.ActiveChannels[roomUUID] = channel
 			}
-			channel.ParticipantsOnServer[openRoomEvent.FromUUID] = true
+			channel.ParticipantsOnServer[toUUID] = true
 			c.Connections[connUUID].Conn.WriteJSON(openRoomEvent)
 		}
 
 		for connUUID := range listOfToConnections {
 			// TODO – use redis client to check if channel is already subscribed
-			channel, ok := c.ActiveChannels[openRoomEvent.Room.UUID]
+			channel, ok := c.ActiveChannels[roomUUID]
 			if !ok {
-				roomSubscriber := c.RedisClient.SetupChannel(openRoomEvent.Room.UUID)
+				roomSubscriber := c.RedisClient.SetupChannel(roomUUID)
 				go c.subscribeToRedisChannel(roomSubscriber, c.handleIncomingTextMessageFromRedis)
 
 				channel = &types.Channel{
 					Subscriber: roomSubscriber,
 					UUID:       openRoomEvent.Room.UUID,
 				}
-				c.ActiveChannels[openRoomEvent.Room.UUID] = channel
+				c.ActiveChannels[roomUUID] = channel
 			}
-			channel.ParticipantsOnServer[openRoomEvent.FromUUID] = true
+			channel.ParticipantsOnServer[fromUUID] = true
 			c.Connections[connUUID].Conn.WriteJSON(openRoomEvent)
 		}
 
@@ -173,11 +180,7 @@ func (c *MessageController) handleIncomingServerEventFromRedis(event string) err
 
 func (c *MessageController) subscribeToRedisChannel(subscriber *redis.PubSub, fn func(string) error) {
 	for redisMsg := range subscriber.Channel() {
-		bytes, err := json.Marshal(redisMsg.Payload)
-		if err != nil {
-			panic(err)
-		}
-		err = fn(string(bytes))
+		err := fn(redisMsg.Payload)
 		if err != nil {
 			panic(err)
 		}
@@ -212,6 +215,7 @@ func main() {
 
 	r.HandleFunc("/create-room", func(w http.ResponseWriter, r *http.Request) {
 		enableCors(&w)
+		// todo, extend the 'to' field to be an array
 		req := types.OpenRoomRequest{}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			panic(err)
@@ -219,17 +223,19 @@ func main() {
 
 		// save the room
 		roomUUID := uuid.New().String()
+		toUUID := utils.ToStr(req.ToUUID)
+		fromUUID := utils.ToStr(req.FromUUID)
 		room := types.ChatRoom{
-			UUID:         roomUUID,
-			Participants: []string{req.ToUUID, req.FromUUID},
+			UUID:         utils.ToStrPtr(roomUUID),
+			Participants: []string{toUUID, fromUUID},
 		}
 
 		// push this out to the redis server events channel
 		openRoomEvent := types.OpenRoomEvent{
 			FromUUID:  req.FromUUID,
 			ToUUID:    req.ToUUID,
-			EventType: EVENT_OPEN_ROOM.String(),
-			Room:      room,
+			EventType: utils.ToStrPtr(EVENT_OPEN_ROOM.String()),
+			Room:      &room,
 		}
 
 		msgBytes, err := json.Marshal(openRoomEvent)
@@ -268,6 +274,15 @@ func (c *MessageController) setupClientConnection(conn *websocket.Conn) {
 
 	var userUUID string
 	var connectionUUID string
+
+	conn.SetPongHandler(func(appData string) error {
+		err := conn.WriteMessage(1, []byte("PONG"))
+		if err != nil {
+			panic(err)
+		}
+		return nil
+	})
+
 	defer func() {
 		conn.Close()
 		delete(c.UserConnections[userUUID], connectionUUID)
@@ -296,13 +311,9 @@ func (c *MessageController) setupClientConnection(conn *websocket.Conn) {
 	}()
 
 	for {
-		fmt.Println("GOT CONNECTION")
 		// read in a message
 		_, p, err := conn.ReadMessage()
 
-		fmt.Println("GOT MESSAGE")
-		fmt.Println(string(p))
-		// check to see if connection has been closed
 		if err != nil && websocket.IsCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 			break
 		}
@@ -322,25 +333,31 @@ func (c *MessageController) setupClientConnection(conn *websocket.Conn) {
 		if msgType == EVENT_SET_CLIENT_SOCKET.String() {
 			// set up the client here and send back a message to the client that everything is ready to go
 			// client should be in a loading state until that happens
+
 			msg := types.SetClientConnectionEvent{}
 			err := json.Unmarshal(p, &msg)
 			if err != nil {
 				panic(err)
 			}
 
-			userUUID = msg.FromUUID
-			connectionUUID = uuid.NewString()
+			userUUID = utils.ToStr(msg.FromUUID)
+			connectionUUID := uuid.New().String()
 
 			connection := &types.Connection{
 				Conn: conn,
-				UUID: connectionUUID,
+				UUID: utils.ToStrPtr(connectionUUID),
 			}
 
 			// map the client uuid to a map of connection UUID's to the connection
-			c.UserConnections[msg.FromUUID][connectionUUID] = true
+			_, ok := c.UserConnections[userUUID]
+			if !ok {
+				c.UserConnections[userUUID] = map[string]bool{}
+			}
+			c.UserConnections[userUUID][connectionUUID] = true
+
 			c.Connections[connectionUUID] = connection
 
-			msg.ConnectionUUID = connectionUUID
+			msg.ConnectionUUID = utils.ToStrPtr(connectionUUID)
 
 			// send back to client the connection uuid so they can set it
 			err = conn.WriteJSON(msg)
@@ -361,7 +378,8 @@ func (c *MessageController) setupClientConnection(conn *websocket.Conn) {
 
 			// save message to database
 			// push to redis channel
-			c.RedisClient.PublishToRedisChannel(msg.RoomUUID, p)
+			roomUUID := utils.ToStr(msg.RoomUUID)
+			c.RedisClient.PublishToRedisChannel(roomUUID, p)
 		}
 	}
 	fmt.Println("CLOSING WEBSOCKET")

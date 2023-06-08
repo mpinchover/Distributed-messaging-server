@@ -2,9 +2,10 @@ package integrestion_testing
 
 import (
 	"bytes"
-	"chatapi/types"
-	"chatapi/utils"
 	"encoding/json"
+
+	"messaging-service/types/entities"
+	"messaging-service/utils"
 	"net/http"
 	"testing"
 
@@ -15,7 +16,7 @@ import (
 )
 
 const (
-	socketURL = "ws://localhost:9090/ws"
+	socketURL = "ws://localhost:5002/ws"
 )
 
 func TestMockEndpoint(t *testing.T) {
@@ -32,7 +33,6 @@ func TestConnectWebsocket(t *testing.T) {
 
 		ws, _, err := websocket.DefaultDialer.Dial(socketURL, nil)
 		assert.NoError(t, err)
-
 		pingHandler := ws.PingHandler()
 		err = pingHandler("PING")
 		assert.NoError(t, err)
@@ -44,13 +44,14 @@ func TestConnectWebsocket(t *testing.T) {
 }
 
 func TestSetClientSocketInfo(t *testing.T) {
+
 	t.Run("test set open socket info on client", func(t *testing.T) {
 
 		ws, _, err := websocket.DefaultDialer.Dial(socketURL, nil)
 		assert.NoError(t, err)
 
 		clientUUID := uuid.New().String()
-		msgOut := types.SetClientConnectionEvent{
+		msgOut := entities.SetClientConnectionEvent{
 			FromUUID:  utils.ToStrPtr(clientUUID),
 			EventType: utils.ToStrPtr("EVENT_SET_CLIENT_SOCKET"),
 		}
@@ -61,7 +62,7 @@ func TestSetClientSocketInfo(t *testing.T) {
 		_, p, err := ws.ReadMessage()
 		assert.NoError(t, err)
 
-		msgIn := types.SetClientConnectionEvent{}
+		msgIn := entities.SetClientConnectionEvent{}
 		err = json.Unmarshal(p, &msgIn)
 		assert.NoError(t, err)
 
@@ -69,6 +70,7 @@ func TestSetClientSocketInfo(t *testing.T) {
 		assert.NotNil(t, msgIn.FromUUID)
 	})
 	t.Run("test create a room", func(t *testing.T) {
+
 		tomUUID := uuid.New().String()
 		jerryUUID := uuid.New().String()
 
@@ -76,16 +78,15 @@ func TestSetClientSocketInfo(t *testing.T) {
 		_, jerryWS := setupClientConnection(t, jerryUUID)
 
 		// create a room
-		openRoomEvent := &types.OpenRoomRequest{
+		openRoomEvent := &entities.OpenRoomRequest{
 			FromUUID: utils.ToStrPtr(tomUUID),
 			ToUUID:   utils.ToStrPtr(jerryUUID),
 		}
 		openRoom(t, openRoomEvent)
-
 		_, p, err := tomWS.ReadMessage()
 		assert.NoError(t, err)
 
-		tomOpenRoomEventResponse := types.OpenRoomEvent{}
+		tomOpenRoomEventResponse := entities.OpenRoomEvent{}
 		err = json.Unmarshal(p, &tomOpenRoomEventResponse)
 		assert.NoError(t, err)
 		assert.NotNil(t, tomOpenRoomEventResponse.EventType)
@@ -99,7 +100,7 @@ func TestSetClientSocketInfo(t *testing.T) {
 		_, p, err = jerryWS.ReadMessage()
 		assert.NoError(t, err)
 
-		jerryOpenRoomEventResponse := types.OpenRoomEvent{}
+		jerryOpenRoomEventResponse := entities.OpenRoomEvent{}
 		err = json.Unmarshal(p, &jerryOpenRoomEventResponse)
 		assert.NoError(t, err)
 		assert.NotNil(t, jerryOpenRoomEventResponse.EventType)
@@ -122,7 +123,7 @@ func TestSetClientSocketInfo(t *testing.T) {
 		jerryClient, jerryWS := setupClientConnection(t, jerryUUID)
 
 		// create a room
-		openRoomEvent := &types.OpenRoomRequest{
+		openRoomEvent := &entities.OpenRoomRequest{
 			FromUUID: utils.ToStrPtr(tomUUID),
 			ToUUID:   utils.ToStrPtr(jerryUUID),
 		}
@@ -132,7 +133,7 @@ func TestSetClientSocketInfo(t *testing.T) {
 		jOpenRoomResp := readOpenRoomResponse(t, jerryWS)
 
 		// send first text message
-		msgEventOut := &types.ChatMessageEvent{
+		msgEventOut := &entities.ChatMessageEvent{
 			FromUserUUID:       &tomUUID,
 			FromConnectionUUID: tomClient.ConnectionUUID,
 			RoomUUID:           tOpenRoomResp.Room.UUID,
@@ -146,7 +147,7 @@ func TestSetClientSocketInfo(t *testing.T) {
 		assert.Equal(t, msgEventOut.MessageText, msgEventIn.MessageText)
 
 		// send the second text message
-		msgEventOut = &types.ChatMessageEvent{
+		msgEventOut = &entities.ChatMessageEvent{
 			FromUserUUID:       &jerryUUID,
 			FromConnectionUUID: jerryClient.ConnectionUUID,
 			RoomUUID:           jOpenRoomResp.Room.UUID,
@@ -160,7 +161,7 @@ func TestSetClientSocketInfo(t *testing.T) {
 		assert.Equal(t, msgEventOut.MessageText, msgEventIn.MessageText)
 
 		// send the third text message
-		msgEventOut = &types.ChatMessageEvent{
+		msgEventOut = &entities.ChatMessageEvent{
 			FromUserUUID:       &tomUUID,
 			FromConnectionUUID: tomClient.ConnectionUUID,
 			RoomUUID:           tOpenRoomResp.Room.UUID,
@@ -174,7 +175,7 @@ func TestSetClientSocketInfo(t *testing.T) {
 		assert.Equal(t, msgEventOut.MessageText, msgEventIn.MessageText)
 
 		// send the fourth text message
-		msgEventOut = &types.ChatMessageEvent{
+		msgEventOut = &entities.ChatMessageEvent{
 			FromUserUUID:       &jerryUUID,
 			FromConnectionUUID: jerryClient.ConnectionUUID,
 			RoomUUID:           jOpenRoomResp.Room.UUID,
@@ -198,7 +199,7 @@ func TestSetClientSocketInfo(t *testing.T) {
 		_, jerryWebWS := setupClientConnection(t, jerryUUID)
 
 		// create a room
-		openRoomEvent := &types.OpenRoomRequest{
+		openRoomEvent := &entities.OpenRoomRequest{
 			FromUUID: utils.ToStrPtr(tomUUID),
 			ToUUID:   utils.ToStrPtr(jerryUUID),
 		}
@@ -212,7 +213,7 @@ func TestSetClientSocketInfo(t *testing.T) {
 		roomUUID := tMobileOpenRoomResp.Room.UUID
 
 		// send first text message
-		msgEventOut := &types.ChatMessageEvent{
+		msgEventOut := &entities.ChatMessageEvent{
 			FromUserUUID:       &tomUUID,
 			FromConnectionUUID: tomMobileResp.ConnectionUUID,
 			RoomUUID:           roomUUID,
@@ -236,11 +237,11 @@ func TestSetClientSocketInfo(t *testing.T) {
 	})
 }
 
-func readOpenRoomResponse(t *testing.T, conn *websocket.Conn) *types.OpenRoomEvent {
+func readOpenRoomResponse(t *testing.T, conn *websocket.Conn) *entities.OpenRoomEvent {
 	_, p, err := conn.ReadMessage()
 	assert.NoError(t, err)
 
-	resp := &types.OpenRoomEvent{}
+	resp := &entities.OpenRoomEvent{}
 	err = json.Unmarshal(p, resp)
 	assert.NoError(t, err)
 	assert.NotNil(t, resp.EventType)
@@ -253,11 +254,11 @@ func readOpenRoomResponse(t *testing.T, conn *websocket.Conn) *types.OpenRoomEve
 	return resp
 }
 
-func readTextMessage(t *testing.T, conn *websocket.Conn) *types.ChatMessageEvent {
+func readTextMessage(t *testing.T, conn *websocket.Conn) *entities.ChatMessageEvent {
 	_, p, err := conn.ReadMessage()
 	assert.NoError(t, err)
 
-	msg := &types.ChatMessageEvent{}
+	msg := &entities.ChatMessageEvent{}
 	err = json.Unmarshal(p, msg)
 	assert.NoError(t, err)
 	assert.NotNil(t, msg.FromConnectionUUID)
@@ -268,18 +269,18 @@ func readTextMessage(t *testing.T, conn *websocket.Conn) *types.ChatMessageEvent
 	return msg
 }
 
-func sendTextMessage(t *testing.T, ws *websocket.Conn, msgEvent *types.ChatMessageEvent) {
+func sendTextMessage(t *testing.T, ws *websocket.Conn, msgEvent *entities.ChatMessageEvent) {
 	err := ws.WriteJSON(msgEvent)
 	assert.NoError(t, err)
 
 }
 
 // set up a client connection
-func setupClientConnection(t *testing.T, userUUID string) (*types.SetClientConnectionEvent, *websocket.Conn) {
+func setupClientConnection(t *testing.T, userUUID string) (*entities.SetClientConnectionEvent, *websocket.Conn) {
 	conn, _, err := websocket.DefaultDialer.Dial(socketURL, nil)
 	assert.NoError(t, err)
 
-	msgOut := types.SetClientConnectionEvent{
+	msgOut := entities.SetClientConnectionEvent{
 		FromUUID:  utils.ToStrPtr(userUUID),
 		EventType: utils.ToStrPtr("EVENT_SET_CLIENT_SOCKET"),
 	}
@@ -290,7 +291,7 @@ func setupClientConnection(t *testing.T, userUUID string) (*types.SetClientConne
 	_, p, err := conn.ReadMessage()
 	assert.NoError(t, err)
 
-	rsp := &types.SetClientConnectionEvent{}
+	rsp := &entities.SetClientConnectionEvent{}
 	err = json.Unmarshal(p, &rsp)
 	assert.NoError(t, err)
 	assert.NotNil(t, rsp.ConnectionUUID)
@@ -298,10 +299,10 @@ func setupClientConnection(t *testing.T, userUUID string) (*types.SetClientConne
 	return rsp, conn
 }
 
-func openRoom(t *testing.T, openRoomEvent *types.OpenRoomRequest) {
+func openRoom(t *testing.T, openRoomEvent *entities.OpenRoomRequest) {
 	postBody, err := json.Marshal(openRoomEvent)
 	assert.NoError(t, err)
 	reqBody := bytes.NewBuffer(postBody)
-	_, err = http.Post("http://localhost:9090/create-room", "application/json", reqBody)
+	_, err = http.Post("http://localhost:5002/create-room", "application/json", reqBody)
 	assert.NoError(t, err)
 }

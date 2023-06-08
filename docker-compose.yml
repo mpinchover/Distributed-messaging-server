@@ -1,0 +1,42 @@
+version: "3"
+
+services:
+  redisCache:
+    image: "redis:latest"
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+
+  mysqldb:
+    image: mysql:8.0
+    restart: always
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_DATABASE: "test"
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_HOST: "%"
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+    volumes:
+      - ./messaging-service/scripts/mysql:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  msgserver:
+    build: "./messaging-service"
+    depends_on:
+      redisCache:
+        condition: service_healthy
+      mysqldb:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      REDIS_URL: redisCache:6379
+      MYSQL_HOST: mysqldb
+      MYSQL_PORT: 3306
+    links:
+      - redisCache
+      - mysqldb
+    ports:
+      - 9090:9090

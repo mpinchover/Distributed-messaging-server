@@ -2,6 +2,7 @@ package entities
 
 import (
 	"encoding/json"
+	"messaging-service/types/records"
 
 	"github.com/gorilla/websocket"
 	"github.com/redis/go-redis/v9"
@@ -63,6 +64,10 @@ type ChatRoom struct {
 type Connection struct {
 	Conn *websocket.Conn
 	UUID *string
+}
+
+type GetRoomsByUserUUIDResponse struct {
+	Rooms []*records.ChatRoom `json:"rooms"`
 }
 
 // UnmarshalBinary decodes the struct into a User

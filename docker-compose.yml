@@ -14,8 +14,10 @@ services:
     environment:
       MYSQL_DATABASE: "test"
       MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_USER: root
       MYSQL_ROOT_HOST: "%"
       MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      MYSQL_TCP_PORT: 3306
     volumes:
       - ./messaging-service/scripts/mysql:/docker-entrypoint-initdb.d
     healthcheck:

@@ -1,5 +1,8 @@
 DROP DATABASE IF EXISTS messaging;
 CREATE DATABASE messaging;
+
+-- GRANT ALL ON *.* TO user@'%' IDENTIFIED BY 'root' WITH GRANT OPTION; FLUSH PRIVILEGES;
+
 USE messaging;
 
 CREATE TABLE chat_messages (

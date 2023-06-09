@@ -21,3 +21,16 @@ connect to locally running dockerized mysql
 ```
 mysql -h 127.0.0.1 -P 3308 -u root -p
 ```
+
+Restart just one container in docker compose
+
+```
+docker-compose restart msgserver
+```
+
+Start a single service in docker compose
+
+```
+docker-compose up -d --no-deps --build <service_name>
+
+```

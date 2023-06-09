@@ -3,6 +3,8 @@ package integrestion_testing
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"io"
 
 	"messaging-service/types/entities"
 	"messaging-service/utils"
@@ -16,7 +18,7 @@ import (
 )
 
 const (
-	socketURL = "ws://localhost:5002/ws"
+	socketURL = "ws://localhost:9090/ws"
 )
 
 func TestMockEndpoint(t *testing.T) {
@@ -235,6 +237,50 @@ func TestSetClientSocketInfo(t *testing.T) {
 		msgEventIn = readTextMessage(t, jerryWebWS)
 		assert.Equal(t, msgEventOut.MessageText, msgEventIn.MessageText)
 	})
+	t.Run("test query rooms for single user", func(t *testing.T) {
+		tomUUID := uuid.New().String()
+		jerryUUID := uuid.New().String()
+
+		tomResp, tomWS := setupClientConnection(t, tomUUID)
+
+		// create a room
+		openRoomEvent := &entities.OpenRoomRequest{
+			FromUUID: utils.ToStrPtr(tomUUID),
+			ToUUID:   utils.ToStrPtr(jerryUUID),
+		}
+		openRoom(t, openRoomEvent)
+
+		tMobileOpenRoomResp := readOpenRoomResponse(t, tomWS)
+		roomUUID := tMobileOpenRoomResp.Room.UUID
+
+		// send first text message
+		msgEventOut := &entities.ChatMessageEvent{
+			FromUserUUID:       &tomUUID,
+			FromConnectionUUID: tomResp.ConnectionUUID,
+			RoomUUID:           roomUUID,
+			EventType:          utils.ToStrPtr("EVENT_CHAT_TEXT"),
+			MessageText:        utils.ToStrPtr("Message 1"),
+		}
+		sendTextMessage(t, tomWS, msgEventOut)
+
+		// send second text message
+		msgEventOut = &entities.ChatMessageEvent{
+			FromUserUUID:       &tomUUID,
+			FromConnectionUUID: tomResp.ConnectionUUID,
+			RoomUUID:           roomUUID,
+			EventType:          utils.ToStrPtr("EVENT_CHAT_TEXT"),
+			MessageText:        utils.ToStrPtr("Message 2"),
+		}
+		sendTextMessage(t, tomWS, msgEventOut)
+
+		// now check the messagse were saved
+		res, err := getRoomsByUserUUID(tomUUID)
+		assert.NoError(t, err)
+		assert.NotNil(t, res)
+
+		assert.Equal(t, 1, len(res.Rooms))
+		assert.Equal(t, 2, len(res.Rooms[0].Messages))
+	})
 }
 
 func readOpenRoomResponse(t *testing.T, conn *websocket.Conn) *entities.OpenRoomEvent {
@@ -272,7 +318,23 @@ func readTextMessage(t *testing.T, conn *websocket.Conn) *entities.ChatMessageEv
 func sendTextMessage(t *testing.T, ws *websocket.Conn, msgEvent *entities.ChatMessageEvent) {
 	err := ws.WriteJSON(msgEvent)
 	assert.NoError(t, err)
+}
 
+func getRoomsByUserUUID(userUUID string) (*entities.GetRoomsByUserUUIDResponse, error) {
+	url := fmt.Sprintf("http://localhost:9090/get-rooms-by-user-uuid/%s", userUUID)
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	result := &entities.GetRoomsByUserUUIDResponse{}
+	err = json.Unmarshal(b, result)
+	return result, err
 }
 
 // set up a client connection
@@ -303,6 +365,6 @@ func openRoom(t *testing.T, openRoomEvent *entities.OpenRoomRequest) {
 	postBody, err := json.Marshal(openRoomEvent)
 	assert.NoError(t, err)
 	reqBody := bytes.NewBuffer(postBody)
-	_, err = http.Post("http://localhost:5002/create-room", "application/json", reqBody)
+	_, err = http.Post("http://localhost:9090/create-room", "application/json", reqBody)
 	assert.NoError(t, err)
 }

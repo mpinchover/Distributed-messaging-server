@@ -2,6 +2,7 @@ package redisClient
 
 import (
 	"context"
+	"errors"
 
 	"os"
 
@@ -12,13 +13,27 @@ type RedisClient struct {
 	Client *redis.Client
 }
 
-func New() RedisClient {
-	// log.Println(os.Getenv("REDIS_URL"))
+func connect() (*redis.Client, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     os.Getenv("REDIS_URL"),
 		Password: "",
 		DB:       0,
 	})
+	ctx := context.Background()
+	var statusCode string
+	status := client.Ping(ctx)
+	statusCode = status.Val()
+	if statusCode != "PONG" {
+		return nil, errors.New("could not connect to redis")
+	}
+	return client, nil
+}
+
+func New() RedisClient {
+	client, err := connect()
+	if err != nil {
+		panic(err)
+	}
 	return RedisClient{
 		Client: client,
 	}

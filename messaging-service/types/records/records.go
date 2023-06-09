@@ -8,7 +8,9 @@ type ChatMessage struct {
 }
 
 type ChatRoom struct {
-	UUID         string   `gorm:"uuid"`
+	UUID         string             `gorm:"uuid"`
+	Participants []*ChatParticipant `gorm:"-"`
+	Messages     []*ChatMessage     `gorm:"-"`
 }
 
 type ChatParticipant struct {

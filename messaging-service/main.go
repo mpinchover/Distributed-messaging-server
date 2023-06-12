@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strconv"
 
 	"messaging-service/controllers/controltower"
 	"messaging-service/types/entities"
@@ -102,6 +103,50 @@ func main() {
 		go msgController.SetupClientConnection(conn)
 	})
 
+	r.HandleFunc("/get-messages-by-room-uuid", func(w http.ResponseWriter, r *http.Request) {
+		enableCors(&w)
+
+		// vars := mux.Vars(r)
+		// roomUUID, ok := vars["room-uuid"]
+		// if !ok {
+		// 	panic("id is missing in parameters")
+		// }
+
+		roomUUID := r.URL.Query().Get("room-uuid")
+		if roomUUID == "" {
+			panic("room uuid required")
+		}
+		_offset := r.URL.Query().Get("offset")
+		if _offset == "" {
+			panic("offset required")
+		}
+
+		startFrom, err := strconv.ParseInt(_offset, 10, 64)
+		if err != nil {
+			panic(err)
+		}
+
+		_startFrom := int(startFrom)
+		msgs, err := msgController.GetMessagesByRoomUUID(roomUUID, &_startFrom)
+		if err != nil {
+			panic(err)
+		}
+
+		resp := &entities.GetMessagesByRoomUUIDResponse{
+			Messages: msgs,
+		}
+		bytes, err := json.Marshal(resp)
+		if err != nil {
+			panic(err)
+		}
+
+		w.Write(bytes)
+
+		// get the last 20 messages for the room
+		// so take the timestamp from last msg
+		// get the last 100 before it or whatever
+	}).Methods("GET")
+
 	r.HandleFunc("/get-rooms-by-user-uuid/{user-uuid}", func(w http.ResponseWriter, r *http.Request) {
 		enableCors(&w)
 
@@ -129,6 +174,6 @@ func main() {
 		w.Write(bytes)
 	}).Methods("GET")
 
-	log.Println("Opening server")
+	log.Println("Opening server...")
 	http.ListenAndServe(":9090", r)
 }

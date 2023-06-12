@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"time"
 
 	"messaging-service/types/entities"
 	"messaging-service/utils"
@@ -72,7 +73,7 @@ func TestSetClientSocketInfo(t *testing.T) {
 		assert.NotNil(t, msgIn.FromUUID)
 	})
 	t.Run("test create a room", func(t *testing.T) {
-
+		// t.Skip()
 		tomUUID := uuid.New().String()
 		jerryUUID := uuid.New().String()
 
@@ -192,6 +193,7 @@ func TestSetClientSocketInfo(t *testing.T) {
 	})
 
 	t.Run("test send messages across a room between two users with multiple connections", func(t *testing.T) {
+
 		tomUUID := uuid.New().String()
 		jerryUUID := uuid.New().String()
 
@@ -237,6 +239,11 @@ func TestSetClientSocketInfo(t *testing.T) {
 		msgEventIn = readTextMessage(t, jerryWebWS)
 		assert.Equal(t, msgEventOut.MessageText, msgEventIn.MessageText)
 	})
+
+	// todo – add another call to get the messages for the chat
+}
+
+func TestQueryMessages(t *testing.T) {
 	t.Run("test query rooms for single user", func(t *testing.T) {
 		tomUUID := uuid.New().String()
 		jerryUUID := uuid.New().String()
@@ -273,13 +280,137 @@ func TestSetClientSocketInfo(t *testing.T) {
 		}
 		sendTextMessage(t, tomWS, msgEventOut)
 
+		time.Sleep(time.Second)
 		// now check the messagse were saved
 		res, err := getRoomsByUserUUID(tomUUID)
 		assert.NoError(t, err)
 		assert.NotNil(t, res)
 
 		assert.Equal(t, 1, len(res.Rooms))
-		assert.Equal(t, 2, len(res.Rooms[0].Messages))
+
+		rooms, err := getMessagesByRoomUUID(t, *roomUUID)
+		assert.NoError(t, err)
+		assert.Equal(t, 2, len(rooms.Messages))
+	})
+}
+
+func TestOpenMultipleConnectionsAndQueryMessages(t *testing.T) {
+	t.Run("test query rooms and messages for both users", func(t *testing.T) {
+		aUUID := uuid.New().String()
+		bUUID := uuid.New().String()
+		cUUID := uuid.New().String()
+
+		// TODO – create additioanl connections to query messages
+		aResp, aWS := setupClientConnection(t, aUUID)
+		bResp, bWS := setupClientConnection(t, bUUID)
+
+		aConnectionUUID := aResp.ConnectionUUID
+		bConnectionUUID := bResp.ConnectionUUID
+		// create a room
+		openRoomEvent1 := &entities.OpenRoomRequest{
+			FromUUID: utils.ToStrPtr(aUUID),
+			ToUUID:   utils.ToStrPtr(bUUID),
+		}
+		openRoom(t, openRoomEvent1)
+
+		openRoomRes1 := readOpenRoomResponse(t, aWS)
+		roomUUID1 := openRoomRes1.Room.UUID
+
+		// send first text message
+		msgEventOut := &entities.ChatMessageEvent{
+			FromUserUUID:       &aUUID,
+			FromConnectionUUID: aConnectionUUID,
+			RoomUUID:           roomUUID1,
+			EventType:          utils.ToStrPtr("EVENT_CHAT_TEXT"),
+			MessageText:        utils.ToStrPtr("Message 1"),
+		}
+		sendTextMessage(t, aWS, msgEventOut)
+
+		// send second text message
+		msgEventOut = &entities.ChatMessageEvent{
+			FromUserUUID:       &bUUID,
+			FromConnectionUUID: bConnectionUUID,
+			RoomUUID:           roomUUID1,
+			EventType:          utils.ToStrPtr("EVENT_CHAT_TEXT"),
+			MessageText:        utils.ToStrPtr("Message 2"),
+		}
+		sendTextMessage(t, bWS, msgEventOut)
+
+		cResp, cWS := setupClientConnection(t, cUUID)
+		cConnectionUUID := cResp.ConnectionUUID
+		openRoomEvent2 := &entities.OpenRoomRequest{
+			FromUUID: utils.ToStrPtr(cUUID),
+			ToUUID:   utils.ToStrPtr(aUUID),
+		}
+		openRoom(t, openRoomEvent2)
+		openRoomRes2 := readOpenRoomResponse(t, cWS)
+		roomUUID2 := openRoomRes2.Room.UUID
+
+		// send third text message
+		msgEventOut = &entities.ChatMessageEvent{
+			FromUserUUID:       &aUUID,
+			FromConnectionUUID: aConnectionUUID,
+			RoomUUID:           roomUUID1,
+			EventType:          utils.ToStrPtr("EVENT_CHAT_TEXT"),
+			MessageText:        utils.ToStrPtr("Message 3"),
+		}
+		sendTextMessage(t, aWS, msgEventOut)
+
+		// send first text message to room 2
+		msgEventOut = &entities.ChatMessageEvent{
+			FromUserUUID:       &cUUID,
+			FromConnectionUUID: cConnectionUUID,
+			RoomUUID:           roomUUID2,
+			EventType:          utils.ToStrPtr("EVENT_CHAT_TEXT"),
+			MessageText:        utils.ToStrPtr("Message 1 for room 2"),
+		}
+		sendTextMessage(t, cWS, msgEventOut)
+
+		// send fourth text message
+		msgEventOut = &entities.ChatMessageEvent{
+			FromUserUUID:       &bUUID,
+			FromConnectionUUID: bConnectionUUID,
+			RoomUUID:           roomUUID1,
+			EventType:          utils.ToStrPtr("EVENT_CHAT_TEXT"),
+			MessageText:        utils.ToStrPtr("Message 4"),
+		}
+		sendTextMessage(t, bWS, msgEventOut)
+
+		// send second text message to room 2
+		msgEventOut = &entities.ChatMessageEvent{
+			FromUserUUID:       &aUUID,
+			FromConnectionUUID: aConnectionUUID,
+			RoomUUID:           roomUUID2,
+			EventType:          utils.ToStrPtr("EVENT_CHAT_TEXT"),
+			MessageText:        utils.ToStrPtr("Message 2 for room 2"),
+		}
+		sendTextMessage(t, aWS, msgEventOut)
+
+		time.Sleep(time.Second)
+		// now check the msgs were saved
+		res, err := getRoomsByUserUUID(aUUID)
+		assert.NoError(t, err)
+		assert.NotNil(t, res)
+		assert.Equal(t, 2, len(res.Rooms))
+
+		res, err = getRoomsByUserUUID(bUUID)
+		assert.NoError(t, err)
+		assert.NotNil(t, res)
+		assert.Equal(t, 1, len(res.Rooms))
+
+		rooms, err := getMessagesByRoomUUID(t, *roomUUID1)
+		assert.NoError(t, err)
+		assert.Equal(t, 4, len(rooms.Messages))
+
+		// now query the messages
+		res, err = getRoomsByUserUUID(cUUID)
+		assert.NoError(t, err)
+		assert.NotNil(t, res)
+		assert.Equal(t, 1, len(res.Rooms))
+
+		rooms, err = getMessagesByRoomUUID(t, *roomUUID2)
+		assert.NoError(t, err)
+		assert.Equal(t, 2, len(rooms.Messages))
 	})
 }
 
@@ -318,6 +449,23 @@ func readTextMessage(t *testing.T, conn *websocket.Conn) *entities.ChatMessageEv
 func sendTextMessage(t *testing.T, ws *websocket.Conn, msgEvent *entities.ChatMessageEvent) {
 	err := ws.WriteJSON(msgEvent)
 	assert.NoError(t, err)
+}
+
+func getMessagesByRoomUUID(t *testing.T, roomUUID string) (*entities.GetMessagesByRoomUUIDResponse, error) {
+	url := fmt.Sprintf("http://localhost:9090/get-messages-by-room-uuid?room-uuid=%s&offset=0", roomUUID)
+	resp, err := http.Get(url)
+	assert.NoError(t, err)
+	assert.NotNil(t, resp)
+
+	defer resp.Body.Close()
+	b, err := io.ReadAll(resp.Body)
+	assert.NoError(t, err)
+	assert.NotNil(t, b)
+
+	result := &entities.GetMessagesByRoomUUIDResponse{}
+	err = json.Unmarshal(b, result)
+	assert.NoError(t, err)
+	return result, err
 }
 
 func getRoomsByUserUUID(userUUID string) (*entities.GetRoomsByUserUUIDResponse, error) {

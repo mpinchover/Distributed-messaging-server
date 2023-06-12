@@ -70,6 +70,10 @@ type GetRoomsByUserUUIDResponse struct {
 	Rooms []*records.ChatRoom `json:"rooms"`
 }
 
+type GetMessagesByRoomUUIDResponse struct {
+	Messages []*records.ChatMessage `json:"messages"`
+}
+
 // UnmarshalBinary decodes the struct into a User
 func (m *Message) UnmarshalBinary(data []byte) error {
 	if err := json.Unmarshal(data, m); err != nil {

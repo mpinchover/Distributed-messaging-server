@@ -106,12 +106,6 @@ func main() {
 	r.HandleFunc("/get-messages-by-room-uuid", func(w http.ResponseWriter, r *http.Request) {
 		enableCors(&w)
 
-		// vars := mux.Vars(r)
-		// roomUUID, ok := vars["room-uuid"]
-		// if !ok {
-		// 	panic("id is missing in parameters")
-		// }
-
 		roomUUID := r.URL.Query().Get("room-uuid")
 		if roomUUID == "" {
 			panic("room uuid required")
@@ -121,13 +115,12 @@ func main() {
 			panic("offset required")
 		}
 
-		startFrom, err := strconv.ParseInt(_offset, 10, 64)
+		offset, err := strconv.ParseInt(_offset, 10, 64)
 		if err != nil {
 			panic(err)
 		}
 
-		_startFrom := int(startFrom)
-		msgs, err := msgController.GetMessagesByRoomUUID(roomUUID, &_startFrom)
+		msgs, err := msgController.GetMessagesByRoomUUID(roomUUID, int(offset))
 		if err != nil {
 			panic(err)
 		}
@@ -147,16 +140,25 @@ func main() {
 		// get the last 100 before it or whatever
 	}).Methods("GET")
 
-	r.HandleFunc("/get-rooms-by-user-uuid/{user-uuid}", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/get-rooms-by-user-uuid", func(w http.ResponseWriter, r *http.Request) {
 		enableCors(&w)
 
-		vars := mux.Vars(r)
-		userUUID, ok := vars["user-uuid"]
-		if !ok {
-			panic("id is missing in parameters")
+		userUUID := r.URL.Query().Get("user-uuid")
+		if userUUID == "" {
+			panic("room uuid required")
 		}
 
-		rooms, err := msgController.GetRoomsByUserUUID(userUUID)
+		_offset := r.URL.Query().Get("offset")
+		if _offset == "" {
+			panic("offset required")
+		}
+
+		offset, err := strconv.ParseInt(_offset, 10, 64)
+		if err != nil {
+			panic(err)
+		}
+
+		rooms, err := msgController.GetRoomsByUserUUID(userUUID, int(offset))
 		if err != nil {
 			panic(err)
 		}

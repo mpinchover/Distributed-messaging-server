@@ -60,8 +60,8 @@ func New() *MessageController {
 	return msgController
 }
 
-func (c *MessageController) GetMessagesByRoomUUID(roomUUID string, startFrom *int) ([]*records.ChatMessage, error) {
-	return c.Repo.GetMessagesByRoomUUID(roomUUID, startFrom)
+func (c *MessageController) GetMessagesByRoomUUID(roomUUID string, offset int) ([]*records.ChatMessage, error) {
+	return c.Repo.GetMessagesByRoomUUID(roomUUID, offset)
 }
 
 func (c *MessageController) PublishAndSubscribeRoom(userUUID *string, roomUUID *string, openRoomEvent *entities.OpenRoomEvent) error {
@@ -290,27 +290,6 @@ func (c *MessageController) SetupClientConnection(conn *websocket.Conn) {
 		if msgType == eventtypes.EVENT_CHAT_TEXT.String() {
 
 			go c.handleTextMessage(p)
-			// msg := entities.ChatMessageEvent{}
-			// err := json.Unmarshal(p, &msg)
-			// if err != nil {
-			// 	panic(err)
-			// }
-
-			// chatMessage := &records.ChatMessage{
-			// 	FromUUID:    *msg.FromUserUUID,
-			// 	MessageText: *msg.MessageText,
-			// 	RoomUUID:    *msg.RoomUUID,
-			// 	UUID:        uuid.New().String(),
-			// }
-
-			// log.Println("SAVED MSG")
-			// err = c.Repo.SaveChatMessage(chatMessage)
-			// if err != nil {
-			// 	panic(err)
-			// }
-
-			// roomUUID := utils.ToStr(msg.RoomUUID)
-			// c.RedisClient.PublishToRedisChannel(roomUUID, p)
 		}
 	}
 }
@@ -338,8 +317,8 @@ func (c *MessageController) handleTextMessage(p []byte) {
 	c.RedisClient.PublishToRedisChannel(roomUUID, p)
 }
 
-func (c *MessageController) GetRoomsByUserUUID(userUUID string) ([]*records.ChatRoom, error) {
-	return c.Repo.GetRoomsByUserUUID(userUUID)
+func (c *MessageController) GetRoomsByUserUUID(userUUID string, offset int) ([]*records.ChatRoom, error) {
+	return c.Repo.GetRoomsByUserUUID(userUUID, offset)
 }
 
 func (c *MessageController) SubscribeRoomsToServer(rooms []*records.ChatRoom, userUUID string) {

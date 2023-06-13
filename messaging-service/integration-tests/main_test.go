@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"messaging-service/types/entities"
+	"messaging-service/types/records"
 	"messaging-service/utils"
 	"net/http"
 	"testing"
@@ -47,7 +48,6 @@ func TestConnectWebsocket(t *testing.T) {
 }
 
 func TestSetClientSocketInfo(t *testing.T) {
-
 	t.Run("test set open socket info on client", func(t *testing.T) {
 
 		ws, _, err := websocket.DefaultDialer.Dial(socketURL, nil)
@@ -73,7 +73,6 @@ func TestSetClientSocketInfo(t *testing.T) {
 		assert.NotNil(t, msgIn.FromUUID)
 	})
 	t.Run("test create a room", func(t *testing.T) {
-		// t.Skip()
 		tomUUID := uuid.New().String()
 		jerryUUID := uuid.New().String()
 
@@ -193,7 +192,6 @@ func TestSetClientSocketInfo(t *testing.T) {
 	})
 
 	t.Run("test send messages across a room between two users with multiple connections", func(t *testing.T) {
-
 		tomUUID := uuid.New().String()
 		jerryUUID := uuid.New().String()
 
@@ -282,15 +280,15 @@ func TestQueryMessages(t *testing.T) {
 
 		time.Sleep(time.Second)
 		// now check the messagse were saved
-		res, err := getRoomsByUserUUID(tomUUID)
+		res, err := getRoomsByUserUUID(tomUUID, 0)
 		assert.NoError(t, err)
 		assert.NotNil(t, res)
 
 		assert.Equal(t, 1, len(res.Rooms))
 
-		rooms, err := getMessagesByRoomUUID(t, *roomUUID)
+		result, err := getMessagesByRoomUUID(t, *roomUUID, 0)
 		assert.NoError(t, err)
-		assert.Equal(t, 2, len(rooms.Messages))
+		assert.Equal(t, 2, len(result.Messages))
 	})
 }
 
@@ -300,7 +298,6 @@ func TestOpenMultipleConnectionsAndQueryMessages(t *testing.T) {
 		bUUID := uuid.New().String()
 		cUUID := uuid.New().String()
 
-		// TODO – create additioanl connections to query messages
 		aResp, aWS := setupClientConnection(t, aUUID)
 		bResp, bWS := setupClientConnection(t, bUUID)
 
@@ -388,30 +385,115 @@ func TestOpenMultipleConnectionsAndQueryMessages(t *testing.T) {
 
 		time.Sleep(time.Second)
 		// now check the msgs were saved
-		res, err := getRoomsByUserUUID(aUUID)
+		res, err := getRoomsByUserUUID(aUUID, 0)
 		assert.NoError(t, err)
 		assert.NotNil(t, res)
 		assert.Equal(t, 2, len(res.Rooms))
 
-		res, err = getRoomsByUserUUID(bUUID)
+		res, err = getRoomsByUserUUID(bUUID, 0)
 		assert.NoError(t, err)
 		assert.NotNil(t, res)
 		assert.Equal(t, 1, len(res.Rooms))
 
-		rooms, err := getMessagesByRoomUUID(t, *roomUUID1)
+		rooms, err := getMessagesByRoomUUID(t, *roomUUID1, 0)
 		assert.NoError(t, err)
 		assert.Equal(t, 4, len(rooms.Messages))
 
 		// now query the messages
-		res, err = getRoomsByUserUUID(cUUID)
+		res, err = getRoomsByUserUUID(cUUID, 0)
 		assert.NoError(t, err)
 		assert.NotNil(t, res)
 		assert.Equal(t, 1, len(res.Rooms))
 
-		rooms, err = getMessagesByRoomUUID(t, *roomUUID2)
+		rooms, err = getMessagesByRoomUUID(t, *roomUUID2, 0)
 		assert.NoError(t, err)
 		assert.Equal(t, 2, len(rooms.Messages))
 	})
+
+}
+
+// TODO – fix. Take all the messages you already have. This is the offset. Then query.
+func TestMessagePagination(t *testing.T) {
+	aUUID := uuid.New().String()
+	bUUID := uuid.New().String()
+
+	aResp, aWS := setupClientConnection(t, aUUID)
+	openRoomEvent1 := &entities.OpenRoomRequest{
+		FromUUID: utils.ToStrPtr(aUUID),
+		ToUUID:   utils.ToStrPtr(bUUID),
+	}
+	openRoom(t, openRoomEvent1)
+
+	aConnectionUUID := aResp.ConnectionUUID
+
+	openRoomRes := readOpenRoomResponse(t, aWS)
+	roomUUID := openRoomRes.Room.UUID
+
+	for i := 0; i < 50; i++ {
+		msgText := fmt.Sprintf("Message %d", i)
+		msgEventOut := &entities.ChatMessageEvent{
+			FromUserUUID:       &aUUID,
+			FromConnectionUUID: aConnectionUUID,
+			RoomUUID:           roomUUID,
+			EventType:          utils.ToStrPtr("EVENT_CHAT_TEXT"),
+			MessageText:        utils.ToStrPtr(msgText),
+		}
+		sendTextMessage(t, aWS, msgEventOut)
+	}
+
+	time.Sleep(1 * time.Second)
+
+	totalMessages := []*records.ChatMessage{}
+	// now query the messages
+	res, err := getRoomsByUserUUID(aUUID, 0)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.Equal(t, 1, len(res.Rooms))
+
+	resp, err := getMessagesByRoomUUID(t, *roomUUID, 0)
+	assert.NoError(t, err)
+	assert.Equal(t, 20, len(resp.Messages))
+
+	for _, m := range resp.Messages {
+		totalMessages = append(totalMessages, m)
+	}
+	assert.Equal(t, 20, len(totalMessages))
+
+	for i := 1; i < len(totalMessages); i++ {
+		prev := totalMessages[i-1]
+		cur := totalMessages[i]
+
+		assert.Greater(t, prev.ID, cur.ID)
+	}
+
+	// TODO - change this to just uuid and dont expose the primary key?
+	resp, err = getMessagesByRoomUUID(t, *roomUUID, len(totalMessages))
+	assert.NoError(t, err)
+	assert.Equal(t, 20, len(resp.Messages))
+
+	totalMessages = append(totalMessages, resp.Messages...)
+	assert.Equal(t, 40, len(totalMessages))
+
+	for i := 1; i < len(resp.Messages); i++ {
+		prev := resp.Messages[i-1]
+		cur := resp.Messages[i]
+
+		assert.Greater(t, prev.ID, cur.ID)
+	}
+	resp, err = getMessagesByRoomUUID(t, *roomUUID, len(totalMessages))
+	assert.NoError(t, err)
+	assert.Equal(t, 10, len(resp.Messages))
+
+	totalMessages = append(totalMessages, resp.Messages...)
+	assert.Equal(t, 50, len(totalMessages))
+
+	for i := 1; i < len(resp.Messages); i++ {
+		prev := resp.Messages[i-1]
+		cur := resp.Messages[i]
+
+		assert.Greater(t, prev.ID, cur.ID)
+	}
+
 }
 
 func readOpenRoomResponse(t *testing.T, conn *websocket.Conn) *entities.OpenRoomEvent {
@@ -451,8 +533,8 @@ func sendTextMessage(t *testing.T, ws *websocket.Conn, msgEvent *entities.ChatMe
 	assert.NoError(t, err)
 }
 
-func getMessagesByRoomUUID(t *testing.T, roomUUID string) (*entities.GetMessagesByRoomUUIDResponse, error) {
-	url := fmt.Sprintf("http://localhost:9090/get-messages-by-room-uuid?room-uuid=%s&offset=0", roomUUID)
+func getMessagesByRoomUUID(t *testing.T, roomUUID string, offset int) (*entities.GetMessagesByRoomUUIDResponse, error) {
+	url := fmt.Sprintf("http://localhost:9090/get-messages-by-room-uuid?room-uuid=%s&offset=%d", roomUUID, offset)
 	resp, err := http.Get(url)
 	assert.NoError(t, err)
 	assert.NotNil(t, resp)
@@ -468,8 +550,8 @@ func getMessagesByRoomUUID(t *testing.T, roomUUID string) (*entities.GetMessages
 	return result, err
 }
 
-func getRoomsByUserUUID(userUUID string) (*entities.GetRoomsByUserUUIDResponse, error) {
-	url := fmt.Sprintf("http://localhost:9090/get-rooms-by-user-uuid/%s", userUUID)
+func getRoomsByUserUUID(userUUID string, offset int) (*entities.GetRoomsByUserUUIDResponse, error) {
+	url := fmt.Sprintf("http://localhost:9090/get-rooms-by-user-uuid?user-uuid=%s&offset=%d", userUUID, offset)
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err

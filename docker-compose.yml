@@ -10,15 +10,15 @@ services:
     image: mysql:8.0
     restart: always
     ports:
-      - 3306:3306/tcp
-    expose:
-      - 3306
+      - 3310:3306/tcp
+    # expose:
+    #   - 3310
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_ROOT_USER: root
       MYSQL_ROOT_HOST: "%"
       # MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
-      MYSQL_TCP_PORT: 3306
+      # MYSQL_TCP_PORT: 3310
       # MYSQL_DATABASE: "messaging"
       # MYSQL_USER: "test"
       # MYSQL_PASSWORD: "test"

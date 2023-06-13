@@ -11,6 +11,7 @@ import (
 
 const (
 	PAGINATION_MESSAGES = 20
+	PAGINATION_ROOMS    = 10
 )
 
 type Repo struct {
@@ -61,21 +62,18 @@ func (r *Repo) SaveChatMessage(msg *records.ChatMessage) error {
 	return err
 }
 
-func (r *Repo) GetMessagesByRoomUUID(roomUUID string, startFrom *int) ([]*records.ChatMessage, error) {
+func (r *Repo) GetMessagesByRoomUUID(roomUUID string, offset int) ([]*records.ChatMessage, error) {
 	results := []*records.ChatMessage{}
 
-	query := r.DB.Where("room_uuid = ?", roomUUID)
-	if startFrom != nil && *startFrom != 0 {
-		query = query.Where("id < ? ", startFrom)
-	}
-	query = query.Order("id desc").Limit(PAGINATION_MESSAGES)
+	query := r.DB.Where("room_uuid = ?", roomUUID).Order("id desc").Offset(offset).Limit(PAGINATION_MESSAGES)
 	err := query.Find(&results).Error
 	return results, err
 }
 
-func (r *Repo) GetRoomsByUserUUID(uuid string) ([]*records.ChatRoom, error) {
+func (r *Repo) GetRoomsByUserUUID(uuid string, offset int) ([]*records.ChatRoom, error) {
 	results := []*records.ChatRoom{}
 
-	err := r.DB.Raw("SELECT * from chat_rooms cr join chat_participants cp on cp.user_uuid = ? and cp.room_uuid = cr.uuid", uuid).Scan(&results).Error
+	// log.Println("GETTINR ROOMS")
+	err := r.DB.Raw("SELECT * from chat_rooms cr join chat_participants cp on cp.user_uuid = ? and cp.room_uuid = cr.uuid limit ? offset ? ", uuid, PAGINATION_ROOMS, offset).Scan(&results).Error
 	return results, err
 }

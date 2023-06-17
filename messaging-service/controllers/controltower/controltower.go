@@ -7,9 +7,9 @@ import (
 	redisClient "messaging-service/redis"
 	"messaging-service/repo"
 	"messaging-service/types/entities"
+	"messaging-service/types/events"
 	"messaging-service/types/eventtypes"
 	"messaging-service/types/records"
-	"messaging-service/utils"
 	"sync"
 
 	"github.com/google/uuid"
@@ -17,7 +17,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-type MessageController struct {
+type ControlTowerController struct {
 	RedisClient *redisClient.RedisClient
 	Connections map[string]*entities.Connection
 
@@ -32,7 +32,7 @@ type MessageController struct {
 	Repo           *repo.Repo
 }
 
-func New() *MessageController {
+func New() *ControlTowerController {
 	redisClient := redisClient.New()
 
 	repo, err := repo.New()
@@ -45,7 +45,7 @@ func New() *MessageController {
 	activeChannels := map[string]*entities.Channel{}
 
 	var mu sync.Mutex
-	msgController := &MessageController{
+	msgController := &ControlTowerController{
 		RedisClient:     &redisClient,
 		Connections:     connections,
 		UserConnections: userConnections,
@@ -60,12 +60,12 @@ func New() *MessageController {
 	return msgController
 }
 
-func (c *MessageController) GetMessagesByRoomUUID(roomUUID string, offset int) ([]*records.ChatMessage, error) {
+func (c *ControlTowerController) GetMessagesByRoomUUID(roomUUID string, offset int) ([]*records.ChatMessage, error) {
 	return c.Repo.GetMessagesByRoomUUID(roomUUID, offset)
 }
 
-func (c *MessageController) PublishAndSubscribeRoom(userUUID *string, roomUUID *string, openRoomEvent *entities.OpenRoomEvent) error {
-	listOfFromConnections, ok := c.UserConnections[utils.ToStr(userUUID)]
+func (c *ControlTowerController) PublishAndSubscribeRoom(userUUID string, roomUUID string, openRoomEvent *events.OpenRoomEvent) error {
+	listOfFromConnections, ok := c.UserConnections[userUUID]
 
 	// no connections for this user uuid found on this server
 	if !ok {
@@ -74,9 +74,9 @@ func (c *MessageController) PublishAndSubscribeRoom(userUUID *string, roomUUID *
 
 	for connUUID := range listOfFromConnections {
 		c.MapLock.Lock()
-		channel, ok := c.ActiveChannels[utils.ToStr(roomUUID)]
+		channel, ok := c.ActiveChannels[roomUUID]
 		if !ok {
-			roomSubscriber := c.RedisClient.SetupChannel(utils.ToStr(roomUUID))
+			roomSubscriber := c.RedisClient.SetupChannel(roomUUID)
 			go c.subscribeToRedisChannel(roomSubscriber, c.handleIncomingTextMessageFromRedis)
 
 			channel = &entities.Channel{
@@ -84,23 +84,25 @@ func (c *MessageController) PublishAndSubscribeRoom(userUUID *string, roomUUID *
 				UUID:                 roomUUID,
 				ParticipantsOnServer: map[string]bool{},
 			}
-			c.ActiveChannels[utils.ToStr(roomUUID)] = channel
+			c.ActiveChannels[roomUUID] = channel
 		}
-		channel.ParticipantsOnServer[utils.ToStr(userUUID)] = true
+		channel.ParticipantsOnServer[userUUID] = true
+
 		c.Connections[connUUID].Conn.WriteJSON(openRoomEvent)
 		c.MapLock.Unlock()
 	}
 	return nil
 }
 
-func (c *MessageController) handleIncomingServerEventFromRedis(event string) error {
+func (c *ControlTowerController) handleIncomingServerEventFromRedis(event string) error {
 	eventType, err := getEventType(event)
 	if err != nil {
 		panic(err)
 	}
 
 	if eventType == eventtypes.EVENT_OPEN_ROOM.String() {
-		openRoomEvent := &entities.OpenRoomEvent{}
+
+		openRoomEvent := &events.OpenRoomEvent{}
 		err = json.Unmarshal([]byte(event), openRoomEvent)
 		if err != nil {
 			panic(err)
@@ -116,7 +118,7 @@ func (c *MessageController) handleIncomingServerEventFromRedis(event string) err
 	return nil
 }
 
-func (c *MessageController) subscribeToRedisChannel(subscriber *redis.PubSub, fn func(string) error) {
+func (c *ControlTowerController) subscribeToRedisChannel(subscriber *redis.PubSub, fn func(string) error) {
 	for redisMsg := range subscriber.Channel() {
 		err := fn(redisMsg.Payload)
 		if err != nil {
@@ -125,14 +127,14 @@ func (c *MessageController) subscribeToRedisChannel(subscriber *redis.PubSub, fn
 	}
 }
 
-func (c *MessageController) handleIncomingTextMessageFromRedis(msg string) error {
-	chatMessage := entities.ChatMessageEvent{}
+func (c *ControlTowerController) handleIncomingTextMessageFromRedis(msg string) error {
+	chatMessage := events.ChatMessageEvent{}
 	err := json.Unmarshal([]byte(msg), &chatMessage)
 	if err != nil {
 		panic(err)
 	}
 
-	roomUUID := utils.ToStr(chatMessage.RoomUUID)
+	roomUUID := chatMessage.RoomUUID
 	room, ok := c.ActiveChannels[roomUUID]
 	if !ok {
 		return nil
@@ -144,7 +146,7 @@ func (c *MessageController) handleIncomingTextMessageFromRedis(msg string) error
 
 		connections := c.UserConnections[participantUUID]
 		for connUUID := range connections {
-			if connUUID != utils.ToStr(chatMessage.FromConnectionUUID) {
+			if connUUID != chatMessage.FromConnectionUUID {
 				connection, ok := c.Connections[connUUID]
 				if !ok {
 					continue
@@ -181,7 +183,7 @@ func getEventType(event string) (string, error) {
 	return val, nil
 }
 
-func (c *MessageController) SetupClientConnection(conn *websocket.Conn) {
+func (c *ControlTowerController) SetupClientConnection(conn *websocket.Conn) {
 
 	var userUUID string
 	var connectionUUID string
@@ -253,18 +255,18 @@ func (c *MessageController) SetupClientConnection(conn *websocket.Conn) {
 			// set up the client here and send back a message to the client that everything is ready to go
 			// client should be in a loading state until that happens
 
-			msg := entities.SetClientConnectionEvent{}
+			msg := events.SetClientConnectionEvent{}
 			err := json.Unmarshal(p, &msg)
 			if err != nil {
 				panic(err)
 			}
 
-			userUUID = utils.ToStr(msg.FromUUID)
+			userUUID = msg.FromUUID
 			connectionUUID := uuid.New().String()
 
 			connection := &entities.Connection{
 				Conn: conn,
-				UUID: utils.ToStrPtr(connectionUUID),
+				UUID: connectionUUID,
 			}
 
 			// map the client uuid to a map of connection UUID's to the connection
@@ -276,7 +278,7 @@ func (c *MessageController) SetupClientConnection(conn *websocket.Conn) {
 
 			c.Connections[connectionUUID] = connection
 
-			msg.ConnectionUUID = utils.ToStrPtr(connectionUUID)
+			msg.ConnectionUUID = connectionUUID
 
 			// send back to client the connection uuid so they can set it
 			err = conn.WriteJSON(msg)
@@ -294,17 +296,17 @@ func (c *MessageController) SetupClientConnection(conn *websocket.Conn) {
 	}
 }
 
-func (c *MessageController) handleTextMessage(p []byte) {
-	msg := entities.ChatMessageEvent{}
+func (c *ControlTowerController) handleTextMessage(p []byte) {
+	msg := events.ChatMessageEvent{}
 	err := json.Unmarshal(p, &msg)
 	if err != nil {
 		panic(err)
 	}
 
 	chatMessage := &records.ChatMessage{
-		FromUUID:    *msg.FromUserUUID,
-		MessageText: *msg.MessageText,
-		RoomUUID:    *msg.RoomUUID,
+		FromUUID:    msg.FromUserUUID,
+		MessageText: msg.MessageText,
+		RoomUUID:    msg.RoomUUID,
 		UUID:        uuid.New().String(),
 	}
 
@@ -313,15 +315,15 @@ func (c *MessageController) handleTextMessage(p []byte) {
 		panic(err)
 	}
 
-	roomUUID := utils.ToStr(msg.RoomUUID)
+	roomUUID := msg.RoomUUID
 	c.RedisClient.PublishToRedisChannel(roomUUID, p)
 }
 
-func (c *MessageController) GetRoomsByUserUUID(userUUID string, offset int) ([]*records.ChatRoom, error) {
+func (c *ControlTowerController) GetRoomsByUserUUID(userUUID string, offset int) ([]*records.ChatRoom, error) {
 	return c.Repo.GetRoomsByUserUUID(userUUID, offset)
 }
 
-func (c *MessageController) SubscribeRoomsToServer(rooms []*records.ChatRoom, userUUID string) {
+func (c *ControlTowerController) SubscribeRoomsToServer(rooms []*records.ChatRoom, userUUID string) {
 	for _, room := range rooms {
 		roomUUID := room.UUID
 		_, ok := c.ActiveChannels[roomUUID]
@@ -335,7 +337,7 @@ func (c *MessageController) SubscribeRoomsToServer(rooms []*records.ChatRoom, us
 
 		channel := &entities.Channel{
 			Subscriber:           roomSubscriber,
-			UUID:                 &roomUUID,
+			UUID:                 roomUUID,
 			ParticipantsOnServer: map[string]bool{},
 		}
 		c.ActiveChannels[roomUUID] = channel

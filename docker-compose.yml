@@ -1,48 +1,17 @@
 version: "3"
 
+networks:
+  default:
+    external:
+      name: external-example
+
 services:
-  redisCache:
-    image: "redis:latest"
-    healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
-
-  mysqldb:
-    image: mysql:8.0
-    restart: always
-    ports:
-      - 3310:3306/tcp
-    # expose:
-    #   - 3310
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_ROOT_USER: root
-      MYSQL_ROOT_HOST: "%"
-      # MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
-      # MYSQL_TCP_PORT: 3310
-      # MYSQL_DATABASE: "messaging"
-      # MYSQL_USER: "test"
-      # MYSQL_PASSWORD: "test"
-    volumes:
-      - ./messaging-service/scripts/mysql:/docker-entrypoint-initdb.d
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      timeout: 20s
-      retries: 10
-
   msgserver:
     build: "./messaging-service"
-    depends_on:
-      redisCache:
-        condition: service_healthy
-      mysqldb:
-        condition: service_healthy
     environment:
       NODE_ENV: production
       REDIS_URL: redisCache:6379
       MYSQL_HOST: mysqldb
       MYSQL_PORT: 3306
-    links:
-      - redisCache
-      - mysqldb
     ports:
       - 9090:9090

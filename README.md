@@ -34,3 +34,11 @@ Start a single service in docker compose
 docker-compose up -d --no-deps --build <service_name>
 
 ```
+
+TODO's
+ – Implement delete room and leave room
+ – add validation to all endpoints
+ – controltower should be parent of
+– realtime controller (sockets)
+– message controller (getting saving updating messages etc)
+– FromUUID should be extracted from headers

@@ -73,7 +73,32 @@ func (r *Repo) GetMessagesByRoomUUID(roomUUID string, offset int) ([]*records.Ch
 func (r *Repo) GetRoomsByUserUUID(uuid string, offset int) ([]*records.ChatRoom, error) {
 	results := []*records.ChatRoom{}
 
-	// log.Println("GETTINR ROOMS")
-	err := r.DB.Raw("SELECT * from chat_rooms cr join chat_participants cp on cp.user_uuid = ? and cp.room_uuid = cr.uuid limit ? offset ? ", uuid, PAGINATION_ROOMS, offset).Scan(&results).Error
+	participants := []*records.ChatParticipant{}
+	err := r.DB.Where("user_uuid = ?", uuid).Find(&participants).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO – what if roomUUIDs is empty?
+	roomUUIDs := []string{}
+	for _, p := range participants {
+		roomUUIDs = append(roomUUIDs, p.RoomUUID)
+	}
+
+	err = r.DB.Where("uuid in (?)", roomUUIDs).Find(&results).Error
 	return results, err
+}
+
+func (r *Repo) DeleteRoom(roomUUID string) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		err := tx.Where("room_uuid = ?", roomUUID).Delete(&records.ChatParticipant{}).Error
+		if err != nil {
+			return err
+		}
+		err = tx.Where("uuid = ?", roomUUID).Delete(&records.ChatRoom{}).Error
+		if err != nil {
+			return err
+		}
+		return nil
+	})
 }

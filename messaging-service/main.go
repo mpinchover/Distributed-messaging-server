@@ -24,6 +24,7 @@ func (fn rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	res, err := fn(w, r)
 	if err != nil {
+		log.Println(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -37,12 +38,14 @@ func (fn rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func main() {
 	r := mux.NewRouter()
 	h := handlers.New()
+	h.SetupChannels()
 
 	// websocket
 	r.HandleFunc("/ws", h.SetupWebsocketConnection)
 
 	// API
 	r.Handle("/delete-room", rootHandler(h.DeleteRoom)).Methods("POST")
+	r.Handle("/leave-room", rootHandler(h.LeaveRoom)).Methods("POST")
 	r.Handle("/create-room", rootHandler(h.CreateRoom)).Methods("POST")
 	r.Handle("/get-messages-by-room-uuid", rootHandler(h.GetMessagesByRoomUUID)).Methods("GET")
 	r.Handle("/get-rooms-by-user-uuid", rootHandler(h.GetRoomsByUserUUID)).Methods("GET")

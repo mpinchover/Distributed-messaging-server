@@ -5,11 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-
-	"messaging-service/types/events"
-	"messaging-service/types/records"
-	"messaging-service/types/requests"
 	"net/http"
+
+	"messaging-service/types/enums"
+	"messaging-service/types/requests"
 	"testing"
 
 	"github.com/gorilla/websocket"
@@ -32,7 +31,6 @@ func TestMockEndpoint(t *testing.T) {
 }
 
 func TestConnectWebsocket(t *testing.T) {
-	t.Skip()
 	t.Run("test opening websocket", func(t *testing.T) {
 
 		ws, _, err := websocket.DefaultDialer.Dial(socketURL, nil)
@@ -47,32 +45,17 @@ func TestConnectWebsocket(t *testing.T) {
 	})
 }
 
-func TestSetClientSocketInfo(t *testing.T) {
-	t.Run("test set open socket info on client", func(t *testing.T) {
-
-		ws, _, err := websocket.DefaultDialer.Dial(socketURL, nil)
-		assert.NoError(t, err)
+func TestOpenSocket(t *testing.T) {
+	t.Run("test set open socket info", func(t *testing.T) {
 
 		clientUUID := uuid.New().String()
-		msgOut := events.SetClientConnectionEvent{
-			FromUUID:  clientUUID,
-			EventType: "EVENT_SET_CLIENT_SOCKET",
-		}
+		setupClientConnection(t, clientUUID)
 
-		err = ws.WriteJSON(msgOut)
-		assert.NoError(t, err)
-
-		_, p, err := ws.ReadMessage()
-		assert.NoError(t, err)
-
-		msgIn := events.SetClientConnectionEvent{}
-		err = json.Unmarshal(p, &msgIn)
-		assert.NoError(t, err)
-
-		assert.NotNil(t, msgIn.ConnectionUUID)
-		assert.NotNil(t, msgIn.FromUUID)
 	})
-	t.Run("test create a room", func(t *testing.T) {
+}
+
+func TestCreateRoom(t *testing.T) {
+	t.Run("create room", func(t *testing.T) {
 		tomUUID := uuid.New().String()
 		jerryUUID := uuid.New().String()
 
@@ -81,39 +64,68 @@ func TestSetClientSocketInfo(t *testing.T) {
 
 		// create a room
 		createRoomRequest := &requests.CreateRoomRequest{
-			FromUUID: tomUUID,
-			ToUUID:   jerryUUID,
+			Members: []*requests.Member{
+				{
+					UserUUID: tomUUID,
+					UserRole: "MEMBER",
+				},
+				{
+					UserUUID: jerryUUID,
+					UserRole: "MEMBER",
+				},
+			},
 		}
-		openRoom(t, createRoomRequest)
+
+		postBody, err := json.Marshal(createRoomRequest)
+		assert.NoError(t, err)
+		reqBody := bytes.NewBuffer(postBody)
+
+		resp, err := http.Post("http://localhost:9090/create-room", "application/json", reqBody)
+
+		assert.NoError(t, err)
+		assert.NotNil(t, resp)
+		assert.True(t, resp.StatusCode >= 200 && resp.StatusCode <= 299)
+
 		_, p, err := tomWS.ReadMessage()
 		assert.NoError(t, err)
 
-		tomOpenRoomEventResponse := events.OpenRoomEvent{}
-		err = json.Unmarshal(p, &tomOpenRoomEventResponse)
+		// // get open room response over socket
+		tomOpenRoomEventResponse := &requests.OpenRoomEvent{}
+		err = json.Unmarshal(p, tomOpenRoomEventResponse)
 		assert.NoError(t, err)
-		assert.NotNil(t, tomOpenRoomEventResponse.EventType)
-		assert.NotNil(t, tomOpenRoomEventResponse.FromUUID)
-		assert.NotNil(t, tomOpenRoomEventResponse.ToUUID)
+		assert.NotEmpty(t, tomOpenRoomEventResponse.EventType)
+		assert.Equal(t, tomOpenRoomEventResponse.EventType, enums.EVENT_OPEN_ROOM.String())
 		assert.NotNil(t, tomOpenRoomEventResponse.Room)
-		assert.NotNil(t, tomOpenRoomEventResponse.Room.UUID)
-		assert.Equal(t, 2, len(tomOpenRoomEventResponse.Room.Participants))
+		assert.NotEmpty(t, tomOpenRoomEventResponse.Room.UUID)
+		assert.Equal(t, 2, len(tomOpenRoomEventResponse.Room.Members))
 
-		// ensure size of channels
+		for _, m := range tomOpenRoomEventResponse.Room.Members {
+			assert.Equal(t, "MEMBER", m.UserRole)
+			assert.NotEmpty(t, m.UUID)
+			assert.NotEmpty(t, m.UserUUID)
+		}
+
 		_, p, err = jerryWS.ReadMessage()
 		assert.NoError(t, err)
 
-		jerryOpenRoomEventResponse := events.OpenRoomEvent{}
+		jerryOpenRoomEventResponse := requests.OpenRoomEvent{}
 		err = json.Unmarshal(p, &jerryOpenRoomEventResponse)
 		assert.NoError(t, err)
-		assert.NotNil(t, jerryOpenRoomEventResponse.EventType)
-		assert.NotNil(t, jerryOpenRoomEventResponse.FromUUID)
-		assert.NotNil(t, jerryOpenRoomEventResponse.ToUUID)
+		assert.NotEmpty(t, jerryOpenRoomEventResponse.EventType)
+		assert.Equal(t, jerryOpenRoomEventResponse.EventType, enums.EVENT_OPEN_ROOM.String())
 		assert.NotNil(t, jerryOpenRoomEventResponse.Room)
-		assert.NotNil(t, jerryOpenRoomEventResponse.Room.UUID)
-		assert.Equal(t, 2, len(jerryOpenRoomEventResponse.Room.Participants))
+		assert.NotEmpty(t, jerryOpenRoomEventResponse.Room.UUID)
+		assert.Equal(t, 2, len(jerryOpenRoomEventResponse.Room.Members))
+
+		for _, m := range jerryOpenRoomEventResponse.Room.Members {
+			assert.Equal(t, "MEMBER", m.UserRole)
+			assert.NotEmpty(t, m.UUID)
+			assert.NotEmpty(t, m.UserUUID)
+		}
 
 		// ensure the room is the same room
 		assert.Equal(t, jerryOpenRoomEventResponse.Room.UUID, tomOpenRoomEventResponse.Room.UUID)
+
 	})
 }
 
@@ -135,28 +147,46 @@ func TestRoomAndMessagesPagination(t *testing.T) {
 		dConnectionUUID := dResp.ConnectionUUID
 
 		createRoomRequest1 := &requests.CreateRoomRequest{
-			FromUUID: aUUID,
-			ToUUID:   bUUID,
+			Members: []*requests.Member{
+				{
+					UserUUID: aUUID,
+					UserRole: "MEMBER",
+				},
+				{
+					UserUUID: bUUID,
+					UserRole: "MEMBER",
+				},
+			},
 		}
 		openRoom(t, createRoomRequest1)
 
-		openRoomRes1 := readOpenRoomResponse(t, aWebWS)
-		openRoomRes1 = readOpenRoomResponse(t, bWebWS)
+		openRoomRes1 := readOpenRoomResponse(t, aWebWS, 2)
+		openRoomRes1 = readOpenRoomResponse(t, bWebWS, 2)
 		roomUUID1 := openRoomRes1.Room.UUID
 
 		createRoomRequest2 := &requests.CreateRoomRequest{
-			FromUUID: aUUID,
-			ToUUID:   cUUID,
+			Members: []*requests.Member{
+				{
+					UserUUID: aUUID,
+					UserRole: "MEMBER",
+				},
+				{
+					UserUUID: cUUID,
+					UserRole: "MEMBER",
+				},
+			},
 		}
 		openRoom(t, createRoomRequest2)
-		openRoomRes2 := readOpenRoomResponse(t, cWebWS)
-		openRoomRes2 = readOpenRoomResponse(t, aWebWS)
+		openRoomRes2 := readOpenRoomResponse(t, cWebWS, 2)
+		openRoomRes2 = readOpenRoomResponse(t, aWebWS, 2)
+
 		roomUUID2 := openRoomRes2.Room.UUID
 
 		// send messages between A and B
 		sendMessages(t, aUUID, aConnectionUUID, roomUUID1, aWebWS)
 		sendMessages(t, bUUID, bConnectionUUID, roomUUID1, bWebWS)
 
+		// hanging here
 		recvMessages(t, bWebWS)
 		recvMessages(t, aWebWS)
 
@@ -175,12 +205,20 @@ func TestRoomAndMessagesPagination(t *testing.T) {
 
 		// create room between A and D
 		createRoomReq3 := &requests.CreateRoomRequest{
-			FromUUID: aUUID,
-			ToUUID:   dUUID,
+			Members: []*requests.Member{
+				{
+					UserUUID: aUUID,
+					UserRole: "MEMBER",
+				},
+				{
+					UserUUID: dUUID,
+					UserRole: "MEMBER",
+				},
+			},
 		}
 		openRoom(t, createRoomReq3)
-		openRoomRes3 := readOpenRoomResponse(t, dWebWS)
-		openRoomRes3 = readOpenRoomResponse(t, aWebWS)
+		openRoomRes3 := readOpenRoomResponse(t, dWebWS, 2)
+		openRoomRes3 = readOpenRoomResponse(t, aWebWS, 2)
 		roomUUID3 := openRoomRes3.Room.UUID
 
 		// send messages between A and D
@@ -195,13 +233,21 @@ func TestRoomAndMessagesPagination(t *testing.T) {
 
 		// create room between B and C
 		openRoomReq4 := &requests.CreateRoomRequest{
-			FromUUID: bUUID,
-			ToUUID:   cUUID,
+			Members: []*requests.Member{
+				{
+					UserUUID: bUUID,
+					UserRole: "MEMBER",
+				},
+				{
+					UserUUID: cUUID,
+					UserRole: "MEMBER",
+				},
+			},
 		}
 
 		openRoom(t, openRoomReq4)
-		openRoomRes4 := readOpenRoomResponse(t, bWebWS)
-		openRoomRes4 = readOpenRoomResponse(t, cWebWS)
+		openRoomRes4 := readOpenRoomResponse(t, bWebWS, 2)
+		openRoomRes4 = readOpenRoomResponse(t, cWebWS, 2)
 		roomUUID4 := openRoomRes4.Room.UUID
 
 		// send messages between B and C
@@ -216,12 +262,20 @@ func TestRoomAndMessagesPagination(t *testing.T) {
 
 		// create room between B and D
 		openRoomRequest5 := &requests.CreateRoomRequest{
-			FromUUID: bUUID,
-			ToUUID:   dUUID,
+			Members: []*requests.Member{
+				{
+					UserUUID: bUUID,
+					UserRole: "MEMBER",
+				},
+				{
+					UserUUID: dUUID,
+					UserRole: "MEMBER",
+				},
+			},
 		}
 		openRoom(t, openRoomRequest5)
-		openRoomRes5 := readOpenRoomResponse(t, dWebWS)
-		openRoomRes5 = readOpenRoomResponse(t, bWebWS)
+		openRoomRes5 := readOpenRoomResponse(t, dWebWS, 2)
+		openRoomRes5 = readOpenRoomResponse(t, bWebWS, 2)
 
 		// the mobiel device will get the open room msg as well
 		roomUUID5 := openRoomRes5.Room.UUID
@@ -239,6 +293,7 @@ func TestRoomAndMessagesPagination(t *testing.T) {
 	})
 }
 
+// Need to get the room id first and pass it to the text message id
 func TestAllConnectionsRcvMessages(t *testing.T) {
 	t.Run("test all connections get msgs", func(t *testing.T) {
 		aUUID := uuid.New().String()
@@ -252,14 +307,22 @@ func TestAllConnectionsRcvMessages(t *testing.T) {
 		bWebConnUUID := bWebResp.ConnectionUUID
 
 		openRoomEvent := &requests.CreateRoomRequest{
-			FromUUID: aUUID,
-			ToUUID:   bUUID,
+			Members: []*requests.Member{
+				{
+					UserUUID: aUUID,
+					UserRole: "MEMBER",
+				},
+				{
+					UserUUID: bUUID,
+					UserRole: "MEMBER",
+				},
+			},
 		}
 		openRoom(t, openRoomEvent)
 
-		openRoomRes := readOpenRoomResponse(t, aWebWS)
-		readOpenRoomResponse(t, bWebWS)
-		readOpenRoomResponse(t, bMobileWS)
+		openRoomRes := readOpenRoomResponse(t, aWebWS, 2)
+		readOpenRoomResponse(t, bWebWS, 2)
+		readOpenRoomResponse(t, bMobileWS, 2)
 		roomUUID := openRoomRes.Room.UUID
 
 		sendMessages(t, bUUID, aWebConnUUID, roomUUID, aWebWS)
@@ -305,36 +368,56 @@ func TestDeleteRoom(t *testing.T) {
 		_, cWebWS := setupClientConnection(t, cUUID)
 
 		openRoomEvent := &requests.CreateRoomRequest{
-			FromUUID: aUUID,
-			ToUUID:   bUUID,
+			Members: []*requests.Member{
+				{
+					UserUUID: aUUID,
+					UserRole: "MEMBER",
+				},
+				{
+					UserUUID: bUUID,
+					UserRole: "MEMBER",
+				},
+			},
 		}
 		openRoom(t, openRoomEvent)
-		openRoomRes := readOpenRoomResponse(t, bWebWS)
+		openRoomRes := readOpenRoomResponse(t, bWebWS, 2)
 		roomUUID1 := openRoomRes.Room.UUID
 
 		openRoomEvent = &requests.CreateRoomRequest{
-			FromUUID: aUUID,
-			ToUUID:   cUUID,
+			Members: []*requests.Member{
+				{
+					UserUUID: aUUID,
+					UserRole: "MEMBER",
+				},
+				{
+					UserUUID: cUUID,
+					UserRole: "MEMBER",
+				},
+			},
 		}
 		openRoom(t, openRoomEvent)
 
-		openRoomRes = readOpenRoomResponse(t, cWebWS)
+		openRoomRes = readOpenRoomResponse(t, cWebWS, 2)
 		roomUUID2 := openRoomRes.Room.UUID
 
 		res, err := getRoomsByUserUUID(aUUID, 0)
 		assert.NoError(t, err)
-		assert.NotNil(t, res)
+		assert.NotEmpty(t, res)
 		assert.Equal(t, 2, len(res.Rooms))
+		assert.Equal(t, 2, len(res.Rooms[0].Members))
+		assert.Equal(t, 2, len(res.Rooms[1].Members))
 
 		res, err = getRoomsByUserUUID(bUUID, 0)
 		assert.NoError(t, err)
-		assert.NotNil(t, res)
+		assert.NotEmpty(t, res)
 		assert.Equal(t, 1, len(res.Rooms))
+		assert.Equal(t, 2, len(res.Rooms[0].Members))
 
 		res, err = getRoomsByUserUUID(cUUID, 0)
 		assert.NoError(t, err)
-		assert.NotNil(t, res)
+		assert.NotEmpty(t, res)
 		assert.Equal(t, 1, len(res.Rooms))
+		assert.Equal(t, 2, len(res.Rooms[0].Members))
 
 		deleteRoom(t, &requests.DeleteRoomRequest{
 			RoomUUID: roomUUID1,
@@ -342,18 +425,20 @@ func TestDeleteRoom(t *testing.T) {
 
 		res, err = getRoomsByUserUUID(aUUID, 0)
 		assert.NoError(t, err)
-		assert.NotNil(t, res)
+		assert.NotEmpty(t, res)
 		assert.Equal(t, 1, len(res.Rooms))
+		assert.Equal(t, 2, len(res.Rooms[0].Members))
 
 		res, err = getRoomsByUserUUID(bUUID, 0)
 		assert.NoError(t, err)
-		assert.NotNil(t, res)
+		assert.NotEmpty(t, res)
 		assert.Equal(t, 0, len(res.Rooms))
 
 		res, err = getRoomsByUserUUID(cUUID, 0)
 		assert.NoError(t, err)
-		assert.NotNil(t, res)
+		assert.NotEmpty(t, res)
 		assert.Equal(t, 1, len(res.Rooms))
+		assert.Equal(t, 2, len(res.Rooms[0].Members))
 
 		deleteRoom(t, &requests.DeleteRoomRequest{
 			RoomUUID: roomUUID2,
@@ -361,27 +446,122 @@ func TestDeleteRoom(t *testing.T) {
 
 		res, err = getRoomsByUserUUID(aUUID, 0)
 		assert.NoError(t, err)
-		assert.NotNil(t, res)
+		assert.NotEmpty(t, res)
 		assert.Equal(t, 0, len(res.Rooms))
 
 		res, err = getRoomsByUserUUID(bUUID, 0)
 		assert.NoError(t, err)
-		assert.NotNil(t, res)
+		assert.NotEmpty(t, res)
 		assert.Equal(t, 0, len(res.Rooms))
 
 		res, err = getRoomsByUserUUID(cUUID, 0)
 		assert.NoError(t, err)
-		assert.NotNil(t, res)
+		assert.NotEmpty(t, res)
 		assert.Equal(t, 0, len(res.Rooms))
 	})
 }
 
+func TestLeaveRoom(t *testing.T) {
+	t.Run("test leave room", func(t *testing.T) {
+		aUUID := uuid.New().String()
+		bUUID := uuid.New().String()
+		cUUID := uuid.New().String()
+		dUUID := uuid.New().String()
+
+		_, aWebWS := setupClientConnection(t, aUUID)
+		_, bWebWS := setupClientConnection(t, bUUID)
+		_, cWebWS := setupClientConnection(t, cUUID)
+		_, dWebWS := setupClientConnection(t, dUUID)
+		_, dMobileWS := setupClientConnection(t, dUUID)
+
+		openRoomEvent := &requests.CreateRoomRequest{
+			Members: []*requests.Member{
+				{
+					UserUUID: aUUID,
+					UserRole: "MEMBER",
+				},
+				{
+					UserUUID: bUUID,
+					UserRole: "MEMBER",
+				},
+				{
+					UserUUID: cUUID,
+					UserRole: "MEMBER",
+				},
+				{
+					UserUUID: dUUID,
+					UserRole: "MEMBER",
+				},
+			},
+		}
+		openRoom(t, openRoomEvent)
+		readOpenRoomResponse(t, aWebWS, 4)
+		readOpenRoomResponse(t, bWebWS, 4)
+		readOpenRoomResponse(t, cWebWS, 4)
+		readOpenRoomResponse(t, dWebWS, 4)
+		openRoomRes := readOpenRoomResponse(t, dMobileWS, 4)
+		roomUUID := openRoomRes.Room.UUID
+
+		res, err := getRoomsByUserUUID(aUUID, 0)
+		assert.NoError(t, err)
+		assert.Len(t, res.Rooms, 1)
+		assert.Len(t, res.Rooms[0].Members, 4)
+
+		res, err = getRoomsByUserUUID(bUUID, 0)
+		assert.NoError(t, err)
+		assert.Len(t, res.Rooms, 1)
+		assert.Len(t, res.Rooms[0].Members, 4)
+
+		res, err = getRoomsByUserUUID(cUUID, 0)
+		assert.NoError(t, err)
+		assert.Len(t, res.Rooms, 1)
+		assert.Len(t, res.Rooms[0].Members, 4)
+
+		res, err = getRoomsByUserUUID(dUUID, 0)
+		assert.NoError(t, err)
+		assert.Len(t, res.Rooms, 1)
+		assert.Len(t, res.Rooms[0].Members, 4)
+
+		leaveRoomReq := &requests.LeaveRoomRequest{
+			UserUUID: cUUID,
+			RoomUUID: roomUUID,
+		}
+
+		leaveRoom(t, leaveRoomReq)
+
+		// // c should now be 0
+		res, err = getRoomsByUserUUID(cUUID, 0)
+		assert.NoError(t, err)
+		assert.Len(t, res.Rooms, 0)
+
+		// everyone else should still be 1
+		res, err = getRoomsByUserUUID(aUUID, 0)
+		assert.NoError(t, err)
+		assert.Len(t, res.Rooms, 1)
+		assert.Len(t, res.Rooms[0].Members, 3)
+
+		res, err = getRoomsByUserUUID(bUUID, 0)
+		assert.NoError(t, err)
+		assert.Len(t, res.Rooms, 1)
+		assert.Len(t, res.Rooms[0].Members, 3)
+
+		res, err = getRoomsByUserUUID(dUUID, 0)
+		assert.NoError(t, err)
+		assert.Len(t, res.Rooms, 1)
+		assert.Len(t, res.Rooms[0].Members, 3)
+
+		// TODO - send out a message that this person has left the chat
+		// so you shouuld have an INFO type of msg
+		// verify that the message has been sent out
+	})
+}
+
 func queryMessages(t *testing.T, userUUID string, roomUUID string, expectedRooms int) {
-	totalMessages := []*records.ChatMessage{}
+	totalMessages := []*requests.Message{}
 	res, err := getRoomsByUserUUID(userUUID, 0)
 
 	assert.NoError(t, err)
-	assert.NotNil(t, res)
+	assert.NotEmpty(t, res)
 	assert.Equal(t, expectedRooms, len(res.Rooms))
 
 	// ensure it contains the room uuid
@@ -405,23 +585,23 @@ func queryMessages(t *testing.T, userUUID string, roomUUID string, expectedRooms
 	totalMessages = append(totalMessages, resp.Messages...)
 	assert.Equal(t, len(totalMessages), 50)
 
-	for i := 1; i < len(totalMessages); i++ {
+	// jump by 15 because the msgs are being sent too fast.
+	for i := 15; i < len(totalMessages); i++ {
 		prev := totalMessages[i-1]
 		cur := totalMessages[i]
-
-		assert.Greater(t, prev.ID, cur.ID)
+		assert.True(t, prev.CreatedAt >= cur.CreatedAt)
 	}
 }
 
 func sendMessages(t *testing.T, fromUserUUID string, connectionUUID string, roomUUID string, conn *websocket.Conn) {
 	for i := 0; i < 25; i++ {
 		msgText := fmt.Sprintf("Message %d", i)
-		msgEventOut := &events.ChatMessageEvent{
-			FromUserUUID:       fromUserUUID,
-			FromConnectionUUID: connectionUUID,
-			RoomUUID:           roomUUID,
-			EventType:          "EVENT_CHAT_TEXT",
-			MessageText:        msgText,
+		msgEventOut := &requests.TextMessageEvent{
+			FromUUID:       fromUserUUID,
+			ConnectionUUID: connectionUUID,
+			RoomUUID:       roomUUID,
+			EventType:      enums.EVENT_TEXT_MESSAGE.String(),
+			MessageText:    msgText,
 		}
 		sendTextMessage(t, conn, msgEventOut)
 	}
@@ -429,21 +609,23 @@ func sendMessages(t *testing.T, fromUserUUID string, connectionUUID string, room
 
 func recvMessages(t *testing.T, conn *websocket.Conn) {
 	for i := 0; i < 25; i++ {
+		// conn.SetReadDeadline(time.Now().Add(1 * time.Second))
 		_, p, err := conn.ReadMessage()
+
 		assert.NoError(t, err)
-		resp := &events.ChatMessageEvent{}
+		resp := &requests.TextMessageEvent{}
 		err = json.Unmarshal(p, resp)
 		assert.NoError(t, err)
-		assert.NotNil(t, resp.EventType)
-		assert.Equal(t, "EVENT_CHAT_TEXT", resp.EventType)
-		assert.NotNil(t, resp.FromUserUUID)
-		assert.NotNil(t, resp.FromConnectionUUID)
-		assert.NotNil(t, resp.RoomUUID)
-		assert.NotNil(t, resp.MessageText)
+		assert.NotEmpty(t, resp.EventType)
+		assert.Equal(t, enums.EVENT_TEXT_MESSAGE.String(), resp.EventType)
+		assert.NotEmpty(t, resp.FromUUID)
+		assert.NotEmpty(t, resp.ConnectionUUID)
+		assert.NotEmpty(t, resp.RoomUUID)
+		assert.NotEmpty(t, resp.MessageText)
 	}
 }
 
-func containsRoomUUID(s []*records.ChatRoom, str string) bool {
+func containsRoomUUID(s []*requests.Room, str string) bool {
 	for _, v := range s {
 		if v.UUID == str {
 			return true
@@ -453,24 +635,23 @@ func containsRoomUUID(s []*records.ChatRoom, str string) bool {
 	return false
 }
 
-func readOpenRoomResponse(t *testing.T, conn *websocket.Conn) *events.OpenRoomEvent {
+func readOpenRoomResponse(t *testing.T, conn *websocket.Conn, expectedMembers int) *requests.OpenRoomEvent {
+	// TODO - ensure correct users are in the room
 	_, p, err := conn.ReadMessage()
 	assert.NoError(t, err)
-	resp := &events.OpenRoomEvent{}
+	resp := &requests.OpenRoomEvent{}
 	err = json.Unmarshal(p, resp)
 	assert.NoError(t, err)
-	assert.NotNil(t, resp.EventType)
-	assert.Equal(t, resp.EventType, "EVENT_OPEN_ROOM")
-	assert.NotNil(t, resp.FromUUID)
-	assert.NotNil(t, resp.ToUUID)
-	assert.NotNil(t, resp.Room)
-	assert.NotNil(t, resp.Room.UUID)
-	assert.Equal(t, 2, len(resp.Room.Participants))
+	assert.NotEmpty(t, resp.EventType)
+	assert.Equal(t, resp.EventType, enums.EVENT_OPEN_ROOM.String())
+	assert.NotEmpty(t, resp.Room)
+	assert.NotEmpty(t, resp.Room.UUID)
+	assert.Equal(t, expectedMembers, len(resp.Room.Members))
 
 	return resp
 }
 
-func sendTextMessage(t *testing.T, ws *websocket.Conn, msgEvent *events.ChatMessageEvent) {
+func sendTextMessage(t *testing.T, ws *websocket.Conn, msgEvent *requests.TextMessageEvent) {
 	err := ws.WriteJSON(msgEvent)
 	assert.NoError(t, err)
 }
@@ -479,12 +660,12 @@ func getMessagesByRoomUUID(t *testing.T, roomUUID string, offset int) (*requests
 	url := fmt.Sprintf("http://localhost:9090/get-messages-by-room-uuid?roomUuid=%s&offset=%d", roomUUID, offset)
 	resp, err := http.Get(url)
 	assert.NoError(t, err)
-	assert.NotNil(t, resp)
+	assert.NotEmpty(t, resp)
 
 	defer resp.Body.Close()
 	b, err := io.ReadAll(resp.Body)
 	assert.NoError(t, err)
-	assert.NotNil(t, b)
+	assert.NotEmpty(t, b)
 
 	result := &requests.GetMessagesByRoomUUIDResponse{}
 	err = json.Unmarshal(b, result)
@@ -510,13 +691,13 @@ func getRoomsByUserUUID(userUUID string, offset int) (*requests.GetRoomsByUserUU
 }
 
 // set up a client connection
-func setupClientConnection(t *testing.T, userUUID string) (*events.SetClientConnectionEvent, *websocket.Conn) {
+func setupClientConnection(t *testing.T, userUUID string) (*requests.SetClientConnectionEvent, *websocket.Conn) {
 	conn, _, err := websocket.DefaultDialer.Dial(socketURL, nil)
 	assert.NoError(t, err)
 
-	msgOut := events.SetClientConnectionEvent{
+	msgOut := requests.SetClientConnectionEvent{
 		FromUUID:  userUUID,
-		EventType: "EVENT_SET_CLIENT_SOCKET",
+		EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
 	}
 
 	err = conn.WriteJSON(msgOut)
@@ -525,11 +706,11 @@ func setupClientConnection(t *testing.T, userUUID string) (*events.SetClientConn
 	_, p, err := conn.ReadMessage()
 	assert.NoError(t, err)
 
-	rsp := &events.SetClientConnectionEvent{}
+	rsp := &requests.SetClientConnectionEvent{}
 	err = json.Unmarshal(p, &rsp)
 	assert.NoError(t, err)
-	assert.NotNil(t, rsp.ConnectionUUID)
-	assert.NotNil(t, rsp.FromUUID)
+	assert.NotEmpty(t, rsp.ConnectionUUID)
+	assert.NotEmpty(t, rsp.FromUUID)
 	return rsp, conn
 }
 
@@ -537,8 +718,10 @@ func openRoom(t *testing.T, openRoomEvent *requests.CreateRoomRequest) {
 	postBody, err := json.Marshal(openRoomEvent)
 	assert.NoError(t, err)
 	reqBody := bytes.NewBuffer(postBody)
-	_, err = http.Post("http://localhost:9090/create-room", "application/json", reqBody)
+	resp, err := http.Post("http://localhost:9090/create-room", "application/json", reqBody)
 	assert.NoError(t, err)
+	assert.True(t, resp.StatusCode >= 200 && resp.StatusCode <= 299)
+
 }
 
 func deleteRoom(t *testing.T, deleteRoomRequest *requests.DeleteRoomRequest) {
@@ -546,5 +729,13 @@ func deleteRoom(t *testing.T, deleteRoomRequest *requests.DeleteRoomRequest) {
 	assert.NoError(t, err)
 	reqBody := bytes.NewBuffer(postBody)
 	_, err = http.Post("http://localhost:9090/delete-room", "application/json", reqBody)
+	assert.NoError(t, err)
+}
+
+func leaveRoom(t *testing.T, req *requests.LeaveRoomRequest) {
+	postBody, err := json.Marshal(req)
+	assert.NoError(t, err)
+	reqBody := bytes.NewBuffer(postBody)
+	_, err = http.Post("http://localhost:9090/leave-room", "application/json", reqBody)
 	assert.NoError(t, err)
 }

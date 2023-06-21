@@ -2,6 +2,7 @@ package redisClient
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 
 	"os"
@@ -48,4 +49,24 @@ func (c *RedisClient) SetupChannel(channelName string) *redis.PubSub {
 // publish message to redis channel
 func (c *RedisClient) PublishToRedisChannel(channelName string, bytes []byte) {
 	c.Client.Publish(context.Background(), channelName, bytes)
+}
+
+func (c *RedisClient) Set(ctx context.Context, key string, value interface{}) error {
+	p, err := json.Marshal(value)
+	if err != nil {
+		return err
+	}
+	_, err = c.Client.Set(ctx, key, p, 0).Result()
+	return err
+}
+
+func (c *RedisClient) Get(ctx context.Context, key string, dest interface{}) error {
+	res := c.Client.Get(ctx, key)
+	if res.Err() == redis.Nil {
+		return nil
+	}
+	if res.Err() != nil {
+		return res.Err()
+	}
+	return json.Unmarshal([]byte(res.Val()), dest)
 }

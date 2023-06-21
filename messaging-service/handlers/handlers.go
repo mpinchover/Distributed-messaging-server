@@ -1,24 +1,25 @@
 package handlers
 
 import (
-	"encoding/json"
 	"messaging-service/controllers/controltower"
-	"messaging-service/types/events"
-	"messaging-service/types/eventtypes"
-	"messaging-service/types/records"
+	redisClient "messaging-service/redis"
 	"messaging-service/types/requests"
-
-	"github.com/google/uuid"
 )
 
 type Handler struct {
 	ControlTowerCtrlr *controltower.ControlTowerController
+	RedisClient       *redisClient.RedisClient
 }
 
 func New() *Handler {
+
+	redisClient := redisClient.New()
+	// subscrie to the events here for server
 	controlTower := controltower.New()
+
 	return &Handler{
 		ControlTowerCtrlr: controlTower,
+		RedisClient:       &redisClient,
 	}
 }
 
@@ -28,10 +29,38 @@ func (h *Handler) getRoomsByUserUUID(req *requests.GetRoomsByUserUUIDRequest) (*
 		panic(err)
 	}
 
-	h.ControlTowerCtrlr.SubscribeRoomsToServer(rooms, req.UserUUID)
+	// TODO - put this all in the controller
+	requestRooms := make([]*requests.Room, len(rooms))
+	for i, room := range rooms {
+
+		members := make([]*requests.Member, len(room.Members))
+		messages := make([]*requests.Message, len(room.Messages))
+
+		for j, member := range room.Members {
+			members[j] = &requests.Member{
+				UserUUID: member.UserUUID,
+				UserRole: member.UserRole,
+			}
+		}
+
+		for j, msg := range room.Messages {
+			messages[j] = &requests.Message{
+				UUID:        msg.UUID,
+				FromUUID:    msg.FromUUID,
+				RoomUUID:    msg.RoomUUID,
+				MessageText: msg.MessageText,
+			}
+		}
+
+		requestRooms[i] = &requests.Room{
+			UUID:     room.UUID,
+			Members:  members,
+			Messages: messages,
+		}
+	}
 
 	response := &requests.GetRoomsByUserUUIDResponse{
-		Rooms: rooms,
+		Rooms: requestRooms,
 	}
 	return response, nil
 }
@@ -42,72 +71,49 @@ func (h *Handler) getMessagesByRoomUUID(req *requests.GetMessagesByRoomUUIDReque
 		return nil, err
 	}
 
+	requestMsgs := make([]*requests.Message, len(msgs))
+
+	for i, msg := range msgs {
+		requestMsgs[i] = &requests.Message{
+			UUID:        msg.UUID,
+			FromUUID:    msg.FromUUID,
+			RoomUUID:    msg.RoomUUID,
+			MessageText: msg.MessageText,
+			// CreatedAt:   msg.Model.CreatedAt.UnixMilli(),
+		}
+	}
+
 	resp := &requests.GetMessagesByRoomUUIDResponse{
-		Messages: msgs,
+		Messages: requestMsgs,
 	}
 	return resp, nil
 }
 
 func (h *Handler) deleteRoom(req *requests.DeleteRoomRequest) (*requests.DeleteRoomResponse, error) {
 	roomUUID := req.RoomUUID
-	err := h.ControlTowerCtrlr.Repo.DeleteRoom(roomUUID)
+	// verify user has permissions
+	err := h.ControlTowerCtrlr.DeleteRoom(roomUUID, req.UserUUID)
 	if err != nil {
 		return nil, err
 	}
-
-	deleteRoomEvent := events.DeleteChatRoomEvent{
-		EventType: eventtypes.EVENT_DELETE_ROOM.String(),
-		RoomUUID:  roomUUID,
-	}
-	msgBytes, err := json.Marshal(deleteRoomEvent)
-	if err != nil {
-		return nil, err
-	}
-
-	h.ControlTowerCtrlr.RedisClient.PublishToRedisChannel(eventtypes.CHANNEL_SERVER_EVENTS, msgBytes)
 	return &requests.DeleteRoomResponse{}, nil
 }
 
 func (h *Handler) createRoom(req *requests.CreateRoomRequest) (*requests.CreateRoomResponse, error) {
-	// TODO, extend the 'to' field to be an array
-
-	roomUUID := uuid.New().String()
-
-	room := &records.ChatRoom{
-		UUID: roomUUID,
-		Participants: []*records.ChatParticipant{
-			{
-				UUID:     uuid.New().String(),
-				RoomUUID: roomUUID,
-				UserUUID: req.FromUUID,
-			},
-			{
-				UUID:     uuid.New().String(),
-				RoomUUID: roomUUID,
-				UserUUID: req.ToUUID,
-			},
-		},
-	}
-
-	// push this out to the redis server events channel
-	openRoomEvent := &events.OpenRoomEvent{
-		FromUUID:  req.FromUUID,
-		ToUUID:    req.ToUUID,
-		EventType: eventtypes.EVENT_OPEN_ROOM.String(),
-		Room:      room,
-	}
-
-	err := h.ControlTowerCtrlr.Repo.SaveRoom(room)
-	if err != nil {
-		return nil, err
-	}
-	msgBytes, err := json.Marshal(openRoomEvent)
+	room, err := h.ControlTowerCtrlr.CreateRoom(req.Members)
 	if err != nil {
 		return nil, err
 	}
 
-	h.ControlTowerCtrlr.RedisClient.PublishToRedisChannel(eventtypes.CHANNEL_SERVER_EVENTS, msgBytes)
 	return &requests.CreateRoomResponse{
 		Room: room,
 	}, nil
+}
+
+func (h *Handler) leaveRoom(req *requests.LeaveRoomRequest) (*requests.LeaveRoomResponse, error) {
+	err := h.ControlTowerCtrlr.LeaveRoom(req.UserUUID, req.RoomUUID)
+	if err != nil {
+		return nil, err
+	}
+	return nil, nil
 }

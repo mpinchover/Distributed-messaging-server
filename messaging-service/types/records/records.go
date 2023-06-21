@@ -2,24 +2,27 @@ package records
 
 import "gorm.io/gorm"
 
-type ChatMessage struct {
+type Message struct {
 	gorm.Model
-	FromUUID    string `gorm:"from_uuid"`
-	RoomUUID    string `gorm:"room_uuid"`
-	MessageText string `gorm:"message_text"`
-	UUID        string `gorm:"uuid"`
+	FromUUID    string
+	RoomUUID    string
+	RoomID      int
+	MessageText string
+	UUID        string
 }
 
-type ChatRoom struct {
+type Room struct {
 	gorm.Model
-	UUID         string             `gorm:"uuid"`
-	Participants []*ChatParticipant `gorm:"-"`
-	Messages     []*ChatMessage     `gorm:"-"`
+	UUID     string
+	Members  []*Member  `gorm:"foreignKey:RoomID"`
+	Messages []*Message `gorm:"foreignKey:RoomID"`
 }
 
-type ChatParticipant struct {
+type Member struct {
 	gorm.Model
-	UUID     string `gorm:"uuid"`
-	RoomUUID string `gorm:"room_uuid"`
-	UserUUID string `gorm:"user_uuid"`
+	UUID     string
+	RoomUUID string
+	RoomID   int
+	UserUUID string
+	UserRole string
 }

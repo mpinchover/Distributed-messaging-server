@@ -1,16 +1,12 @@
 package requests
 
-import (
-	"messaging-service/types/records"
-)
-
 type GetRoomsByUserUUIDRequest struct {
 	UserUUID string `schema:"userUuid"`
 	Offset   int    `schema:"offset"`
 }
 
 type GetRoomsByUserUUIDResponse struct {
-	Rooms []*records.ChatRoom `json:"rooms"`
+	Rooms []*Room `json:"rooms"`
 }
 
 type GetMessagesByRoomUUIDRequest struct {
@@ -19,21 +15,29 @@ type GetMessagesByRoomUUIDRequest struct {
 }
 
 type GetMessagesByRoomUUIDResponse struct {
-	Messages []*records.ChatMessage `json:"messages"`
+	Messages []*Message `json:"messages"`
 }
 
 type CreateRoomRequest struct {
-	FromUUID string `json:"fromUuid"`
-	ToUUID   string `json:"toUuid"`
+	Members []*Member `json:"participants"`
 }
 
 type CreateRoomResponse struct {
-	Room *records.ChatRoom `json:"room"`
+	Room *Room `json:"room"`
 }
 
 type DeleteRoomRequest struct {
 	RoomUUID string `json:"roomUuid"`
+	UserUUID string `json:"userUuid"`
 }
 
 type DeleteRoomResponse struct {
+}
+
+type LeaveRoomRequest struct {
+	UserUUID string `json:"userUuid"`
+	RoomUUID string `json:"roomUuid"`
+}
+
+type LeaveRoomResponse struct {
 }

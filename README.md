@@ -1,5 +1,34 @@
 # To run the service
 
+## Create the docket network
+
+```
+docker network create external-example
+```
+
+## Get the databases up and running first
+
+```
+cd dependencies
+docker compose up --build
+```
+
+## Get the service up and running
+
+```
+cd messaging-service
+docker compose up --build
+```
+
+## Run integration tests
+
+```
+cd messaging-service/integration-tests
+go test
+```
+
+# Misc.
+
 ```
  docker build --tag messaging-server . --no-cache
 ```
@@ -35,10 +64,20 @@ docker-compose up -d --no-deps --build <service_name>
 
 ```
 
-TODO's
- – Implement delete room and leave room
- – add validation to all endpoints
- – controltower should be parent of
-– realtime controller (sockets)
-– message controller (getting saving updating messages etc)
-– FromUUID should be extracted from headers
+## TODO's
+
+- Add validation to endpoints
+- controltower should be parent of
+  - realtime controller (sockets)
+  - message controller (sync flows for messages)
+- FromUUID should be extracted from header
+- Add enum status to roles
+- default to "PARTICIPANT" role
+- Add a "seen" attribute to the message
+  - If a message wasn't seen by the client, push it to the top
+- Leave room should be an event sent to other clients
+- Allow event and messages to be sent from the room itself
+- Dependency injection or singleton needed for redis and mysql db.
+- Separate out socket and redis events
+- Create an error struct response for API's
+- Run processMessage in go routine and inform the client if a message fails. This will let the message be routed directly to the client

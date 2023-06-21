@@ -19,8 +19,8 @@ type Channel struct {
 	Subscriber *redis.PubSub
 
 	// just the participants that are on this server
-	ParticipantsOnServer map[string]bool
-	UUID                 string
+	MembersOnServer map[string]bool
+	UUID            string
 }
 
 type ChatRoom struct {

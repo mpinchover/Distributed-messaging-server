@@ -1,7 +1,7 @@
 package requests
 
 type GetRoomsByUserUUIDRequest struct {
-	UserUUID string `schema:"userUuid"`
+	UserUUID string `schema:"userUuid" validate:"required"`
 	Offset   int    `schema:"offset"`
 }
 
@@ -10,7 +10,7 @@ type GetRoomsByUserUUIDResponse struct {
 }
 
 type GetMessagesByRoomUUIDRequest struct {
-	RoomUUID string `schema:"roomUuid"`
+	RoomUUID string `schema:"roomUuid" validate:"required"`
 	Offset   int    `schema:"offset"`
 }
 
@@ -27,16 +27,16 @@ type CreateRoomResponse struct {
 }
 
 type DeleteRoomRequest struct {
-	RoomUUID string `json:"roomUuid"`
-	UserUUID string `json:"userUuid"`
+	RoomUUID string `json:"roomUuid" validate:"required"`
+	UserUUID string `json:"userUuid" validate:"required"`
 }
 
 type DeleteRoomResponse struct {
 }
 
 type LeaveRoomRequest struct {
-	UserUUID string `json:"userUuid"`
-	RoomUUID string `json:"roomUuid"`
+	UserUUID string `json:"userUuid" validate:"required"`
+	RoomUUID string `json:"roomUuid" validate:"required"`
 }
 
 type LeaveRoomResponse struct {

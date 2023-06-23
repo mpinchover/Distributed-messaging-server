@@ -4,6 +4,7 @@ import (
 	"messaging-service/controllers/controltower"
 	redisClient "messaging-service/redis"
 	"messaging-service/types/requests"
+	"messaging-service/validation"
 )
 
 type Handler struct {
@@ -24,6 +25,11 @@ func New() *Handler {
 }
 
 func (h *Handler) getRoomsByUserUUID(req *requests.GetRoomsByUserUUIDRequest) (*requests.GetRoomsByUserUUIDResponse, error) {
+	err := validation.ValidateRequest(req)
+	if err != nil {
+		return nil, err
+	}
+
 	rooms, err := h.ControlTowerCtrlr.GetRoomsByUserUUID(req.UserUUID, req.Offset)
 	if err != nil {
 		panic(err)
@@ -66,6 +72,11 @@ func (h *Handler) getRoomsByUserUUID(req *requests.GetRoomsByUserUUIDRequest) (*
 }
 
 func (h *Handler) getMessagesByRoomUUID(req *requests.GetMessagesByRoomUUIDRequest) (*requests.GetMessagesByRoomUUIDResponse, error) {
+	err := validation.ValidateRequest(req)
+	if err != nil {
+		return nil, err
+	}
+
 	msgs, err := h.ControlTowerCtrlr.GetMessagesByRoomUUID(req.RoomUUID, req.Offset)
 	if err != nil {
 		return nil, err
@@ -79,7 +90,7 @@ func (h *Handler) getMessagesByRoomUUID(req *requests.GetMessagesByRoomUUIDReque
 			FromUUID:    msg.FromUUID,
 			RoomUUID:    msg.RoomUUID,
 			MessageText: msg.MessageText,
-			// CreatedAt:   msg.Model.CreatedAt.UnixMilli(),
+			CreatedAt:   msg.Model.CreatedAt.UnixMilli(),
 		}
 	}
 
@@ -90,9 +101,14 @@ func (h *Handler) getMessagesByRoomUUID(req *requests.GetMessagesByRoomUUIDReque
 }
 
 func (h *Handler) deleteRoom(req *requests.DeleteRoomRequest) (*requests.DeleteRoomResponse, error) {
+	err := validation.ValidateRequest(req)
+	if err != nil {
+		return nil, err
+	}
+
 	roomUUID := req.RoomUUID
 	// verify user has permissions
-	err := h.ControlTowerCtrlr.DeleteRoom(roomUUID, req.UserUUID)
+	err = h.ControlTowerCtrlr.DeleteRoom(roomUUID, req.UserUUID)
 	if err != nil {
 		return nil, err
 	}
@@ -100,6 +116,11 @@ func (h *Handler) deleteRoom(req *requests.DeleteRoomRequest) (*requests.DeleteR
 }
 
 func (h *Handler) createRoom(req *requests.CreateRoomRequest) (*requests.CreateRoomResponse, error) {
+	err := validation.ValidateRequest(req)
+	if err != nil {
+		return nil, err
+	}
+
 	room, err := h.ControlTowerCtrlr.CreateRoom(req.Members)
 	if err != nil {
 		return nil, err
@@ -111,7 +132,12 @@ func (h *Handler) createRoom(req *requests.CreateRoomRequest) (*requests.CreateR
 }
 
 func (h *Handler) leaveRoom(req *requests.LeaveRoomRequest) (*requests.LeaveRoomResponse, error) {
-	err := h.ControlTowerCtrlr.LeaveRoom(req.UserUUID, req.RoomUUID)
+	err := validation.ValidateRequest(req)
+	if err != nil {
+		return nil, err
+	}
+
+	err = h.ControlTowerCtrlr.LeaveRoom(req.UserUUID, req.RoomUUID)
 	if err != nil {
 		return nil, err
 	}

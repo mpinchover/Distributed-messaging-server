@@ -3,7 +3,6 @@ package requests
 type DeleteRoomEvent struct {
 	EventType string `json:"eventType"`
 	RoomUUID  string `json:"roomUuid"`
-	UserUUID  string `json:"userUuid"`
 }
 
 type LeaveRoomEvent struct {

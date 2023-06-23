@@ -28,7 +28,7 @@ type CreateRoomResponse struct {
 
 type DeleteRoomRequest struct {
 	RoomUUID string `json:"roomUuid" validate:"required"`
-	UserUUID string `json:"userUuid" validate:"required"`
+	// UserUUID string `json:"userUuid" validate:"required"`
 }
 
 type DeleteRoomResponse struct {

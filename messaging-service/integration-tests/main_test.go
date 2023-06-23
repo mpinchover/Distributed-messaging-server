@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"messaging-service/types/enums"
 	"messaging-service/types/requests"
@@ -363,9 +364,9 @@ func TestDeleteRoom(t *testing.T) {
 		bUUID := uuid.New().String()
 		cUUID := uuid.New().String()
 
-		setupClientConnection(t, aUUID)
-		_, bWebWS := setupClientConnection(t, bUUID)
-		_, cWebWS := setupClientConnection(t, cUUID)
+		_, aWS := setupClientConnection(t, aUUID)
+		_, bWS := setupClientConnection(t, bUUID)
+		_, cWS := setupClientConnection(t, cUUID)
 
 		openRoomEvent := &requests.CreateRoomRequest{
 			Members: []*requests.Member{
@@ -380,7 +381,8 @@ func TestDeleteRoom(t *testing.T) {
 			},
 		}
 		openRoom(t, openRoomEvent)
-		openRoomRes := readOpenRoomResponse(t, bWebWS, 2)
+		readOpenRoomResponse(t, aWS, 2)
+		openRoomRes := readOpenRoomResponse(t, bWS, 2)
 		roomUUID1 := openRoomRes.Room.UUID
 
 		openRoomEvent = &requests.CreateRoomRequest{
@@ -397,7 +399,8 @@ func TestDeleteRoom(t *testing.T) {
 		}
 		openRoom(t, openRoomEvent)
 
-		openRoomRes = readOpenRoomResponse(t, cWebWS, 2)
+		readOpenRoomResponse(t, aWS, 2)
+		openRoomRes = readOpenRoomResponse(t, cWS, 2)
 		roomUUID2 := openRoomRes.Room.UUID
 
 		res, err := getRoomsByUserUUID(aUUID, 0)
@@ -440,6 +443,19 @@ func TestDeleteRoom(t *testing.T) {
 		assert.Equal(t, 1, len(res.Rooms))
 		assert.Equal(t, 2, len(res.Rooms[0].Members))
 
+		// ensure delete event is recd
+		resp := &requests.DeleteRoomEvent{}
+		err = readEvent(aWS, resp)
+		assert.NoError(t, err)
+		assert.Equal(t, enums.EVENT_DELETE_ROOM.String(), resp.EventType)
+		assert.Equal(t, roomUUID1, resp.RoomUUID)
+
+		resp = &requests.DeleteRoomEvent{}
+		err = readEvent(bWS, resp)
+		assert.NoError(t, err)
+		assert.Equal(t, enums.EVENT_DELETE_ROOM.String(), resp.EventType)
+		assert.Equal(t, roomUUID1, resp.RoomUUID)
+
 		deleteRoom(t, &requests.DeleteRoomRequest{
 			RoomUUID: roomUUID2,
 		})
@@ -458,6 +474,19 @@ func TestDeleteRoom(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotEmpty(t, res)
 		assert.Equal(t, 0, len(res.Rooms))
+
+		// ensure delete event is recd
+		resp = &requests.DeleteRoomEvent{}
+		err = readEvent(aWS, resp)
+		assert.NoError(t, err)
+		assert.Equal(t, enums.EVENT_DELETE_ROOM.String(), resp.EventType)
+		assert.Equal(t, roomUUID2, resp.RoomUUID)
+
+		resp = &requests.DeleteRoomEvent{}
+		err = readEvent(cWS, resp)
+		assert.NoError(t, err)
+		assert.Equal(t, enums.EVENT_DELETE_ROOM.String(), resp.EventType)
+		assert.Equal(t, roomUUID2, resp.RoomUUID)
 	})
 }
 
@@ -550,10 +579,50 @@ func TestLeaveRoom(t *testing.T) {
 		assert.Len(t, res.Rooms, 1)
 		assert.Len(t, res.Rooms[0].Members, 3)
 
-		// TODO - send out a message that this person has left the chat
-		// so you shouuld have an INFO type of msg
-		// verify that the message has been sent out
+		// read the message from leaving the room
+		resp := &requests.LeaveRoomEvent{}
+		err = readEvent(aWebWS, resp)
+		assert.NoError(t, err)
+		assert.NotNil(t, resp)
+		assert.Equal(t, cUUID, resp.UserUUID)
+		assert.Equal(t, roomUUID, resp.RoomUUID)
+		assert.Equal(t, enums.EVENT_LEAVE_ROOM.String(), resp.EventType)
+
+		resp = &requests.LeaveRoomEvent{}
+		err = readEvent(bWebWS, resp)
+		assert.NoError(t, err)
+		assert.NotNil(t, resp)
+		assert.Equal(t, cUUID, resp.UserUUID)
+		assert.Equal(t, roomUUID, resp.RoomUUID)
+		assert.Equal(t, enums.EVENT_LEAVE_ROOM.String(), resp.EventType)
+
+		resp = &requests.LeaveRoomEvent{}
+		err = readEvent(dWebWS, resp)
+		assert.NoError(t, err)
+		assert.NotNil(t, resp)
+		assert.Equal(t, cUUID, resp.UserUUID)
+		assert.Equal(t, roomUUID, resp.RoomUUID)
+		assert.Equal(t, enums.EVENT_LEAVE_ROOM.String(), resp.EventType)
+
+		resp = &requests.LeaveRoomEvent{}
+		err = readEvent(dMobileWS, resp)
+		assert.NoError(t, err)
+		assert.NotNil(t, resp)
+		assert.Equal(t, cUUID, resp.UserUUID)
+		assert.Equal(t, roomUUID, resp.RoomUUID)
+		assert.Equal(t, enums.EVENT_LEAVE_ROOM.String(), resp.EventType)
 	})
+}
+
+func readEvent(conn *websocket.Conn, v interface{}) error {
+	conn.SetReadDeadline(time.Now().Add(time.Second * 2))
+	_, p, err := conn.ReadMessage()
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(p, v)
+	return err
 }
 
 func queryMessages(t *testing.T, userUUID string, roomUUID string, expectedRooms int) {
@@ -667,6 +736,11 @@ func getMessagesByRoomUUID(t *testing.T, roomUUID string, offset int) (*requests
 	assert.NoError(t, err)
 	assert.NotEmpty(t, b)
 
+	if resp.StatusCode < 200 || resp.StatusCode > 300 {
+		fmt.Println(string(b))
+		return nil, fmt.Errorf("error code is %d", resp.StatusCode)
+	}
+
 	result := &requests.GetMessagesByRoomUUIDResponse{}
 	err = json.Unmarshal(b, result)
 	assert.NoError(t, err)
@@ -683,6 +757,11 @@ func getRoomsByUserUUID(userUUID string, offset int) (*requests.GetRoomsByUserUU
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode > 300 {
+		fmt.Println(string(b))
+		return nil, fmt.Errorf("error code is %d", resp.StatusCode)
 	}
 
 	result := &requests.GetRoomsByUserUUIDResponse{}
@@ -720,7 +799,8 @@ func openRoom(t *testing.T, openRoomEvent *requests.CreateRoomRequest) {
 	reqBody := bytes.NewBuffer(postBody)
 	resp, err := http.Post("http://localhost:9090/create-room", "application/json", reqBody)
 	assert.NoError(t, err)
-	assert.True(t, resp.StatusCode >= 200 && resp.StatusCode <= 299)
+	assert.GreaterOrEqual(t, resp.StatusCode, 200)
+	assert.LessOrEqual(t, resp.StatusCode, 299)
 
 }
 
@@ -728,14 +808,35 @@ func deleteRoom(t *testing.T, deleteRoomRequest *requests.DeleteRoomRequest) {
 	postBody, err := json.Marshal(deleteRoomRequest)
 	assert.NoError(t, err)
 	reqBody := bytes.NewBuffer(postBody)
-	_, err = http.Post("http://localhost:9090/delete-room", "application/json", reqBody)
+	resp, err := http.Post("http://localhost:9090/delete-room", "application/json", reqBody)
 	assert.NoError(t, err)
+
+	defer resp.Body.Close()
+	b, err := io.ReadAll(resp.Body)
+	assert.NoError(t, err)
+
+	if resp.StatusCode < 200 || resp.StatusCode > 300 {
+		fmt.Println(string(b))
+	}
+
+	assert.GreaterOrEqual(t, resp.StatusCode, 200)
+	assert.LessOrEqual(t, resp.StatusCode, 299)
 }
 
 func leaveRoom(t *testing.T, req *requests.LeaveRoomRequest) {
 	postBody, err := json.Marshal(req)
 	assert.NoError(t, err)
 	reqBody := bytes.NewBuffer(postBody)
-	_, err = http.Post("http://localhost:9090/leave-room", "application/json", reqBody)
+	resp, err := http.Post("http://localhost:9090/leave-room", "application/json", reqBody)
 	assert.NoError(t, err)
+	defer resp.Body.Close()
+	b, err := io.ReadAll(resp.Body)
+	assert.NoError(t, err)
+
+	if resp.StatusCode < 200 || resp.StatusCode > 300 {
+		fmt.Println(string(b))
+	}
+
+	assert.GreaterOrEqual(t, resp.StatusCode, 200)
+	assert.LessOrEqual(t, resp.StatusCode, 299)
 }

@@ -32,41 +32,12 @@ func (h *Handler) getRoomsByUserUUID(req *requests.GetRoomsByUserUUIDRequest) (*
 
 	rooms, err := h.ControlTowerCtrlr.GetRoomsByUserUUID(req.UserUUID, req.Offset)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	// TODO - put this all in the controller
-	requestRooms := make([]*requests.Room, len(rooms))
-	for i, room := range rooms {
-
-		members := make([]*requests.Member, len(room.Members))
-		messages := make([]*requests.Message, len(room.Messages))
-
-		for j, member := range room.Members {
-			members[j] = &requests.Member{
-				UserUUID: member.UserUUID,
-				UserRole: member.UserRole,
-			}
-		}
-
-		for j, msg := range room.Messages {
-			messages[j] = &requests.Message{
-				UUID:        msg.UUID,
-				FromUUID:    msg.FromUUID,
-				RoomUUID:    msg.RoomUUID,
-				MessageText: msg.MessageText,
-			}
-		}
-
-		requestRooms[i] = &requests.Room{
-			UUID:     room.UUID,
-			Members:  members,
-			Messages: messages,
-		}
-	}
-
 	response := &requests.GetRoomsByUserUUIDResponse{
-		Rooms: requestRooms,
+		Rooms: rooms,
 	}
 	return response, nil
 }
@@ -108,7 +79,7 @@ func (h *Handler) deleteRoom(req *requests.DeleteRoomRequest) (*requests.DeleteR
 
 	roomUUID := req.RoomUUID
 	// verify user has permissions
-	err = h.ControlTowerCtrlr.DeleteRoom(roomUUID, req.UserUUID)
+	err = h.ControlTowerCtrlr.DeleteRoom(roomUUID)
 	if err != nil {
 		return nil, err
 	}

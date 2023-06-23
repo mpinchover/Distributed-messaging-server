@@ -66,18 +66,20 @@ docker-compose up -d --no-deps --build <service_name>
 
 ## TODO's
 
-- Add validation to endpoints
 - controltower should be parent of
   - realtime controller (sockets)
   - message controller (sync flows for messages)
 - FromUUID should be extracted from header
-- Add enum status to roles
-- default to "PARTICIPANT" role
-- Add a "seen" attribute to the message
+- Add a "seen" attribute/event to the message
   - If a message wasn't seen by the client, push it to the top
+- Add a "typing" attribute/event to the message
 - Leave room should be an event sent to other clients
 - Allow event and messages to be sent from the room itself
 - Dependency injection or singleton needed for redis and mysql db.
 - Separate out socket and redis events
-- Create an error struct response for API's
 - Run processMessage in go routine and inform the client if a message fails. This will let the message be routed directly to the client
+- convert the map to its own type with its own mutex instead of letting controller handle that logic.
+- allow someone to be invited to the chat
+- allow members, rooms to have a stringified text field that can track whatever the user wants.
+- add validation on events
+- LeaveRoom should also save messages that someone has left the chat

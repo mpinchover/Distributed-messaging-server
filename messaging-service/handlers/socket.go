@@ -93,6 +93,7 @@ func (h *Handler) handleIncomingSocketEvents(conn *websocket.Conn) error {
 			if err != nil {
 				return err
 			}
+			// break this up into processTextMessage and SaveTextMessage
 			_, err = h.ControlTowerCtrlr.ProcessTextMessage(msg)
 			if err != nil {
 				err = conn.WriteJSON([]byte("could not send text message"))

@@ -3,7 +3,6 @@ package controltower
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	redisClient "messaging-service/redis"
 	"messaging-service/repo"
 	"messaging-service/types/enums"
@@ -113,19 +112,19 @@ func (c *ControlTowerController) LeaveRoom(userUUID string, roomUUID string) err
 		return errors.New("room does not exist")
 	}
 
-	membersInRoom := make([]string, len(room.Members))
-	for i, mem := range room.Members {
-		fmt.Println("MEMBER UUID IS ", mem.UserUUID)
-		membersInRoom[i] = mem.UserUUID
-	}
+	// TODO – this is something the client should verify not the server
+	// membersInRoom := make([]string, len(room.Members))
+	// for i, mem := range room.Members {
+	// 	membersInRoom[i] = mem.UserUUID
+	// }
 
-	if !utils.Contains(membersInRoom, userUUID) {
-		return errors.New("member not in room")
-	}
+	// if !utils.Contains(membersInRoom, userUUID) {
+	// 	return errors.New("member not in room")
+	// }
 
 	// TODO - put in helper function
+	// TODO – in the future add in fn to make this optional
 	if len(room.Members) == 1 {
-
 		err := c.Repo.DeleteRoom(roomUUID)
 		if err != nil {
 			return err
@@ -133,7 +132,6 @@ func (c *ControlTowerController) LeaveRoom(userUUID string, roomUUID string) err
 		deleteRoomEvent := requests.DeleteRoomEvent{
 			EventType: enums.EVENT_DELETE_ROOM.String(),
 			RoomUUID:  roomUUID,
-			UserUUID:  userUUID,
 		}
 
 		msgBytes, err := json.Marshal(deleteRoomEvent)
@@ -144,7 +142,6 @@ func (c *ControlTowerController) LeaveRoom(userUUID string, roomUUID string) err
 		return nil
 	}
 
-	// TODO - combine this into a function
 	err = c.Repo.LeaveRoom(userUUID, roomUUID)
 	if err != nil {
 		return err
@@ -163,7 +160,7 @@ func (c *ControlTowerController) LeaveRoom(userUUID string, roomUUID string) err
 	return nil
 }
 
-func (c *ControlTowerController) DeleteRoom(roomUUID string, userUUID string) error {
+func (c *ControlTowerController) DeleteRoom(roomUUID string) error {
 	room, err := c.Repo.GetRoomByRoomUUID(roomUUID)
 	if err != nil {
 		return err
@@ -216,11 +213,39 @@ func (c *ControlTowerController) SetupClientConnectionV2(
 	return msg, nil
 }
 
-func (c *ControlTowerController) GetRoomsByUserUUID(userUUID string, offset int) ([]*records.Room, error) {
+func (c *ControlTowerController) GetRoomsByUserUUID(userUUID string, offset int) ([]*requests.Room, error) {
 	rooms, err := c.Repo.GetRoomsByUserUUID(userUUID, offset)
 	if err != nil {
 		return nil, err
 	}
 
-	return rooms, nil
+	// TODO - put this all in the controller
+	requestRooms := make([]*requests.Room, len(rooms))
+	for i, room := range rooms {
+		members := make([]*requests.Member, len(room.Members))
+		messages := make([]*requests.Message, len(room.Messages))
+
+		for j, member := range room.Members {
+			members[j] = &requests.Member{
+				UserUUID: member.UserUUID,
+				UserRole: member.UserRole,
+			}
+		}
+
+		for j, msg := range room.Messages {
+			messages[j] = &requests.Message{
+				UUID:        msg.UUID,
+				FromUUID:    msg.FromUUID,
+				RoomUUID:    msg.RoomUUID,
+				MessageText: msg.MessageText,
+			}
+		}
+
+		requestRooms[i] = &requests.Room{
+			UUID:     room.UUID,
+			Members:  members,
+			Messages: messages,
+		}
+	}
+	return requestRooms, nil
 }

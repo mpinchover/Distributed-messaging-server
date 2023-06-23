@@ -144,14 +144,23 @@ func (h *Handler) handleLeaveRoomEvent(event *requests.LeaveRoomEvent) error {
 
 func (h *Handler) handleDeleteRoomEvent(event *requests.DeleteRoomEvent) error {
 	// get the room from the server
-	room := h.ControlTowerCtrlr.GetChannelFromServer(event.RoomUUID)
+	channel := h.ControlTowerCtrlr.GetChannelFromServer(event.RoomUUID)
 
 	// room not on server
-	if room == nil {
+	if channel == nil {
 		return nil
 	}
 
-	h.ControlTowerCtrlr.DeleteServerChannel(room.UUID)
+	h.ControlTowerCtrlr.DeleteServerChannel(channel.UUID)
+
+	// notify everyone that the channel has closed
+	for userUUID := range channel.MembersOnServer {
+		connection := h.ControlTowerCtrlr.GetClientConnectionFromServer(userUUID)
+		for _, conn := range connection.Connections {
+			conn.WriteJSON(event)
+		}
+	}
+
 	return nil
 }
 

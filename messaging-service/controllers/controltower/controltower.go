@@ -26,21 +26,16 @@ type ControlTowerController struct {
 	Repo *repo.Repo
 }
 
-func New() *ControlTowerController {
-	redisClient := redisClient.New()
-
-	repo, err := repo.New()
-	//  TODO – change to err
-	if err != nil {
-		panic(err)
-	}
-
+func New(
+	redisClient *redisClient.RedisClient,
+	repo *repo.Repo,
+) *ControlTowerController {
 	connections := map[string]*requests.Connection{}
 	serverChannels := map[string]*requests.ServerChannel{}
 
 	var mu sync.Mutex
 	msgController := &ControlTowerController{
-		RedisClient:    &redisClient,
+		RedisClient:    redisClient,
 		Connections:    connections,
 		ServerChannels: serverChannels,
 

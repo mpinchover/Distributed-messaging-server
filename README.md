@@ -69,11 +69,10 @@ docker-compose up -d --no-deps --build <service_name>
 - controltower should be parent of
   - realtime controller (sockets)
   - message controller (sync flows for messages)
-- FromUUID should be extracted from header
+- FromUUID should be extracted from header (maybe)
 - Add a "seen" attribute/event to the message
   - If a message wasn't seen by the client, push it to the top
 - Add a "typing" attribute/event to the message
-- Leave room should be an event sent to other clients
 - Allow event and messages to be sent from the room itself
 - Dependency injection or singleton needed for redis and mysql db.
 - Separate out socket and redis events

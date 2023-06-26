@@ -1,13 +1,19 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 
+	"messaging-service/controllers/controltower"
 	"messaging-service/handlers"
+	"messaging-service/repo"
 	"net/http"
 
+	redisClient "messaging-service/redis"
+
 	"github.com/gorilla/mux"
+	"go.uber.org/fx"
 )
 
 func enableCors(w *http.ResponseWriter) {
@@ -36,9 +42,17 @@ func (fn rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // https://markphelps.me/posts/handling-errors-in-your-http-handlers/
 func main() {
-	r := mux.NewRouter()
-	h := handlers.New()
-	h.SetupChannels()
+	fx.New(
+		fx.Provide(NewMuxRouter),
+		fx.Provide(handlers.New),
+		fx.Provide(redisClient.New),
+		fx.Provide(controltower.New),
+		fx.Provide(repo.New),
+		fx.Invoke(SetupRoutes),
+	).Run()
+}
+
+func SetupRoutes(h *handlers.Handler, r *mux.Router) {
 
 	// websocket
 	r.HandleFunc("/ws", h.SetupWebsocketConnection)
@@ -50,6 +64,25 @@ func main() {
 	r.Handle("/get-messages-by-room-uuid", rootHandler(h.GetMessagesByRoomUUID)).Methods("GET")
 	r.Handle("/get-rooms-by-user-uuid", rootHandler(h.GetRoomsByUserUUID)).Methods("GET")
 
-	log.Println("Opening server...")
-	http.ListenAndServe(":9090", r)
+	h.SetupChannels()
+}
+
+func NewMuxRouter(lc fx.Lifecycle) *mux.Router {
+	r := mux.NewRouter()
+	lc.Append(fx.Hook{
+		OnStart: func(ctx context.Context) error {
+			go func() {
+				log.Println("Opening server on port 9090")
+				err := http.ListenAndServe(":9090", r)
+				if err != nil {
+					log.Println(err)
+				}
+			}()
+			return nil
+		},
+		OnStop: func(ctx context.Context) error {
+			return nil
+		},
+	})
+	return r
 }

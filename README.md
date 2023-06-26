@@ -74,7 +74,6 @@ docker-compose up -d --no-deps --build <service_name>
   - If a message wasn't seen by the client, push it to the top
 - Add a "typing" attribute/event to the message
 - Allow event and messages to be sent from the room itself
-- Dependency injection or singleton needed for redis and mysql db.
 - Separate out socket and redis events
 - Run processMessage in go routine and inform the client if a message fails. This will let the message be routed directly to the client
 - convert the map to its own type with its own mutex instead of letting controller handle that logic.

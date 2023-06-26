@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"log"
 
+	"messaging-service/controllers/channelscontroller"
+	"messaging-service/controllers/connectionscontroller"
 	"messaging-service/controllers/controltower"
 	"messaging-service/handlers"
 	"messaging-service/repo"
@@ -43,6 +45,8 @@ func (fn rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // https://markphelps.me/posts/handling-errors-in-your-http-handlers/
 func main() {
 	fx.New(
+		fx.Provide(channelscontroller.New),
+		fx.Provide(connectionscontroller.New),
 		fx.Provide(NewMuxRouter),
 		fx.Provide(handlers.New),
 		fx.Provide(redisClient.New),

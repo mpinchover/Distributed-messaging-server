@@ -30,12 +30,12 @@ func connect() (*redis.Client, error) {
 	return client, nil
 }
 
-func New() RedisClient {
+func New() *RedisClient {
 	client, err := connect()
 	if err != nil {
 		panic(err)
 	}
-	return RedisClient{
+	return &RedisClient{
 		Client: client,
 	}
 }

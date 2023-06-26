@@ -8,19 +8,14 @@ import (
 )
 
 type Handler struct {
-	ControlTowerCtrlr *controltower.ControlTowerController
+	ControlTowerCtrlr *controltower.ControlTowerCtrlr
 	RedisClient       *redisClient.RedisClient
 }
 
-func New() *Handler {
-
-	redisClient := redisClient.New()
-	// subscrie to the events here for server
-	controlTower := controltower.New()
-
+func New(redisClient *redisClient.RedisClient, controlTower *controltower.ControlTowerCtrlr) *Handler {
 	return &Handler{
 		ControlTowerCtrlr: controlTower,
-		RedisClient:       &redisClient,
+		RedisClient:       redisClient,
 	}
 }
 

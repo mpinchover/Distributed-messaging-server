@@ -3,6 +3,8 @@ package controltower
 import (
 	"encoding/json"
 	"errors"
+	"messaging-service/controllers/channelscontroller"
+	"messaging-service/controllers/connectionscontroller"
 	redisClient "messaging-service/redis"
 	"messaging-service/repo"
 	"messaging-service/types/enums"
@@ -15,9 +17,10 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type ControlTowerController struct {
-	RedisClient *redisClient.RedisClient
-	Connections map[string]*requests.Connection
+type ControlTowerCtrlr struct {
+	RedisClient   *redisClient.RedisClient
+	ConnCtrlr     *connectionscontroller.ConnectionsController
+	ChannelsCtrlr *channelscontroller.ChannelsController
 	// track active rooms/channels on this server
 	ServerChannels map[string]*requests.ServerChannel
 
@@ -26,36 +29,33 @@ type ControlTowerController struct {
 	Repo *repo.Repo
 }
 
-func New() *ControlTowerController {
-	redisClient := redisClient.New()
-
-	repo, err := repo.New()
-	//  TODO – change to err
-	if err != nil {
-		panic(err)
-	}
-
-	connections := map[string]*requests.Connection{}
-	serverChannels := map[string]*requests.ServerChannel{}
+func New(
+	redisClient *redisClient.RedisClient,
+	repo *repo.Repo,
+	connCtrlr *connectionscontroller.ConnectionsController,
+	channelsCtrlr *channelscontroller.ChannelsController,
+) *ControlTowerCtrlr {
+	// connections := map[string]*requests.Connection{}
+	// serverChannels := map[string]*requests.ServerChannel{}
 
 	var mu sync.Mutex
-	msgController := &ControlTowerController{
-		RedisClient:    &redisClient,
-		Connections:    connections,
-		ServerChannels: serverChannels,
+	controlTower := &ControlTowerCtrlr{
+		RedisClient:   redisClient,
+		ConnCtrlr:     connCtrlr,
+		ChannelsCtrlr: channelsCtrlr,
 
 		Repo:    repo,
 		MapLock: &mu,
 	}
 
-	return msgController
+	return controlTower
 }
 
-func (c *ControlTowerController) GetMessagesByRoomUUID(roomUUID string, offset int) ([]*records.Message, error) {
+func (c *ControlTowerCtrlr) GetMessagesByRoomUUID(roomUUID string, offset int) ([]*records.Message, error) {
 	return c.Repo.GetMessagesByRoomUUID(roomUUID, offset)
 }
 
-func (c *ControlTowerController) CreateRoom(
+func (c *ControlTowerCtrlr) CreateRoom(
 	members []*requests.Member,
 ) (*requests.Room, error) {
 	// build the room
@@ -103,7 +103,7 @@ func (c *ControlTowerController) CreateRoom(
 	return newRoom, nil
 }
 
-func (c *ControlTowerController) LeaveRoom(userUUID string, roomUUID string) error {
+func (c *ControlTowerCtrlr) LeaveRoom(userUUID string, roomUUID string) error {
 	room, err := c.Repo.GetRoomByRoomUUID(roomUUID)
 	if err != nil {
 		return err
@@ -160,7 +160,7 @@ func (c *ControlTowerController) LeaveRoom(userUUID string, roomUUID string) err
 	return nil
 }
 
-func (c *ControlTowerController) DeleteRoom(roomUUID string) error {
+func (c *ControlTowerCtrlr) DeleteRoom(roomUUID string) error {
 	room, err := c.Repo.GetRoomByRoomUUID(roomUUID)
 	if err != nil {
 		return err
@@ -193,27 +193,27 @@ func (c *ControlTowerController) DeleteRoom(roomUUID string) error {
 	return nil
 }
 
-func (c *ControlTowerController) SetupClientConnectionV2(
+func (c *ControlTowerCtrlr) SetupClientConnectionV2(
 	conn *websocket.Conn,
 	msg *requests.SetClientConnectionEvent) (*requests.SetClientConnectionEvent, error) {
 
 	connectionUUID := uuid.New().String()
 	msg.ConnectionUUID = connectionUUID
-	connection := c.GetClientConnectionFromServer(msg.FromUUID)
+	userConnection := c.ConnCtrlr.GetConnection(msg.FromUUID)
 
-	if connection == nil {
-		connection = &requests.Connection{
+	if userConnection == nil {
+		userConnection = &requests.Connection{
 			UserUUID:    msg.FromUUID,
 			Connections: map[string]*websocket.Conn{},
 		}
-		c.AddUserConnection(connection)
+		c.ConnCtrlr.AddConnection(userConnection)
 	}
 
-	c.AddClientConnection(connection, connectionUUID, conn)
+	c.ConnCtrlr.AddClient(userConnection, connectionUUID, conn)
 	return msg, nil
 }
 
-func (c *ControlTowerController) GetRoomsByUserUUID(userUUID string, offset int) ([]*requests.Room, error) {
+func (c *ControlTowerCtrlr) GetRoomsByUserUUID(userUUID string, offset int) ([]*requests.Room, error) {
 	rooms, err := c.Repo.GetRoomsByUserUUID(userUUID, offset)
 	if err != nil {
 		return nil, err

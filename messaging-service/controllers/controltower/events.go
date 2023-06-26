@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (c *ControlTowerController) ProcessTextMessage(msg *requests.TextMessageEvent) (*requests.Message, error) {
+func (c *ControlTowerCtrlr) ProcessTextMessage(msg *requests.TextMessageEvent) (*requests.Message, error) {
 	// ensure room exists
 	room, err := c.Repo.GetRoomByRoomUUID(msg.RoomUUID)
 	if err != nil {

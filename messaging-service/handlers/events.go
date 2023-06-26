@@ -94,7 +94,7 @@ func (h *Handler) HandleRoomEvent(event string) error {
 
 func (h *Handler) handleTextMessageEvent(event *requests.TextMessageEvent) error {
 	// get the room from the server
-	channel := h.ControlTowerCtrlr.GetChannelFromServer(event.RoomUUID)
+	channel := h.ControlTowerCtrlr.ChannelsCtrlr.GetChannel(event.RoomUUID)
 	from := event.ConnectionUUID
 	// save the txt msg to db
 
@@ -104,7 +104,7 @@ func (h *Handler) handleTextMessageEvent(event *requests.TextMessageEvent) error
 	}
 
 	for userUUID := range channel.MembersOnServer {
-		connection := h.ControlTowerCtrlr.GetClientConnectionFromServer(userUUID)
+		connection := h.ControlTowerCtrlr.ConnCtrlr.GetConnection(userUUID)
 		// issue is that connection is null
 		for connUUID, conn := range connection.Connections {
 			if connUUID == from {
@@ -119,7 +119,7 @@ func (h *Handler) handleTextMessageEvent(event *requests.TextMessageEvent) error
 
 func (h *Handler) handleLeaveRoomEvent(event *requests.LeaveRoomEvent) error {
 	// get the room from the server
-	channel := h.ControlTowerCtrlr.GetChannelFromServer(event.RoomUUID)
+	channel := h.ControlTowerCtrlr.ChannelsCtrlr.GetChannel(event.RoomUUID)
 
 	// room not on server
 	if channel == nil {
@@ -127,14 +127,14 @@ func (h *Handler) handleLeaveRoomEvent(event *requests.LeaveRoomEvent) error {
 	}
 
 	// remove the user from this room
-	err := h.ControlTowerCtrlr.RemoveUserFromServerChannel(event.RoomUUID, event.UserUUID)
+	err := h.ControlTowerCtrlr.ChannelsCtrlr.DeleteUser(event.RoomUUID, event.UserUUID)
 	if err != nil {
 		return err
 	}
 
 	// notify any remaining members that the user has left
 	for userUUID := range channel.MembersOnServer {
-		connection := h.ControlTowerCtrlr.GetClientConnectionFromServer(userUUID)
+		connection := h.ControlTowerCtrlr.ConnCtrlr.GetConnection(userUUID)
 		for _, conn := range connection.Connections {
 			conn.WriteJSON(event)
 		}
@@ -144,18 +144,18 @@ func (h *Handler) handleLeaveRoomEvent(event *requests.LeaveRoomEvent) error {
 
 func (h *Handler) handleDeleteRoomEvent(event *requests.DeleteRoomEvent) error {
 	// get the room from the server
-	channel := h.ControlTowerCtrlr.GetChannelFromServer(event.RoomUUID)
+	channel := h.ControlTowerCtrlr.ChannelsCtrlr.GetChannel(event.RoomUUID)
 
 	// room not on server
 	if channel == nil {
 		return nil
 	}
 
-	h.ControlTowerCtrlr.DeleteServerChannel(channel.UUID)
+	h.ControlTowerCtrlr.ChannelsCtrlr.DeleteChannel(channel.UUID)
 
 	// notify everyone that the channel has closed
 	for userUUID := range channel.MembersOnServer {
-		connection := h.ControlTowerCtrlr.GetClientConnectionFromServer(userUUID)
+		connection := h.ControlTowerCtrlr.ConnCtrlr.GetConnection(userUUID)
 		for _, conn := range connection.Connections {
 			conn.WriteJSON(event)
 		}
@@ -174,13 +174,13 @@ func (h *Handler) handleOpenRoomEvent(event *requests.OpenRoomEvent) error {
 	connectionsToWrite := []*websocket.Conn{}
 	for _, member := range members {
 
-		connection := h.ControlTowerCtrlr.GetClientConnectionFromServer(member.UserUUID)
+		connection := h.ControlTowerCtrlr.ConnCtrlr.GetConnection(member.UserUUID)
 		// user not on this server, so don't subscribe the room to this server
 		if connection == nil {
 			continue
 		}
 		// check if the room has already been subscribed to this server as well
-		room := h.ControlTowerCtrlr.GetChannelFromServer(roomUUID)
+		room := h.ControlTowerCtrlr.ChannelsCtrlr.GetChannel(roomUUID)
 
 		if room == nil {
 			// Set up the room on this server
@@ -192,7 +192,7 @@ func (h *Handler) handleOpenRoomEvent(event *requests.OpenRoomEvent) error {
 				MembersOnServer: map[string]bool{},
 				UUID:            roomUUID,
 			}
-			h.ControlTowerCtrlr.AddServerChannel(room)
+			h.ControlTowerCtrlr.ChannelsCtrlr.AddChannel(room)
 		}
 
 		// add the member to the server

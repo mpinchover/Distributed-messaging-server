@@ -26,7 +26,7 @@ func connect() (*gorm.DB, error) {
 	})
 }
 
-func New() (*Repo, error) {
+func New() *Repo {
 	var db *gorm.DB
 	// refer https://github.com/go-sql-driver/mysql#dsn-data-source-name for details
 	db, err := connect()
@@ -36,7 +36,7 @@ func New() (*Repo, error) {
 
 	return &Repo{
 		DB: db,
-	}, nil
+	}
 }
 
 func (r *Repo) SaveRoom(room *records.Room) error {

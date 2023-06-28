@@ -1,10 +1,8 @@
-package integrestion_testing
+package integrationtests
 
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
-	"io"
 	"net/http"
 	"time"
 
@@ -19,10 +17,11 @@ import (
 )
 
 const (
-	socketURL = "ws://localhost:9090/ws"
+	SocketURL = "ws://localhost:9090/ws"
 )
 
 func TestMockEndpoint(t *testing.T) {
+
 	t.Run("mock test", func(t *testing.T) {
 		assert.Equal(t, 123, 123, "they should be equal")
 	})
@@ -32,9 +31,10 @@ func TestMockEndpoint(t *testing.T) {
 }
 
 func TestConnectWebsocket(t *testing.T) {
+
 	t.Run("test opening websocket", func(t *testing.T) {
 
-		ws, _, err := websocket.DefaultDialer.Dial(socketURL, nil)
+		ws, _, err := websocket.DefaultDialer.Dial(SocketURL, nil)
 		assert.NoError(t, err)
 		pingHandler := ws.PingHandler()
 		err = pingHandler("PING")
@@ -47,6 +47,7 @@ func TestConnectWebsocket(t *testing.T) {
 }
 
 func TestOpenSocket(t *testing.T) {
+
 	t.Run("test set open socket info", func(t *testing.T) {
 
 		clientUUID := uuid.New().String()
@@ -56,6 +57,7 @@ func TestOpenSocket(t *testing.T) {
 }
 
 func TestCreateRoom(t *testing.T) {
+
 	t.Run("create room", func(t *testing.T) {
 		tomUUID := uuid.New().String()
 		jerryUUID := uuid.New().String()
@@ -131,6 +133,7 @@ func TestCreateRoom(t *testing.T) {
 }
 
 func TestRoomAndMessagesPagination(t *testing.T) {
+
 	t.Run("test rooms and messages pagination", func(t *testing.T) {
 		aUUID := uuid.New().String()
 		bUUID := uuid.New().String()
@@ -296,6 +299,7 @@ func TestRoomAndMessagesPagination(t *testing.T) {
 
 // Need to get the room id first and pass it to the text message id
 func TestAllConnectionsRcvMessages(t *testing.T) {
+
 	t.Run("test all connections get msgs", func(t *testing.T) {
 		aUUID := uuid.New().String()
 		bUUID := uuid.New().String()
@@ -359,6 +363,7 @@ func TestAllConnectionsRcvMessages(t *testing.T) {
 }
 
 func TestDeleteRoom(t *testing.T) {
+
 	t.Run("test delete a room", func(t *testing.T) {
 		aUUID := uuid.New().String()
 		bUUID := uuid.New().String()
@@ -491,6 +496,7 @@ func TestDeleteRoom(t *testing.T) {
 }
 
 func TestLeaveRoom(t *testing.T) {
+	//
 	t.Run("test leave room", func(t *testing.T) {
 		aUUID := uuid.New().String()
 		bUUID := uuid.New().String()
@@ -660,183 +666,4 @@ func queryMessages(t *testing.T, userUUID string, roomUUID string, expectedRooms
 		cur := totalMessages[i]
 		assert.True(t, prev.CreatedAt >= cur.CreatedAt)
 	}
-}
-
-func sendMessages(t *testing.T, fromUserUUID string, connectionUUID string, roomUUID string, conn *websocket.Conn) {
-	for i := 0; i < 25; i++ {
-		msgText := fmt.Sprintf("Message %d", i)
-		msgEventOut := &requests.TextMessageEvent{
-			FromUUID:       fromUserUUID,
-			ConnectionUUID: connectionUUID,
-			RoomUUID:       roomUUID,
-			EventType:      enums.EVENT_TEXT_MESSAGE.String(),
-			MessageText:    msgText,
-		}
-		sendTextMessage(t, conn, msgEventOut)
-	}
-}
-
-func recvMessages(t *testing.T, conn *websocket.Conn) {
-	for i := 0; i < 25; i++ {
-		// conn.SetReadDeadline(time.Now().Add(1 * time.Second))
-		_, p, err := conn.ReadMessage()
-
-		assert.NoError(t, err)
-		resp := &requests.TextMessageEvent{}
-		err = json.Unmarshal(p, resp)
-		assert.NoError(t, err)
-		assert.NotEmpty(t, resp.EventType)
-		assert.Equal(t, enums.EVENT_TEXT_MESSAGE.String(), resp.EventType)
-		assert.NotEmpty(t, resp.FromUUID)
-		assert.NotEmpty(t, resp.ConnectionUUID)
-		assert.NotEmpty(t, resp.RoomUUID)
-		assert.NotEmpty(t, resp.MessageText)
-	}
-}
-
-func containsRoomUUID(s []*requests.Room, str string) bool {
-	for _, v := range s {
-		if v.UUID == str {
-			return true
-		}
-	}
-
-	return false
-}
-
-func readOpenRoomResponse(t *testing.T, conn *websocket.Conn, expectedMembers int) *requests.OpenRoomEvent {
-	// TODO - ensure correct users are in the room
-	_, p, err := conn.ReadMessage()
-	assert.NoError(t, err)
-	resp := &requests.OpenRoomEvent{}
-	err = json.Unmarshal(p, resp)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, resp.EventType)
-	assert.Equal(t, resp.EventType, enums.EVENT_OPEN_ROOM.String())
-	assert.NotEmpty(t, resp.Room)
-	assert.NotEmpty(t, resp.Room.UUID)
-	assert.Equal(t, expectedMembers, len(resp.Room.Members))
-
-	return resp
-}
-
-func sendTextMessage(t *testing.T, ws *websocket.Conn, msgEvent *requests.TextMessageEvent) {
-	err := ws.WriteJSON(msgEvent)
-	assert.NoError(t, err)
-}
-
-func getMessagesByRoomUUID(t *testing.T, roomUUID string, offset int) (*requests.GetMessagesByRoomUUIDResponse, error) {
-	url := fmt.Sprintf("http://localhost:9090/get-messages-by-room-uuid?roomUuid=%s&offset=%d", roomUUID, offset)
-	resp, err := http.Get(url)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, resp)
-
-	defer resp.Body.Close()
-	b, err := io.ReadAll(resp.Body)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, b)
-
-	if resp.StatusCode < 200 || resp.StatusCode > 300 {
-		fmt.Println(string(b))
-		return nil, fmt.Errorf("error code is %d", resp.StatusCode)
-	}
-
-	result := &requests.GetMessagesByRoomUUIDResponse{}
-	err = json.Unmarshal(b, result)
-	assert.NoError(t, err)
-	return result, err
-}
-
-func getRoomsByUserUUID(userUUID string, offset int) (*requests.GetRoomsByUserUUIDResponse, error) {
-	url := fmt.Sprintf("http://localhost:9090/get-rooms-by-user-uuid?userUuid=%s&offset=%d", userUUID, offset)
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	b, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode < 200 || resp.StatusCode > 300 {
-		fmt.Println(string(b))
-		return nil, fmt.Errorf("error code is %d", resp.StatusCode)
-	}
-
-	result := &requests.GetRoomsByUserUUIDResponse{}
-	err = json.Unmarshal(b, result)
-	return result, err
-}
-
-// set up a client connection
-func setupClientConnection(t *testing.T, userUUID string) (*requests.SetClientConnectionEvent, *websocket.Conn) {
-	conn, _, err := websocket.DefaultDialer.Dial(socketURL, nil)
-	assert.NoError(t, err)
-
-	msgOut := requests.SetClientConnectionEvent{
-		FromUUID:  userUUID,
-		EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
-	}
-
-	err = conn.WriteJSON(msgOut)
-	assert.NoError(t, err)
-
-	_, p, err := conn.ReadMessage()
-	assert.NoError(t, err)
-
-	rsp := &requests.SetClientConnectionEvent{}
-	err = json.Unmarshal(p, &rsp)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, rsp.ConnectionUUID)
-	assert.NotEmpty(t, rsp.FromUUID)
-	return rsp, conn
-}
-
-func openRoom(t *testing.T, openRoomEvent *requests.CreateRoomRequest) {
-	postBody, err := json.Marshal(openRoomEvent)
-	assert.NoError(t, err)
-	reqBody := bytes.NewBuffer(postBody)
-	resp, err := http.Post("http://localhost:9090/create-room", "application/json", reqBody)
-	assert.NoError(t, err)
-	assert.GreaterOrEqual(t, resp.StatusCode, 200)
-	assert.LessOrEqual(t, resp.StatusCode, 299)
-
-}
-
-func deleteRoom(t *testing.T, deleteRoomRequest *requests.DeleteRoomRequest) {
-	postBody, err := json.Marshal(deleteRoomRequest)
-	assert.NoError(t, err)
-	reqBody := bytes.NewBuffer(postBody)
-	resp, err := http.Post("http://localhost:9090/delete-room", "application/json", reqBody)
-	assert.NoError(t, err)
-
-	defer resp.Body.Close()
-	b, err := io.ReadAll(resp.Body)
-	assert.NoError(t, err)
-
-	if resp.StatusCode < 200 || resp.StatusCode > 300 {
-		fmt.Println(string(b))
-	}
-
-	assert.GreaterOrEqual(t, resp.StatusCode, 200)
-	assert.LessOrEqual(t, resp.StatusCode, 299)
-}
-
-func leaveRoom(t *testing.T, req *requests.LeaveRoomRequest) {
-	postBody, err := json.Marshal(req)
-	assert.NoError(t, err)
-	reqBody := bytes.NewBuffer(postBody)
-	resp, err := http.Post("http://localhost:9090/leave-room", "application/json", reqBody)
-	assert.NoError(t, err)
-	defer resp.Body.Close()
-	b, err := io.ReadAll(resp.Body)
-	assert.NoError(t, err)
-
-	if resp.StatusCode < 200 || resp.StatusCode > 300 {
-		fmt.Println(string(b))
-	}
-
-	assert.GreaterOrEqual(t, resp.StatusCode, 200)
-	assert.LessOrEqual(t, resp.StatusCode, 299)
 }

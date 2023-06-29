@@ -37,4 +37,15 @@ type TextMessageEvent struct {
 	RoomUUID       string `json:"roomUuid"`
 	MessageText    string `json:"messageText"`
 	CreatedAt      int64  `json:"createdAt"`
+	MessageUUID    string `json:"messageUuid"`
+}
+
+// the recpt has read the message
+// client will have the user uuid stored. If the message is opened
+// by not owner user uuid, send out the event
+type SeenMessageEvent struct {
+	EventType   string `json:"eventType"`
+	MessageUUID string `json:"messageUuid"`
+	UserUUID    string `json:"userUuid"`
+	RoomUUID    string `json:"roomUuid"`
 }

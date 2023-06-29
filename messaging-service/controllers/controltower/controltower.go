@@ -3,6 +3,7 @@ package controltower
 import (
 	"encoding/json"
 	"errors"
+
 	"messaging-service/controllers/channelscontroller"
 	"messaging-service/controllers/connectionscontroller"
 	redisClient "messaging-service/redis"
@@ -211,6 +212,35 @@ func (c *ControlTowerCtrlr) SetupClientConnectionV2(
 
 	c.ConnCtrlr.AddClient(userConnection, connectionUUID, conn)
 	return msg, nil
+}
+
+func (c *ControlTowerCtrlr) SaveSeenBy(msg *requests.SeenMessageEvent) error {
+	existingMessage, err := c.Repo.GetMessageByUUID(msg.MessageUUID)
+	if err != nil {
+		return err
+	}
+
+	if existingMessage == nil {
+		return errors.New("message not found")
+	}
+
+	seenBy := &records.SeenBy{
+		UserUUID:    msg.UserUUID,
+		MessageID:   int(existingMessage.Model.ID),
+		MessageUUID: msg.MessageUUID,
+	}
+
+	err = c.Repo.SaveSeenBy(seenBy)
+	if err != nil {
+		return err
+	}
+
+	bytes, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+	c.RedisClient.PublishToRedisChannel(msg.RoomUUID, bytes)
+	return nil
 }
 
 func (c *ControlTowerCtrlr) GetRoomsByUserUUID(userUUID string, offset int) ([]*requests.Room, error) {

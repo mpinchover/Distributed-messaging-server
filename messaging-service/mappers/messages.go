@@ -20,6 +20,7 @@ func FromRecordsMessageToRequestMessage(msg *records.Message) *requests.Message 
 		FromUUID:    msg.FromUUID,
 		RoomUUID:    msg.RoomUUID,
 		MessageText: msg.MessageText,
+
 		// CreatedAt:   msg.CreatedAt.Unix(),
 	}
 }

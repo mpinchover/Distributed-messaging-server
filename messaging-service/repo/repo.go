@@ -40,7 +40,6 @@ func New() *Repo {
 }
 
 func (r *Repo) SaveRoom(room *records.Room) error {
-
 	return r.DB.Transaction(func(tx *gorm.DB) error {
 		err := tx.Create(room).Error
 		if err != nil {
@@ -56,9 +55,43 @@ func (r *Repo) LeaveRoom(userUUID string, roomUUID string) error {
 		Delete(&records.Member{}).Error
 }
 
+func (r *Repo) UpdateMessage(message *records.Message) error {
+	err := r.DB.Where("uuid = ?", message.UUID).Update("messages", message).Error
+	return err
+}
+
+func (r *Repo) GetMembersByRoomUUID(roomUUID string) ([]*records.Member, error) {
+	result := []*records.Member{}
+	err := r.DB.Where("room_uuid = ?", roomUUID).Find(&result).Error
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (r *Repo) GetMessageByUUID(uuid string) (*records.Message, error) {
+	result := &records.Message{}
+	err := r.DB.Preload("SeenBy").Where("uuid = ?", uuid).Find(result).Error
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (r *Repo) SaveSeenBy(seenBy *records.SeenBy) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		err := tx.Create(seenBy).Error
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+
+}
+
 func (r *Repo) GetRoomByRoomUUID(roomUUID string) (*records.Room, error) {
 	result := &records.Room{}
-	err := r.DB.Preload("Messages").Preload("Members").Where("uuid = ?", roomUUID).Find(result).Error
+	err := r.DB.Preload("Messages").Preload("Messages.SeenBy").Preload("Members").Where("uuid = ?", roomUUID).Find(result).Error
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +109,7 @@ func (r *Repo) SaveMessage(msg *records.Message) error {
 func (r *Repo) GetMessagesByRoomUUID(roomUUID string, offset int) ([]*records.Message, error) {
 	results := []*records.Message{}
 
-	query := r.DB.Where("room_uuid = ?", roomUUID).Order("id desc").Offset(offset).Limit(PAGINATION_MESSAGES)
+	query := r.DB.Preload("SeenBy").Where("room_uuid = ?", roomUUID).Order("id desc").Offset(offset).Limit(PAGINATION_MESSAGES)
 	err := query.Find(&results).Error
 	return results, err
 }
@@ -96,20 +129,61 @@ func (r *Repo) GetRoomsByUserUUID(uuid string, offset int) ([]*records.Room, err
 		roomUUIDs = append(roomUUIDs, m.RoomUUID)
 	}
 
-	err = r.DB.Preload("Members").Preload("Messages").Where("uuid in (?)", roomUUIDs).Find(&results).Error
+	err = r.DB.Preload("Members").Preload("Messages").Preload("Messages.SeenBy").Where("uuid in (?)", roomUUIDs).Find(&results).Error
 	return results, err
+}
+
+func (r *Repo) deleteMembersByRoomUUIDInTx(tx *gorm.DB, roomUUID string) error {
+	return tx.
+		Where("room_uuid = ?", roomUUID).
+		Delete(&records.Member{}).
+		Error
+}
+
+func (r *Repo) deleteSeenByByMessageUUIDInTx(tx *gorm.DB, messageUUIDs []string) error {
+	return tx.
+		Where("message_uuid in (?)", messageUUIDs).
+		Delete(&records.SeenBy{}).
+		Error
+}
+
+func (r *Repo) deleteMessagesByRoomUUIDInTx(tx *gorm.DB, roomUUID string) error {
+	messageUUIDs := []string{}
+	if err := tx.
+		Where("room_uuid = ?", roomUUID).
+		Model(&records.Message{}).
+		Pluck("uuid", &messageUUIDs).
+		Error; err != nil {
+		return err
+	}
+
+	// delete all the seen_by
+	if err := r.deleteSeenByByMessageUUIDInTx(tx, messageUUIDs); err != nil {
+		return err
+	}
+
+	return tx.
+		Where("room_uuid = (?) ", roomUUID).
+		Delete(&records.Message{}).
+		Error
+}
+
+func (r *Repo) deleteRoomByUUIDInTx(tx *gorm.DB, roomUUID string) error {
+	return tx.
+		Where("uuid = ?", roomUUID).
+		Delete(&records.Room{}).Error
 }
 
 func (r *Repo) DeleteRoom(roomUUID string) error {
 	return r.DB.Transaction(func(tx *gorm.DB) error {
-		err := tx.Where("room_uuid = ?", roomUUID).Delete(&records.Member{}).Error
-		if err != nil {
+		if err := r.deleteMembersByRoomUUIDInTx(tx, roomUUID); err != nil {
 			return err
 		}
-		err = tx.Where("uuid = ?", roomUUID).Delete(&records.Room{}).Error
-		if err != nil {
+
+		if err := r.deleteMessagesByRoomUUIDInTx(tx, roomUUID); err != nil {
 			return err
 		}
-		return nil
+
+		return r.deleteRoomByUUIDInTx(tx, roomUUID)
 	})
 }

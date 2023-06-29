@@ -10,6 +10,7 @@ const (
 	EVENT_DELETE_ROOM       // delete a room
 	EVENT_LEAVE_ROOM        // leave a room
 	EVENT_SUBSCRIBE_TO_ROOM // subscribe to a room
+	EVENT_SEEN_MESSAGE      // recpt saw message
 )
 
 const (
@@ -32,6 +33,8 @@ func (m MessageType) String() string {
 		return "EVENT_SET_CLIENT_SOCKET"
 	case EVENT_SUBSCRIBE_TO_ROOM:
 		return "EVENT_SUBSCRIBE_TO_ROOM"
+	case EVENT_SEEN_MESSAGE:
+		return "EVENT_SEEN_MESSAGE"
 	}
 	return "UNKNOWN"
 }

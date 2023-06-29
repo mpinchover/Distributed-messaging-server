@@ -89,6 +89,15 @@ func (h *Handler) HandleRoomEvent(event string) error {
 		return h.handleDeleteRoomEvent(deleteRoomEvent)
 	}
 
+	if eventType == enums.EVENT_SEEN_MESSAGE.String() {
+		seenMsgEvent := &requests.SeenMessageEvent{}
+		err = json.Unmarshal([]byte(event), seenMsgEvent)
+		if err != nil {
+			return err
+		}
+		return h.handleSeenMessageChannelEvent(seenMsgEvent)
+	}
+
 	return nil
 }
 

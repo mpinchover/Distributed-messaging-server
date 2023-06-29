@@ -66,16 +66,28 @@ docker-compose up -d --no-deps --build <service_name>
 
 ## TODO's
 
+### P1
+
+- Add an API key/auth in some way
+  - once the client connects they should get back a JWT. For all socket related req, just use JWT.
+  - use redis to track API keys
+- Run processMessage in go routine and inform the client if a message fails. This will let the message be routed directly to the client
+- allow members, rooms to have a stringified text field that can track whatever the user wants.
+- add validation on events
+- run UpdateMessageToSeen in go routine
+- on the server side, mark the messages as seen so the client doesn't have to
+- allow delete message
+- update tests to run in go routines to mimic high, concurrent volumes
+
+### P2
+
+- separate out channel and client events
+- allow someone to be invited to the chat
+- Add a "typing" attribute/event to the message
+
+### P3
+
 - controltower should be parent of
   - realtime controller (sockets)
   - message controller (sync flows for messages)
-- Add a "seen" attribute/event to the message
-  - If a message wasn't seen by the client, push it to the top?
-- Add a "typing" attribute/event to the message
-- Allow event and messages to be sent from the room itself
-- Separate out socket and redis events
-- Run processMessage in go routine and inform the client if a message fails. This will let the message be routed directly to the client
-- allow someone to be invited to the chat
-- allow members, rooms to have a stringified text field that can track whatever the user wants.
-- add validation on events
 - LeaveRoom should also save messages that someone has left the chat

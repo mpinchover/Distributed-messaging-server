@@ -21,6 +21,7 @@ func (c *ControlTowerCtrlr) ProcessTextMessage(msg *requests.TextMessageEvent) (
 	}
 
 	msgUUID := uuid.New().String()
+	msg.MessageUUID = msgUUID
 
 	repoMessage := &records.Message{
 		FromUUID:    msg.FromUUID,

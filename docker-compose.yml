@@ -8,6 +8,7 @@ networks:
 services:
   msgserver:
     build: "./messaging-service"
+    restart: always
     environment:
       NODE_ENV: production
       REDIS_URL: redisCache:6379

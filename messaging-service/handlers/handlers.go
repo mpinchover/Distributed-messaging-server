@@ -49,14 +49,23 @@ func (h *Handler) getMessagesByRoomUUID(req *requests.GetMessagesByRoomUUIDReque
 	}
 
 	requestMsgs := make([]*requests.Message, len(msgs))
-
 	for i, msg := range msgs {
+
+		seenBy := make([]*requests.SeenBy, len(msg.SeenBy))
+		for j, sb := range msg.SeenBy {
+			seenBy[j] = &requests.SeenBy{
+				MessageUUID: sb.MessageUUID,
+				UserUUID:    sb.UserUUID,
+			}
+		}
+
 		requestMsgs[i] = &requests.Message{
 			UUID:        msg.UUID,
 			FromUUID:    msg.FromUUID,
 			RoomUUID:    msg.RoomUUID,
 			MessageText: msg.MessageText,
 			CreatedAt:   msg.Model.CreatedAt.UnixMilli(),
+			SeenBy:      seenBy,
 		}
 	}
 

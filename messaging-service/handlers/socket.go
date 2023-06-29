@@ -104,6 +104,15 @@ func (h *Handler) handleIncomingSocketEvents(conn *websocket.Conn) error {
 
 			// save the message to the database and send out an event.
 		}
+
+		if msgType == enums.EVENT_SEEN_MESSAGE.String() {
+			msg := &requests.SeenMessageEvent{}
+			err := json.Unmarshal(p, msg)
+			if err != nil {
+				return err
+			}
+			h.ControlTowerCtrlr.SaveSeenBy(msg)
+		}
 	}
 
 	return nil

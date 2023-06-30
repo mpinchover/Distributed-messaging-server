@@ -79,14 +79,7 @@ func (r *Repo) GetMessageByUUID(uuid string) (*records.Message, error) {
 }
 
 func (r *Repo) SaveSeenBy(seenBy *records.SeenBy) error {
-	return r.DB.Transaction(func(tx *gorm.DB) error {
-		err := tx.Create(seenBy).Error
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-
+	return r.DB.Create(seenBy).Error
 }
 
 func (r *Repo) GetRoomByRoomUUID(roomUUID string) (*records.Room, error) {
@@ -111,6 +104,7 @@ func (r *Repo) GetMessagesByRoomUUID(roomUUID string, offset int) ([]*records.Me
 
 	query := r.DB.Preload("SeenBy").Where("room_uuid = ?", roomUUID).Order("id desc").Offset(offset).Limit(PAGINATION_MESSAGES)
 	err := query.Find(&results).Error
+
 	return results, err
 }
 

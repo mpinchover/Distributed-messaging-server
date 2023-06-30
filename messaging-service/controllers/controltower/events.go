@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"messaging-service/mappers"
+	"messaging-service/types/enums"
 	"messaging-service/types/records"
 	"messaging-service/types/requests"
 
 	"github.com/google/uuid"
 )
 
+// TODO – event should just have the message embedded within it
 func (c *ControlTowerCtrlr) ProcessTextMessage(msg *requests.TextMessageEvent) (*requests.Message, error) {
 	// ensure room exists
 	room, err := c.Repo.GetRoomByRoomUUID(msg.RoomUUID)
@@ -24,11 +26,12 @@ func (c *ControlTowerCtrlr) ProcessTextMessage(msg *requests.TextMessageEvent) (
 	msg.MessageUUID = msgUUID
 
 	repoMessage := &records.Message{
-		FromUUID:    msg.FromUUID,
-		RoomUUID:    msg.RoomUUID,
-		RoomID:      int(room.Model.ID),
-		MessageText: msg.MessageText,
-		UUID:        msgUUID,
+		FromUUID:      msg.FromUUID,
+		RoomUUID:      msg.RoomUUID,
+		RoomID:        int(room.Model.ID),
+		MessageText:   msg.MessageText,
+		UUID:          msgUUID,
+		MessageStatus: enums.MESSAGE_STATUS_LIVE.String(),
 	}
 
 	err = c.Repo.SaveMessage(repoMessage)

@@ -78,6 +78,8 @@ docker-compose up -d --no-deps --build <service_name>
 - on the server side, mark the messages as seen so the client doesn't have to
 - allow delete message
 - update tests to run in go routines to mimic high, concurrent volumes
+- embed the text message struct within eventTextMessage
+- consolidate HandleRoomEvent
 
 ### P2
 
@@ -91,7 +93,4 @@ docker-compose up -d --no-deps --build <service_name>
   - realtime controller (sockets)
   - message controller (sync flows for messages)
 - LeaveRoom should also save messages that someone has left the chat
-
-### debug
-
-Use this dlv package go install github.com/go-delve/delve/cmd/dlv@latest
+- app should show if someone screenshotted

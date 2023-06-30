@@ -31,7 +31,6 @@ func TestMockEndpoint(t *testing.T) {
 }
 
 func TestConnectWebsocket(t *testing.T) {
-
 	t.Run("test opening websocket", func(t *testing.T) {
 
 		ws, _, err := websocket.DefaultDialer.Dial(SocketURL, nil)
@@ -47,7 +46,6 @@ func TestConnectWebsocket(t *testing.T) {
 }
 
 func TestOpenSocket(t *testing.T) {
-
 	t.Run("test set open socket info", func(t *testing.T) {
 
 		clientUUID := uuid.New().String()
@@ -57,7 +55,6 @@ func TestOpenSocket(t *testing.T) {
 }
 
 func TestCreateRoom(t *testing.T) {
-
 	t.Run("create room", func(t *testing.T) {
 		tomUUID := uuid.New().String()
 		jerryUUID := uuid.New().String()
@@ -190,10 +187,10 @@ func TestRoomAndMessagesPagination(t *testing.T) {
 		sendMessages(t, aUUID, aConnectionUUID, roomUUID1, aWebWS)
 		sendMessages(t, bUUID, bConnectionUUID, roomUUID1, bWebWS)
 
-		// hanging here
 		recvMessages(t, bWebWS)
 		recvMessages(t, aWebWS)
 
+		time.Sleep(1 * time.Second)
 		queryMessages(t, bUUID, roomUUID1, 1)
 		queryMessages(t, aUUID, roomUUID1, 2)
 
@@ -204,6 +201,7 @@ func TestRoomAndMessagesPagination(t *testing.T) {
 		recvMessages(t, aWebWS)
 		recvMessages(t, cWebWS)
 
+		time.Sleep(1 * time.Second)
 		queryMessages(t, aUUID, roomUUID2, 2)
 		queryMessages(t, cUUID, roomUUID2, 1)
 
@@ -232,6 +230,7 @@ func TestRoomAndMessagesPagination(t *testing.T) {
 		recvMessages(t, aWebWS)
 		recvMessages(t, dWebWS)
 
+		time.Sleep(1 * time.Second)
 		queryMessages(t, aUUID, roomUUID3, 3)
 		queryMessages(t, dUUID, roomUUID3, 1)
 
@@ -261,6 +260,7 @@ func TestRoomAndMessagesPagination(t *testing.T) {
 		recvMessages(t, bWebWS)
 		recvMessages(t, cWebWS)
 
+		time.Sleep(1 * time.Second)
 		queryMessages(t, bUUID, roomUUID4, 2)
 		queryMessages(t, cUUID, roomUUID4, 2)
 
@@ -291,6 +291,7 @@ func TestRoomAndMessagesPagination(t *testing.T) {
 		recvMessages(t, bWebWS)
 		recvMessages(t, dWebWS)
 
+		time.Sleep(100 * time.Millisecond)
 		queryMessages(t, bUUID, roomUUID5, 3)
 		queryMessages(t, dUUID, roomUUID5, 2)
 
@@ -299,7 +300,6 @@ func TestRoomAndMessagesPagination(t *testing.T) {
 
 // Need to get the room id first and pass it to the text message id
 func TestAllConnectionsRcvMessages(t *testing.T) {
-
 	t.Run("test all connections get msgs", func(t *testing.T) {
 		aUUID := uuid.New().String()
 		bUUID := uuid.New().String()
@@ -363,7 +363,6 @@ func TestAllConnectionsRcvMessages(t *testing.T) {
 }
 
 func TestDeleteRoom(t *testing.T) {
-
 	t.Run("test delete a room", func(t *testing.T) {
 		aUUID := uuid.New().String()
 		bUUID := uuid.New().String()
@@ -496,7 +495,6 @@ func TestDeleteRoom(t *testing.T) {
 }
 
 func TestLeaveRoom(t *testing.T) {
-	//
 	t.Run("test leave room", func(t *testing.T) {
 		aUUID := uuid.New().String()
 		bUUID := uuid.New().String()
@@ -645,20 +643,21 @@ func queryMessages(t *testing.T, userUUID string, roomUUID string, expectedRooms
 	resp, err := getMessagesByRoomUUID(t, roomUUID, 0)
 	assert.NoError(t, err)
 	assert.Equal(t, 20, len(resp.Messages))
+
 	totalMessages = append(totalMessages, resp.Messages...)
-	assert.Equal(t, len(totalMessages), 20)
+	assert.Equal(t, 20, len(totalMessages))
 
 	resp, err = getMessagesByRoomUUID(t, roomUUID, len(totalMessages))
 	assert.NoError(t, err)
 	assert.Equal(t, 20, len(resp.Messages))
 	totalMessages = append(totalMessages, resp.Messages...)
-	assert.Equal(t, len(totalMessages), 40)
+	assert.Equal(t, 40, len(totalMessages))
 
 	resp, err = getMessagesByRoomUUID(t, roomUUID, len(totalMessages))
 	assert.NoError(t, err)
 	assert.Equal(t, 10, len(resp.Messages))
 	totalMessages = append(totalMessages, resp.Messages...)
-	assert.Equal(t, len(totalMessages), 50)
+	assert.Equal(t, 50, len(totalMessages))
 
 	// jump by 15 because the msgs are being sent too fast.
 	for i := 15; i < len(totalMessages); i++ {
@@ -666,4 +665,5 @@ func queryMessages(t *testing.T, userUUID string, roomUUID string, expectedRooms
 		cur := totalMessages[i]
 		assert.True(t, prev.CreatedAt >= cur.CreatedAt)
 	}
+
 }

@@ -11,6 +11,7 @@ const (
 	EVENT_LEAVE_ROOM        // leave a room
 	EVENT_SUBSCRIBE_TO_ROOM // subscribe to a room
 	EVENT_SEEN_MESSAGE      // recpt saw message
+	EVENT_DELETE_MESSAGE    // message was deleted
 )
 
 const (
@@ -21,6 +22,8 @@ const (
 
 func (m MessageType) String() string {
 	switch m {
+	case EVENT_DELETE_MESSAGE:
+		return "EVENT_DELETE_MESSAGE"
 	case EVENT_TEXT_MESSAGE:
 		return "EVENT_TEXT_MESSAGE"
 	case EVENT_DELETE_ROOM:
@@ -35,6 +38,23 @@ func (m MessageType) String() string {
 		return "EVENT_SUBSCRIBE_TO_ROOM"
 	case EVENT_SEEN_MESSAGE:
 		return "EVENT_SEEN_MESSAGE"
+	}
+	return "UNKNOWN"
+}
+
+type MessageStatus int64
+
+const (
+	MESSAGE_STATUS_LIVE MessageStatus = iota
+	MESSAGE_STATUS_DELETED
+)
+
+func (m MessageStatus) String() string {
+	switch m {
+	case MESSAGE_STATUS_LIVE:
+		return "MESSAGE_STATUS_LIVE"
+	case MESSAGE_STATUS_DELETED:
+		return "MESSAGE_STATUS_DELETED"
 	}
 	return "UNKNOWN"
 }

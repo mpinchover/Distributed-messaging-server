@@ -1,6 +1,7 @@
 package mappers
 
 import (
+	"messaging-service/types/enums"
 	"messaging-service/types/records"
 	"messaging-service/types/requests"
 )
@@ -15,13 +16,15 @@ func FromRecordsMessagesToRequestsMessages(msgs []*records.Message) []*requests.
 }
 
 func FromRecordsMessageToRequestMessage(msg *records.Message) *requests.Message {
+	if msg.MessageStatus == enums.MESSAGE_STATUS_DELETED.String() {
+		msg.MessageText = ""
+	}
 	return &requests.Message{
 		UUID:        msg.UUID,
 		FromUUID:    msg.FromUUID,
 		RoomUUID:    msg.RoomUUID,
 		MessageText: msg.MessageText,
-
-		// CreatedAt:   msg.CreatedAt.Unix(),
+		CreatedAt: msg.CreatedAt.Unix(),
 	}
 }
 

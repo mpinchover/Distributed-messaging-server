@@ -23,6 +23,8 @@ CREATE TABLE messages (
     from_uuid VARCHAR(36) NOT NULL,
     room_uuid VARCHAR(36) NOT NULL,
     room_id INT,
+    message_status TINYTEXT NOT NULL,
+
     PRIMARY KEY (id),
     FOREIGN KEY (room_id)
         REFERENCES rooms(id)

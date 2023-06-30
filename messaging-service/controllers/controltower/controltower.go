@@ -104,6 +104,22 @@ func (c *ControlTowerCtrlr) CreateRoom(
 	return newRoom, nil
 }
 
+func (c *ControlTowerCtrlr) UpdateMessage(message *requests.Message) error {
+	// first get the message
+	existingMsg, err := c.Repo.GetMessageByUUID(message.UUID)
+	if err != nil {
+		return err
+	}
+
+	// if we haven't already deleted the message and want to delete it
+	if existingMsg.MessageStatus != enums.MESSAGE_STATUS_DELETED.String() &&
+		message.MessageStatus != existingMsg.MessageStatus {
+		existingMsg.MessageStatus = message.MessageStatus
+	}
+
+	return c.Repo.UpdateMessage(existingMsg)
+}
+
 func (c *ControlTowerCtrlr) LeaveRoom(userUUID string, roomUUID string) error {
 	room, err := c.Repo.GetRoomByRoomUUID(roomUUID)
 	if err != nil {
@@ -114,14 +130,6 @@ func (c *ControlTowerCtrlr) LeaveRoom(userUUID string, roomUUID string) error {
 	}
 
 	// TODO – this is something the client should verify not the server
-	// membersInRoom := make([]string, len(room.Members))
-	// for i, mem := range room.Members {
-	// 	membersInRoom[i] = mem.UserUUID
-	// }
-
-	// if !utils.Contains(membersInRoom, userUUID) {
-	// 	return errors.New("member not in room")
-	// }
 
 	// TODO - put in helper function
 	// TODO – in the future add in fn to make this optional

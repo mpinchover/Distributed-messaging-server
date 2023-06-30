@@ -18,12 +18,13 @@ type Room struct {
 }
 
 type Message struct {
-	UUID        string    `json:"uuid"`
-	FromUUID    string    `json:"fromUuid"`
-	RoomUUID    string    `json:"roomUuid"`
-	MessageText string    `json:"messageText"`
-	CreatedAt   int64     `json:"createdAt"`
-	SeenBy      []*SeenBy `json:"seenBy"`
+	UUID          string    `json:"uuid"`
+	FromUUID      string    `json:"fromUuid"`
+	RoomUUID      string    `json:"roomUuid"`
+	MessageText   string    `json:"messageText"`
+	CreatedAt     int64     `json:"createdAt"`
+	MessageStatus string    `json:"messageStatus"`
+	SeenBy        []*SeenBy `json:"seenBy"`
 }
 
 type SeenBy struct {

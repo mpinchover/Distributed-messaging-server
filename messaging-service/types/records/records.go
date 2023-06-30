@@ -6,12 +6,14 @@ import (
 
 type Message struct {
 	gorm.Model
-	FromUUID    string
-	RoomUUID    string
-	RoomID      int
-	MessageText string
-	UUID        string
-	SeenBy      []*SeenBy
+	FromUUID      string
+	RoomUUID      string
+	RoomID        int
+	MessageText   string
+	UUID          string
+	MessageStatus string
+
+	SeenBy []*SeenBy
 }
 
 type SeenBy struct {

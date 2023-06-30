@@ -7,17 +7,23 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestDeleteRoomAndMessages(t *testing.T) {
-	t.Skip()
 	t.Run("delete room and messages", func(t *testing.T) {
 		tomUUID := uuid.New().String()
 		jerryUUID := uuid.New().String()
+		aliceUUID := uuid.New().String()
+		benUUID := uuid.New().String()
 
 		tResp, tomWS := setupClientConnection(t, tomUUID)
 		_, jerryWS := setupClientConnection(t, jerryUUID)
+		_, aliceWS := setupClientConnection(t, aliceUUID)
+		_, benWS1 := setupClientConnection(t, benUUID)
+		_, benWS2 := setupClientConnection(t, benUUID)
+		_, benWS3 := setupClientConnection(t, benUUID)
 
 		// create a room
 		createRoomRequest := &requests.CreateRoomRequest{
@@ -30,54 +36,35 @@ func TestDeleteRoomAndMessages(t *testing.T) {
 					UserUUID: jerryUUID,
 					UserRole: "MEMBER",
 				},
+				{
+					UserUUID: aliceUUID,
+					UserRole: "MEMBER",
+				},
+				{
+					UserUUID: benUUID,
+					UserRole: "MEMBER",
+				},
 			},
 		}
 
 		openRoom(t, createRoomRequest)
 
-		_, p, err := tomWS.ReadMessage()
-		assert.NoError(t, err)
-
 		// // get open room response over socket
-		tomOpenRoomEventResponse := &requests.OpenRoomEvent{}
-		err = json.Unmarshal(p, tomOpenRoomEventResponse)
-		assert.NoError(t, err)
-		assert.NotEmpty(t, tomOpenRoomEventResponse.EventType)
-		assert.Equal(t, tomOpenRoomEventResponse.EventType, enums.EVENT_OPEN_ROOM.String())
-		assert.NotNil(t, tomOpenRoomEventResponse.Room)
-		assert.NotEmpty(t, tomOpenRoomEventResponse.Room.UUID)
-		assert.Equal(t, 2, len(tomOpenRoomEventResponse.Room.Members))
+		tomOpenRoomEventResponse := readOpenRoomResponse(t, tomWS, 4)
 
-		for _, m := range tomOpenRoomEventResponse.Room.Members {
-			assert.Equal(t, "MEMBER", m.UserRole)
-			assert.NotEmpty(t, m.UUID)
-			assert.NotEmpty(t, m.UserUUID)
-		}
-
-		_, p, err = jerryWS.ReadMessage()
-		assert.NoError(t, err)
-
-		jerryOpenRoomEventResponse := requests.OpenRoomEvent{}
-		err = json.Unmarshal(p, &jerryOpenRoomEventResponse)
-		assert.NoError(t, err)
-		assert.NotEmpty(t, jerryOpenRoomEventResponse.EventType)
-		assert.Equal(t, jerryOpenRoomEventResponse.EventType, enums.EVENT_OPEN_ROOM.String())
-		assert.NotNil(t, jerryOpenRoomEventResponse.Room)
-		assert.NotEmpty(t, jerryOpenRoomEventResponse.Room.UUID)
-		assert.Equal(t, 2, len(jerryOpenRoomEventResponse.Room.Members))
-
-		for _, m := range jerryOpenRoomEventResponse.Room.Members {
-			assert.Equal(t, "MEMBER", m.UserRole)
-			assert.NotEmpty(t, m.UUID)
-			assert.NotEmpty(t, m.UserUUID)
-		}
-
-		// ensure the room is the same room
-		assert.Equal(t, jerryOpenRoomEventResponse.Room.UUID, tomOpenRoomEventResponse.Room.UUID)
+		readOpenRoomResponse(t, jerryWS, 4)
+		readOpenRoomResponse(t, aliceWS, 4)
+		readOpenRoomResponse(t, benWS1, 4)
+		readOpenRoomResponse(t, benWS2, 4)
+		readOpenRoomResponse(t, benWS3, 4)
 
 		roomUUID := tomOpenRoomEventResponse.Room.UUID
 		sendMessages(t, tomUUID, tResp.ConnectionUUID, roomUUID, tomWS)
 		recvMessages(t, jerryWS)
+		recvMessages(t, aliceWS)
+		recvMessages(t, benWS1)
+		recvMessages(t, benWS2)
+		recvMessages(t, benWS3)
 
 		res, err := getMessagesByRoomUUID(t, roomUUID, 0)
 		assert.NoError(t, err)
@@ -91,5 +78,24 @@ func TestDeleteRoomAndMessages(t *testing.T) {
 		res, err = getMessagesByRoomUUID(t, roomUUID, 0)
 		assert.NoError(t, err)
 		assert.Len(t, res.Messages, 0)
+
+		// ensure everyone got the deletedRoom event
+		e := &requests.DeleteRoomEvent{}
+		recvDeletedRoomMsg(t, tomWS, e)
+		recvDeletedRoomMsg(t, jerryWS, e)
+		recvDeletedRoomMsg(t, aliceWS, e)
+		recvDeletedRoomMsg(t, benWS1, e)
+		recvDeletedRoomMsg(t, benWS2, e)
+		recvDeletedRoomMsg(t, benWS3, e)
 	})
+}
+
+func recvDeletedRoomMsg(t *testing.T, conn *websocket.Conn, resp *requests.DeleteRoomEvent) {
+	_, p, err := conn.ReadMessage()
+	assert.NoError(t, err)
+	err = json.Unmarshal(p, resp)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, resp.EventType)
+	assert.Equal(t, enums.EVENT_DELETE_ROOM.String(), resp.EventType)
+	assert.NotEmpty(t, resp.RoomUUID)
 }

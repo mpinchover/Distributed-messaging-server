@@ -67,10 +67,15 @@ func readOpenRoomResponse(t *testing.T, conn *websocket.Conn, expectedMembers in
 	err = json.Unmarshal(p, resp)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, resp.EventType)
-	assert.Equal(t, resp.EventType, enums.EVENT_OPEN_ROOM.String())
+	assert.Equal(t, enums.EVENT_OPEN_ROOM.String(), resp.EventType)
 	assert.NotEmpty(t, resp.Room)
 	assert.NotEmpty(t, resp.Room.UUID)
 	assert.Equal(t, expectedMembers, len(resp.Room.Members))
+
+	for _, m := range resp.Room.Members {
+		assert.NotEmpty(t, m.UUID)
+		assert.NotEmpty(t, m.UserUUID)
+	}
 
 	return resp
 }

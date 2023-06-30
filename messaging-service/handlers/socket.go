@@ -101,8 +101,6 @@ func (h *Handler) handleIncomingSocketEvents(conn *websocket.Conn) error {
 					log.Println("error sending err msg")
 				}
 			}
-
-			// save the message to the database and send out an event.
 		}
 
 		if msgType == enums.EVENT_SEEN_MESSAGE.String() {

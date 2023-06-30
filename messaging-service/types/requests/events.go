@@ -49,3 +49,10 @@ type SeenMessageEvent struct {
 	UserUUID    string `json:"userUuid"`
 	RoomUUID    string `json:"roomUuid"`
 }
+
+type DeleteMessageEvent struct {
+	EventType   string `json:"eventType"`
+	MessageUUID string `json:"messageUuid"`
+	UserUUID    string `json:"userUuid"`
+	RoomUUID    string `json:"roomUuid"`
+}

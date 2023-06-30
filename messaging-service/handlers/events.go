@@ -68,7 +68,11 @@ func (h *Handler) HandleRoomEvent(event string) error {
 		if err != nil {
 			return err
 		}
-		return h.handleTextMessageEvent(textMessageEvent)
+		return h.BroadcastEventToChannelSubscribersClientExclusive(
+			textMessageEvent.RoomUUID,
+			textMessageEvent.ConnectionUUID,
+			textMessageEvent,
+		)
 	}
 
 	if eventType == enums.EVENT_LEAVE_ROOM.String() {
@@ -77,6 +81,7 @@ func (h *Handler) HandleRoomEvent(event string) error {
 		if err != nil {
 			return err
 		}
+
 		return h.handleLeaveRoomEvent(leaveRoomEvent)
 	}
 
@@ -86,6 +91,11 @@ func (h *Handler) HandleRoomEvent(event string) error {
 		if err != nil {
 			return err
 		}
+		// return h.BroadcastEventToChannelSubscribersExclusive(
+		// 	deleteMessageEvent.RoomUUID,
+		// 	deleteMessageEvent.UserUUID,
+		// 	deleteMessageEvent,
+		// )
 		return h.handleDeleteRoomEvent(deleteRoomEvent)
 	}
 
@@ -95,7 +105,19 @@ func (h *Handler) HandleRoomEvent(event string) error {
 		if err != nil {
 			return err
 		}
-		return h.handleSeenMessageChannelEvent(seenMsgEvent)
+		return h.BroadcastEventToChannelSubscribersUserExclusive(seenMsgEvent.RoomUUID, seenMsgEvent.UserUUID, seenMsgEvent)
+	}
+
+	if eventType == enums.EVENT_DELETE_MESSAGE.String() {
+		deleteMessageEvent := &requests.DeleteMessageEvent{}
+		err = json.Unmarshal([]byte(event), deleteMessageEvent)
+		if err != nil {
+			return err
+		}
+		return h.BroadcastEventToChannelSubscribers(
+			deleteMessageEvent.RoomUUID,
+			deleteMessageEvent,
+		)
 	}
 
 	return nil

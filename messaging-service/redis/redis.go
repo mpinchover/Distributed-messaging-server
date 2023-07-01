@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"os"
 
@@ -15,6 +16,8 @@ type RedisClient struct {
 }
 
 func connect() (*redis.Client, error) {
+	redisURL := os.Getenv("REDIS_URL")
+	fmt.Println("CONNECTION STRING IS ", redisURL)
 	client := redis.NewClient(&redis.Options{
 		Addr:     os.Getenv("REDIS_URL"),
 		Password: "",
@@ -31,6 +34,7 @@ func connect() (*redis.Client, error) {
 }
 
 func New() *RedisClient {
+	fmt.Println("CONNECTING TO REDIS...")
 	client, err := connect()
 	if err != nil {
 		panic(err)

@@ -91,3 +91,7 @@ docker-compose up -d --no-deps --build <service_name>
   - realtime controller (sockets)
   - message controller (sync flows for messages)
 - LeaveRoom should also save messages that someone has left the chat
+
+### debug
+
+Use this dlv package go install github.com/go-delve/delve/cmd/dlv@latest

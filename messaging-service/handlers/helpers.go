@@ -33,6 +33,8 @@ func (h *Handler) GetMessagesByRoomUUID(w http.ResponseWriter, r *http.Request) 
 
 func (h *Handler) CreateRoom(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 	// validation
+	a := "AAAAA!"
+	_ = a
 	req := &requests.CreateRoomRequest{}
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 		return nil, err

@@ -4,17 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"log"
-
 	"messaging-service/controllers/channelscontroller"
 	"messaging-service/controllers/connectionscontroller"
 	"messaging-service/controllers/controltower"
 	"messaging-service/handlers"
+	redisClient "messaging-service/redis"
 	"messaging-service/repo"
 	"net/http"
 
-	redisClient "messaging-service/redis"
-
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 	"go.uber.org/fx"
 )
 
@@ -44,6 +43,7 @@ func (fn rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // https://markphelps.me/posts/handling-errors-in-your-http-handlers/
 func main() {
+	godotenv.Load()
 	fx.New(
 		fx.Provide(channelscontroller.New),
 		fx.Provide(connectionscontroller.New),

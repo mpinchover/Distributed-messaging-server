@@ -6,12 +6,12 @@ networks:
       name: external-example
 
 services:
-  msgserver:
+  msgserver-debug:
     image: golang:1.20.4
     restart: always
     working_dir: /app
     volumes:
-      - ./messaging-service:/app
+      - ./:/app
     environment:
       # GO111MODULE: true
       NODE_ENV: production
@@ -20,12 +20,10 @@ services:
       MYSQL_PORT: 3306
     ports:
       - 9090:9090
-    command:
-      go run main.go
-      # go mod download && go run main.go
-      # - echo hello
-      # - messaging-service
-      # - messaging-service
-      # - "go run main.go"
-      # - go mod download
-      # - go run main.go
+      - 4000:4000
+    # command:
+    #   - /bin/bash
+    #   - -c
+    #   - |
+    #     go install github.com/go-delve/delve/cmd/dlv@latest
+    #     dlv debug main.go

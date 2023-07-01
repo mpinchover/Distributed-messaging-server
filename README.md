@@ -76,7 +76,6 @@ docker-compose up -d --no-deps --build <service_name>
 - add validation on events
 - run UpdateMessageToSeen in go routine
 - on the server side, mark the messages as seen so the client doesn't have to
-- allow delete message
 - update tests to run in go routines to mimic high, concurrent volumes
 - embed the text message struct within eventTextMessage
 - consolidate HandleRoomEvent
@@ -94,3 +93,4 @@ docker-compose up -d --no-deps --build <service_name>
   - message controller (sync flows for messages)
 - LeaveRoom should also save messages that someone has left the chat
 - app should show if someone screenshotted
+- add in a user permissions table to link to member table

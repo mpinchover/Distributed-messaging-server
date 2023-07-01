@@ -55,7 +55,6 @@ CREATE TABLE members (
     room_uuid VARCHAR(36) NOT NULL,
     room_id INT,
     user_uuid VARCHAR(36) NOT NULL,
-    user_role VARCHAR(36) NOT NULL,
     PRIMARY KEY (id),
     FOREIGN KEY (room_id)
         REFERENCES rooms(id)

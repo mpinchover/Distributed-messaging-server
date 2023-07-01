@@ -8,7 +8,6 @@ import (
 type Member struct {
 	UUID     string `json:"uuid"`
 	UserUUID string `json:"userUuid"`
-	UserRole string `json:"user_role"`
 }
 
 type Room struct {

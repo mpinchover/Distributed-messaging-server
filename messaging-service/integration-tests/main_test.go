@@ -67,11 +67,9 @@ func TestCreateRoom(t *testing.T) {
 			Members: []*requests.Member{
 				{
 					UserUUID: tomUUID,
-					UserRole: "MEMBER",
 				},
 				{
 					UserUUID: jerryUUID,
-					UserRole: "MEMBER",
 				},
 			},
 		}
@@ -100,7 +98,6 @@ func TestCreateRoom(t *testing.T) {
 		assert.Equal(t, 2, len(tomOpenRoomEventResponse.Room.Members))
 
 		for _, m := range tomOpenRoomEventResponse.Room.Members {
-			assert.Equal(t, "MEMBER", m.UserRole)
 			assert.NotEmpty(t, m.UUID)
 			assert.NotEmpty(t, m.UserUUID)
 		}
@@ -118,7 +115,6 @@ func TestCreateRoom(t *testing.T) {
 		assert.Equal(t, 2, len(jerryOpenRoomEventResponse.Room.Members))
 
 		for _, m := range jerryOpenRoomEventResponse.Room.Members {
-			assert.Equal(t, "MEMBER", m.UserRole)
 			assert.NotEmpty(t, m.UUID)
 			assert.NotEmpty(t, m.UserUUID)
 		}
@@ -151,11 +147,9 @@ func TestRoomAndMessagesPagination(t *testing.T) {
 			Members: []*requests.Member{
 				{
 					UserUUID: aUUID,
-					UserRole: "MEMBER",
 				},
 				{
 					UserUUID: bUUID,
-					UserRole: "MEMBER",
 				},
 			},
 		}
@@ -169,11 +163,9 @@ func TestRoomAndMessagesPagination(t *testing.T) {
 			Members: []*requests.Member{
 				{
 					UserUUID: aUUID,
-					UserRole: "MEMBER",
 				},
 				{
 					UserUUID: cUUID,
-					UserRole: "MEMBER",
 				},
 			},
 		}
@@ -210,11 +202,9 @@ func TestRoomAndMessagesPagination(t *testing.T) {
 			Members: []*requests.Member{
 				{
 					UserUUID: aUUID,
-					UserRole: "MEMBER",
 				},
 				{
 					UserUUID: dUUID,
-					UserRole: "MEMBER",
 				},
 			},
 		}
@@ -239,11 +229,9 @@ func TestRoomAndMessagesPagination(t *testing.T) {
 			Members: []*requests.Member{
 				{
 					UserUUID: bUUID,
-					UserRole: "MEMBER",
 				},
 				{
 					UserUUID: cUUID,
-					UserRole: "MEMBER",
 				},
 			},
 		}
@@ -269,11 +257,9 @@ func TestRoomAndMessagesPagination(t *testing.T) {
 			Members: []*requests.Member{
 				{
 					UserUUID: bUUID,
-					UserRole: "MEMBER",
 				},
 				{
 					UserUUID: dUUID,
-					UserRole: "MEMBER",
 				},
 			},
 		}
@@ -315,11 +301,9 @@ func TestAllConnectionsRcvMessages(t *testing.T) {
 			Members: []*requests.Member{
 				{
 					UserUUID: aUUID,
-					UserRole: "MEMBER",
 				},
 				{
 					UserUUID: bUUID,
-					UserRole: "MEMBER",
 				},
 			},
 		}
@@ -376,11 +360,9 @@ func TestDeleteRoom(t *testing.T) {
 			Members: []*requests.Member{
 				{
 					UserUUID: aUUID,
-					UserRole: "MEMBER",
 				},
 				{
 					UserUUID: bUUID,
-					UserRole: "MEMBER",
 				},
 			},
 		}
@@ -393,11 +375,9 @@ func TestDeleteRoom(t *testing.T) {
 			Members: []*requests.Member{
 				{
 					UserUUID: aUUID,
-					UserRole: "MEMBER",
 				},
 				{
 					UserUUID: cUUID,
-					UserRole: "MEMBER",
 				},
 			},
 		}
@@ -511,19 +491,15 @@ func TestLeaveRoom(t *testing.T) {
 			Members: []*requests.Member{
 				{
 					UserUUID: aUUID,
-					UserRole: "MEMBER",
 				},
 				{
 					UserUUID: bUUID,
-					UserRole: "MEMBER",
 				},
 				{
 					UserUUID: cUUID,
-					UserRole: "MEMBER",
 				},
 				{
 					UserUUID: dUUID,
-					UserRole: "MEMBER",
 				},
 			},
 		}

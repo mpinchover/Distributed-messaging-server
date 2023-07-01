@@ -58,5 +58,4 @@ type Member struct {
 	RoomUUID string
 	RoomID   int
 	UserUUID string
-	UserRole string
 }

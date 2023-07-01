@@ -29,19 +29,15 @@ func TestSeenBy(t *testing.T) {
 			Members: []*requests.Member{
 				{
 					UserUUID: tomUUID,
-					UserRole: "MEMBER",
 				},
 				{
 					UserUUID: jerryUUID,
-					UserRole: "MEMBER",
 				},
 				{
 					UserUUID: aliceUUID,
-					UserRole: "MEMBER",
 				},
 				{
 					UserUUID: deanUUID,
-					UserRole: "MEMBER",
 				},
 			},
 		}

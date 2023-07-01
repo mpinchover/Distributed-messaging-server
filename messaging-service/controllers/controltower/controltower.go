@@ -73,7 +73,6 @@ func (c *ControlTowerCtrlr) CreateRoom(
 			UUID:     member.UUID,
 			RoomUUID: roomUUID,
 			UserUUID: member.UserUUID,
-			UserRole: member.UserRole,
 		}
 	}
 
@@ -266,7 +265,6 @@ func (c *ControlTowerCtrlr) GetRoomsByUserUUID(userUUID string, offset int) ([]*
 		for j, member := range room.Members {
 			members[j] = &requests.Member{
 				UserUUID: member.UserUUID,
-				UserRole: member.UserRole,
 			}
 		}
 

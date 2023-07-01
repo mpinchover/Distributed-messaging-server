@@ -67,9 +67,11 @@ func TestSeenBy(t *testing.T) {
 		msgEventOut := &requests.TextMessageEvent{
 			FromUUID:       tomUUID,
 			ConnectionUUID: tResp.ConnectionUUID,
-			RoomUUID:       roomUUID,
 			EventType:      enums.EVENT_TEXT_MESSAGE.String(),
-			MessageText:    "TEXT",
+			Message: &requests.Message{
+				MessageText: "TEXT",
+				RoomUUID:    roomUUID,
+			},
 		}
 		sendTextMessage(t, tomWS, msgEventOut)
 
@@ -89,7 +91,7 @@ func TestSeenBy(t *testing.T) {
 		// send seen event jerry -> room
 		seenEvent := &requests.SeenMessageEvent{
 			EventType:   enums.EVENT_SEEN_MESSAGE.String(),
-			MessageUUID: resp.MessageUUID,
+			MessageUUID: resp.Message.UUID,
 			UserUUID:    jerryUUID,
 			RoomUUID:    roomUUID,
 		}
@@ -98,17 +100,17 @@ func TestSeenBy(t *testing.T) {
 		assert.NoError(t, err)
 
 		// everyone should get the seen event message
-		recvSeenMessageEvent(t, tomWS, resp.MessageUUID)
-		recvSeenMessageEvent(t, aliceWS, resp.MessageUUID)
-		recvSeenMessageEvent(t, deanWS, resp.MessageUUID)
-		recvSeenMessageEvent(t, deanMobileWS, resp.MessageUUID)
+		recvSeenMessageEvent(t, tomWS, resp.Message.UUID)
+		recvSeenMessageEvent(t, aliceWS, resp.Message.UUID)
+		recvSeenMessageEvent(t, deanWS, resp.Message.UUID)
+		recvSeenMessageEvent(t, deanMobileWS, resp.Message.UUID)
 
 		res, err := getMessagesByRoomUUID(t, roomUUID, 0)
 		assert.NoError(t, err)
 		assert.Len(t, res.Messages, 1)
 		assert.Len(t, res.Messages[0].SeenBy, 1)
 
-		assert.Equal(t, res.Messages[0].SeenBy[0].MessageUUID, resp.MessageUUID)
+		assert.Equal(t, res.Messages[0].SeenBy[0].MessageUUID, resp.Message.UUID)
 		assert.Equal(t, res.Messages[0].SeenBy[0].UserUUID, jerryUUID)
 
 	})

@@ -20,9 +20,11 @@ func sendMessages(t *testing.T, fromUserUUID string, connectionUUID string, room
 		msgEventOut := &requests.TextMessageEvent{
 			FromUUID:       fromUserUUID,
 			ConnectionUUID: connectionUUID,
-			RoomUUID:       roomUUID,
 			EventType:      enums.EVENT_TEXT_MESSAGE.String(),
-			MessageText:    msgText,
+			Message: &requests.Message{
+				RoomUUID:    roomUUID,
+				MessageText: msgText,
+			},
 		}
 		sendTextMessage(t, conn, msgEventOut)
 	}
@@ -45,8 +47,8 @@ func recvMessage(t *testing.T, conn *websocket.Conn, resp *requests.TextMessageE
 	assert.Equal(t, enums.EVENT_TEXT_MESSAGE.String(), resp.EventType)
 	assert.NotEmpty(t, resp.FromUUID)
 	assert.NotEmpty(t, resp.ConnectionUUID)
-	assert.NotEmpty(t, resp.RoomUUID)
-	assert.NotEmpty(t, resp.MessageText)
+	assert.NotEmpty(t, resp.Message.RoomUUID)
+	assert.NotEmpty(t, resp.Message.MessageText)
 }
 
 func containsRoomUUID(s []*requests.Room, str string) bool {

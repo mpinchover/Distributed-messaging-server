@@ -31,13 +31,10 @@ type SetClientConnectionEvent struct {
 }
 
 type TextMessageEvent struct {
-	EventType      string `json:"eventType"`
-	FromUUID       string `json:"fromUuid"`
-	ConnectionUUID string `json:"connectionUuid"`
-	RoomUUID       string `json:"roomUuid"`
-	MessageText    string `json:"messageText"`
-	CreatedAt      int64  `json:"createdAt"`
-	MessageUUID    string `json:"messageUuid"`
+	EventType      string   `json:"eventType"`
+	FromUUID       string   `json:"fromUuid"`
+	ConnectionUUID string   `json:"connectionUuid"`
+	Message        *Message `json:"message"`
 }
 
 // the recpt has read the message

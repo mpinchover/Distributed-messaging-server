@@ -77,8 +77,6 @@ docker-compose up -d --no-deps --build <service_name>
 - run UpdateMessageToSeen in go routine
 - on the server side, mark the messages as seen so the client doesn't have to
 - update tests to run in go routines to mimic high, concurrent volumes
-- embed the text message struct within eventTextMessage
-- consolidate HandleRoomEvent
 
 ### P2
 

@@ -69,7 +69,7 @@ func (h *Handler) HandleRoomEvent(event string) error {
 			return err
 		}
 		return h.BroadcastEventToChannelSubscribersClientExclusive(
-			textMessageEvent.RoomUUID,
+			textMessageEvent.Message.RoomUUID,
 			textMessageEvent.ConnectionUUID,
 			textMessageEvent,
 		)
@@ -125,7 +125,7 @@ func (h *Handler) HandleRoomEvent(event string) error {
 
 func (h *Handler) handleTextMessageEvent(event *requests.TextMessageEvent) error {
 	// get the room from the server
-	channel := h.ControlTowerCtrlr.ChannelsCtrlr.GetChannel(event.RoomUUID)
+	channel := h.ControlTowerCtrlr.ChannelsCtrlr.GetChannel(event.Message.RoomUUID)
 	from := event.ConnectionUUID
 	// save the txt msg to db
 

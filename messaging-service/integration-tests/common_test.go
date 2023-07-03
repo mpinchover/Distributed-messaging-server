@@ -9,6 +9,7 @@ import (
 	"messaging-service/types/requests"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
@@ -201,4 +202,69 @@ func leaveRoom(t *testing.T, req *requests.LeaveRoomRequest) {
 
 	assert.GreaterOrEqual(t, resp.StatusCode, 200)
 	assert.LessOrEqual(t, resp.StatusCode, 299)
+}
+
+func readEvent(conn *websocket.Conn, v interface{}) error {
+	conn.SetReadDeadline(time.Now().Add(time.Second * 2))
+	_, p, err := conn.ReadMessage()
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(p, v)
+	return err
+}
+
+func queryMessages(t *testing.T, userUUID string, roomUUID string, expectedRooms int) {
+	totalMessages := []*requests.Message{}
+	res, err := getRoomsByUserUUID(userUUID, 0)
+
+	assert.NoError(t, err)
+	assert.NotEmpty(t, res)
+	assert.Equal(t, expectedRooms, len(res.Rooms))
+
+	// ensure it contains the room uuid
+	assert.True(t, containsRoomUUID(res.Rooms, roomUUID))
+
+	resp, err := getMessagesByRoomUUID(t, roomUUID, 0)
+	assert.NoError(t, err)
+	assert.Equal(t, 20, len(resp.Messages))
+
+	totalMessages = append(totalMessages, resp.Messages...)
+	assert.Equal(t, 20, len(totalMessages))
+
+	resp, err = getMessagesByRoomUUID(t, roomUUID, len(totalMessages))
+	assert.NoError(t, err)
+	assert.Equal(t, 20, len(resp.Messages))
+	totalMessages = append(totalMessages, resp.Messages...)
+	assert.Equal(t, 40, len(totalMessages))
+
+	resp, err = getMessagesByRoomUUID(t, roomUUID, len(totalMessages))
+	assert.NoError(t, err)
+	assert.Equal(t, 10, len(resp.Messages))
+	totalMessages = append(totalMessages, resp.Messages...)
+	assert.Equal(t, 50, len(totalMessages))
+
+	// jump by 15 because the msgs are being sent too fast.
+	for i := 15; i < len(totalMessages); i++ {
+		prev := totalMessages[i-1]
+		cur := totalMessages[i]
+		assert.True(t, prev.CreatedAt >= cur.CreatedAt)
+	}
+
+}
+
+func recvSeenMessageEvent(t *testing.T, conn *websocket.Conn, messageUUID string) {
+	_, p, err := conn.ReadMessage()
+	assert.NoError(t, err)
+	seenMessageEvent := &requests.SeenMessageEvent{}
+	err = json.Unmarshal(p, seenMessageEvent)
+	assert.NoError(t, err)
+
+	assert.NotEmpty(t, seenMessageEvent.EventType)
+	assert.Equal(t, enums.EVENT_SEEN_MESSAGE.String(), seenMessageEvent.EventType)
+	assert.NotEmpty(t, seenMessageEvent.MessageUUID)
+	assert.Equal(t, messageUUID, seenMessageEvent.MessageUUID)
+	assert.NotEmpty(t, seenMessageEvent.RoomUUID)
+	assert.NotEmpty(t, seenMessageEvent.UserUUID)
 }

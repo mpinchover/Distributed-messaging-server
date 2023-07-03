@@ -49,10 +49,11 @@ func (h *Handler) handleIncomingSocketEvents(conn *websocket.Conn) error {
 	for {
 		// read in a message
 		_, p, err := conn.ReadMessage()
-
 		if err != nil {
 			break
 		}
+
+		// add in token authenticator
 
 		// if err != nil && websocket.IsCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 		// 	break

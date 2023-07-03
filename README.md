@@ -69,13 +69,11 @@ docker-compose up -d --no-deps --build <service_name>
 ### P1
 
 - Add an API key/auth in some way
+
   - once the client connects they should get back a JWT. For all socket related req, just use JWT.
   - use redis to track API keys
-- Run processMessage in go routine and inform the client if a message fails. This will let the message be routed directly to the client
+
 - allow members, rooms to have a stringified text field that can track whatever the user wants.
-- add validation on events
-- run UpdateMessageToSeen in go routine
-- on the server side, mark the messages as seen so the client doesn't have to
 - update tests to run in go routines to mimic high, concurrent volumes
 
 ### P2
@@ -83,6 +81,9 @@ docker-compose up -d --no-deps --build <service_name>
 - separate out channel and client events
 - allow someone to be invited to the chat
 - Add a "typing" attribute/event to the message
+- Run processMessage in go routine and inform the client if a message fails. This will let the message be routed directly to the client
+- run UpdateMessageToSeen in go routine
+- on the server side, mark the messages as seen so the client doesn't have to
 
 ### P3
 

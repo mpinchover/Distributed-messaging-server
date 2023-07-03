@@ -2,6 +2,7 @@ package integrationtests
 
 import (
 	"encoding/json"
+	"log"
 	"messaging-service/types/enums"
 	"messaging-service/types/requests"
 	"testing"
@@ -11,8 +12,138 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestDeleteRoom(t *testing.T) {
+	t.Run("test delete a room", func(t *testing.T) {
+		log.Printf("Running test %s", t.Name())
+		aUUID := uuid.New().String()
+		bUUID := uuid.New().String()
+		cUUID := uuid.New().String()
+
+		_, aWS := setupClientConnection(t, aUUID)
+		_, bWS := setupClientConnection(t, bUUID)
+		_, cWS := setupClientConnection(t, cUUID)
+
+		openRoomEvent := &requests.CreateRoomRequest{
+			Members: []*requests.Member{
+				{
+					UserUUID: aUUID,
+				},
+				{
+					UserUUID: bUUID,
+				},
+			},
+		}
+		openRoom(t, openRoomEvent)
+		readOpenRoomResponse(t, aWS, 2)
+		openRoomRes := readOpenRoomResponse(t, bWS, 2)
+		roomUUID1 := openRoomRes.Room.UUID
+
+		openRoomEvent = &requests.CreateRoomRequest{
+			Members: []*requests.Member{
+				{
+					UserUUID: aUUID,
+				},
+				{
+					UserUUID: cUUID,
+				},
+			},
+		}
+		openRoom(t, openRoomEvent)
+
+		readOpenRoomResponse(t, aWS, 2)
+		openRoomRes = readOpenRoomResponse(t, cWS, 2)
+		roomUUID2 := openRoomRes.Room.UUID
+
+		res, err := getRoomsByUserUUID(aUUID, 0)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, res)
+		assert.Equal(t, 2, len(res.Rooms))
+		assert.Equal(t, 2, len(res.Rooms[0].Members))
+		assert.Equal(t, 2, len(res.Rooms[1].Members))
+
+		res, err = getRoomsByUserUUID(bUUID, 0)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, res)
+		assert.Equal(t, 1, len(res.Rooms))
+		assert.Equal(t, 2, len(res.Rooms[0].Members))
+
+		res, err = getRoomsByUserUUID(cUUID, 0)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, res)
+		assert.Equal(t, 1, len(res.Rooms))
+		assert.Equal(t, 2, len(res.Rooms[0].Members))
+
+		deleteRoom(t, &requests.DeleteRoomRequest{
+			RoomUUID: roomUUID1,
+		})
+
+		res, err = getRoomsByUserUUID(aUUID, 0)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, res)
+		assert.Equal(t, 1, len(res.Rooms))
+		assert.Equal(t, 2, len(res.Rooms[0].Members))
+
+		res, err = getRoomsByUserUUID(bUUID, 0)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, res)
+		assert.Equal(t, 0, len(res.Rooms))
+
+		res, err = getRoomsByUserUUID(cUUID, 0)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, res)
+		assert.Equal(t, 1, len(res.Rooms))
+		assert.Equal(t, 2, len(res.Rooms[0].Members))
+
+		// ensure delete event is recd
+		resp := &requests.DeleteRoomEvent{}
+		err = readEvent(aWS, resp)
+		assert.NoError(t, err)
+		assert.Equal(t, enums.EVENT_DELETE_ROOM.String(), resp.EventType)
+		assert.Equal(t, roomUUID1, resp.RoomUUID)
+
+		resp = &requests.DeleteRoomEvent{}
+		err = readEvent(bWS, resp)
+		assert.NoError(t, err)
+		assert.Equal(t, enums.EVENT_DELETE_ROOM.String(), resp.EventType)
+		assert.Equal(t, roomUUID1, resp.RoomUUID)
+
+		deleteRoom(t, &requests.DeleteRoomRequest{
+			RoomUUID: roomUUID2,
+		})
+
+		res, err = getRoomsByUserUUID(aUUID, 0)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, res)
+		assert.Equal(t, 0, len(res.Rooms))
+
+		res, err = getRoomsByUserUUID(bUUID, 0)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, res)
+		assert.Equal(t, 0, len(res.Rooms))
+
+		res, err = getRoomsByUserUUID(cUUID, 0)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, res)
+		assert.Equal(t, 0, len(res.Rooms))
+
+		// ensure delete event is recd
+		resp = &requests.DeleteRoomEvent{}
+		err = readEvent(aWS, resp)
+		assert.NoError(t, err)
+		assert.Equal(t, enums.EVENT_DELETE_ROOM.String(), resp.EventType)
+		assert.Equal(t, roomUUID2, resp.RoomUUID)
+
+		resp = &requests.DeleteRoomEvent{}
+		err = readEvent(cWS, resp)
+		assert.NoError(t, err)
+		assert.Equal(t, enums.EVENT_DELETE_ROOM.String(), resp.EventType)
+		assert.Equal(t, roomUUID2, resp.RoomUUID)
+	})
+}
+
 func TestDeleteRoomAndMessages(t *testing.T) {
 	t.Run("delete room and messages", func(t *testing.T) {
+		log.Printf("Running test %s", t.Name())
 		tomUUID := uuid.New().String()
 		jerryUUID := uuid.New().String()
 		aliceUUID := uuid.New().String()

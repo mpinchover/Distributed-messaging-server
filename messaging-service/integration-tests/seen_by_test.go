@@ -2,17 +2,18 @@ package integrationtests
 
 import (
 	"encoding/json"
+	"log"
 	"messaging-service/types/enums"
 	"messaging-service/types/requests"
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSeenBy(t *testing.T) {
 	t.Run("delete room and messages", func(t *testing.T) {
+		log.Printf("Running test %s", t.Name())
 		tomUUID := uuid.New().String()
 		jerryUUID := uuid.New().String()
 		aliceUUID := uuid.New().String()
@@ -114,19 +115,4 @@ func TestSeenBy(t *testing.T) {
 		assert.Equal(t, res.Messages[0].SeenBy[0].UserUUID, jerryUUID)
 
 	})
-}
-
-func recvSeenMessageEvent(t *testing.T, conn *websocket.Conn, messageUUID string) {
-	_, p, err := conn.ReadMessage()
-	assert.NoError(t, err)
-	seenMessageEvent := &requests.SeenMessageEvent{}
-	err = json.Unmarshal(p, seenMessageEvent)
-	assert.NoError(t, err)
-
-	assert.NotEmpty(t, seenMessageEvent.EventType)
-	assert.Equal(t, enums.EVENT_SEEN_MESSAGE.String(), seenMessageEvent.EventType)
-	assert.NotEmpty(t, seenMessageEvent.MessageUUID)
-	assert.Equal(t, messageUUID, seenMessageEvent.MessageUUID)
-	assert.NotEmpty(t, seenMessageEvent.RoomUUID)
-	assert.NotEmpty(t, seenMessageEvent.UserUUID)
 }

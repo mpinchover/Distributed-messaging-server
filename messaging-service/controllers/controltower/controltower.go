@@ -1,6 +1,7 @@
 package controltower
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 
@@ -52,11 +53,12 @@ func New(
 	return controlTower
 }
 
-func (c *ControlTowerCtrlr) GetMessagesByRoomUUID(roomUUID string, offset int) ([]*records.Message, error) {
+func (c *ControlTowerCtrlr) GetMessagesByRoomUUID(ctx context.Context, roomUUID string, offset int) ([]*records.Message, error) {
 	return c.Repo.GetMessagesByRoomUUID(roomUUID, offset)
 }
 
 func (c *ControlTowerCtrlr) CreateRoom(
+	ctx context.Context,
 	members []*requests.Member,
 ) (*requests.Room, error) {
 	// build the room
@@ -103,7 +105,7 @@ func (c *ControlTowerCtrlr) CreateRoom(
 	return newRoom, nil
 }
 
-func (c *ControlTowerCtrlr) UpdateMessage(message *requests.Message) error {
+func (c *ControlTowerCtrlr) UpdateMessage(ctx context.Context, message *requests.Message) error {
 	// first get the message
 	existingMsg, err := c.Repo.GetMessageByUUID(message.UUID)
 	if err != nil {
@@ -119,7 +121,7 @@ func (c *ControlTowerCtrlr) UpdateMessage(message *requests.Message) error {
 	return c.Repo.UpdateMessage(existingMsg)
 }
 
-func (c *ControlTowerCtrlr) LeaveRoom(userUUID string, roomUUID string) error {
+func (c *ControlTowerCtrlr) LeaveRoom(ctx context.Context, userUUID string, roomUUID string) error {
 	room, err := c.Repo.GetRoomByRoomUUID(roomUUID)
 	if err != nil {
 		return err
@@ -168,7 +170,7 @@ func (c *ControlTowerCtrlr) LeaveRoom(userUUID string, roomUUID string) error {
 	return nil
 }
 
-func (c *ControlTowerCtrlr) DeleteRoom(roomUUID string) error {
+func (c *ControlTowerCtrlr) DeleteRoom(ctx context.Context, roomUUID string) error {
 	room, err := c.Repo.GetRoomByRoomUUID(roomUUID)
 	if err != nil {
 		return err
@@ -250,7 +252,7 @@ func (c *ControlTowerCtrlr) SaveSeenBy(msg *requests.SeenMessageEvent) error {
 	return nil
 }
 
-func (c *ControlTowerCtrlr) GetRoomsByUserUUID(userUUID string, offset int) ([]*requests.Room, error) {
+func (c *ControlTowerCtrlr) GetRoomsByUserUUID(ctx context.Context, userUUID string, offset int) ([]*requests.Room, error) {
 	rooms, err := c.Repo.GetRoomsByUserUUID(userUUID, offset)
 	if err != nil {
 		return nil, err

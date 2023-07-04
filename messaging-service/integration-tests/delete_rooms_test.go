@@ -33,7 +33,8 @@ func TestDeleteRoom(t *testing.T) {
 				},
 			},
 		}
-		openRoom(t, openRoomEvent)
+		err := openRoom(openRoomEvent)
+		assert.NoError(t, err)
 		readOpenRoomResponse(t, aWS, 2)
 		openRoomRes := readOpenRoomResponse(t, bWS, 2)
 		roomUUID1 := openRoomRes.Room.UUID
@@ -48,7 +49,8 @@ func TestDeleteRoom(t *testing.T) {
 				},
 			},
 		}
-		openRoom(t, openRoomEvent)
+		err = openRoom(openRoomEvent)
+		assert.NoError(t, err)
 
 		readOpenRoomResponse(t, aWS, 2)
 		openRoomRes = readOpenRoomResponse(t, cWS, 2)
@@ -174,7 +176,8 @@ func TestDeleteRoomAndMessages(t *testing.T) {
 			},
 		}
 
-		openRoom(t, createRoomRequest)
+		err := openRoom(createRoomRequest)
+		assert.NoError(t, err)
 
 		// // get open room response over socket
 		tomOpenRoomEventResponse := readOpenRoomResponse(t, tomWS, 4)

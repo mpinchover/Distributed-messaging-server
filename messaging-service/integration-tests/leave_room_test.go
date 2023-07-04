@@ -40,7 +40,8 @@ func TestLeaveRoom(t *testing.T) {
 				},
 			},
 		}
-		openRoom(t, openRoomEvent)
+		err := openRoom(openRoomEvent)
+		assert.NoError(t, err)
 		readOpenRoomResponse(t, aWebWS, 4)
 		readOpenRoomResponse(t, bWebWS, 4)
 		readOpenRoomResponse(t, cWebWS, 4)

@@ -59,3 +59,14 @@ CREATE TABLE members (
     FOREIGN KEY (room_id)
         REFERENCES rooms(id)
 ) ENGINE=INNODB;
+
+CREATE TABLE auth_profiles (
+    id int NOT NULL UNIQUE AUTO_INCREMENT,
+    created_at timestamp,
+    updated_at timestamp,
+    deleted_at timestamp,
+
+    uuid VARCHAR(36) NOT NULL,
+    hashed_password TINYTEXT NOT NULL,
+    email TINYTEXT NOT NULL
+) ENGINE=INNODB;

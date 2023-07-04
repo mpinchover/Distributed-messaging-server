@@ -42,7 +42,8 @@ func TestSeenBy(t *testing.T) {
 				},
 			},
 		}
-		openRoom(t, createRoomRequest)
+		err := openRoom(createRoomRequest)
+		assert.NoError(t, err)
 
 		// read message from create room
 		_, p, err := tomWS.ReadMessage()

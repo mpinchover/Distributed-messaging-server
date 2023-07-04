@@ -44,3 +44,13 @@ type ServerChannel struct {
 	MembersOnServer map[string]bool
 	UUID            string
 }
+
+type User struct {
+	UserID string
+}
+
+// for ext service, not chat user
+type AuthProfile struct {
+	UUID  string
+	Email string
+}

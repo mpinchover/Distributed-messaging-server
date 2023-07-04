@@ -39,23 +39,18 @@ type Room struct {
 	Messages []*Message `gorm:"foreignKey:RoomID;"`
 }
 
-// func (r *Room) BeforeDelete(tx *gorm.DB) error {
-// 	err := tx.Where("room_uuid = ? ", r.UUID).Delete(&Message{}).Error
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	err = tx.Where("room_uuid = ? ", r.UUID).Delete(&Member{}).Error
-// 	if err != nil {
-// 		return err
-// 	}
-// 	return err
-// }
-
 type Member struct {
 	gorm.Model
 	UUID     string
 	RoomUUID string
 	RoomID   int
 	UserUUID string
+}
+
+// for ext service, not chat user
+type AuthProfile struct {
+	gorm.Model
+	UUID           string
+	Email          string
+	HashedPassword string
 }

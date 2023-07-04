@@ -41,3 +41,26 @@ type LeaveRoomRequest struct {
 
 type LeaveRoomResponse struct {
 }
+
+type LoginRequest struct {
+	Email    string `json:"email" validate:"required"`
+	Password string `json:"password" validate:"required"`
+}
+
+type LoginResponse struct {
+	Token string `json:"token"`
+}
+
+type SignupRequest struct {
+	Email           string `json:"email" validate:"required"`
+	Password        string `json:"password" validate:"required"`
+	ConfirmPassword string `json:"confirmPassword" validate:"required"`
+}
+
+type SignupResponse struct {
+	Token string `json:"token"`
+}
+
+type ErrorResponse struct {
+	Message string
+}

@@ -68,6 +68,12 @@ docker-compose up -d --no-deps --build <service_name>
 
 ### P1
 
+- ensure passwords match in signup
+- ensure password, email are correct formats
+- implement delete, update authprofile
+- implement password reset
+- generate new token after sucesfull call
+
 - Add an API key/auth in some way
 
   - once the client connects they should get back a JWT. For all socket related req, just use JWT.
@@ -75,6 +81,7 @@ docker-compose up -d --no-deps --build <service_name>
 
 - allow members, rooms to have a stringified text field that can track whatever the user wants.
 - update tests to run in go routines to mimic high, concurrent volumes
+- create endpoints to allow user to generate and delete api key
 
 ### P2
 

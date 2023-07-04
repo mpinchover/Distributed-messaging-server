@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -43,11 +44,13 @@ func TestRoomAndMessagesPagination(t *testing.T) {
 				},
 			},
 		}
-		openRoom(t, createRoomRequest1)
+		err := openRoom(createRoomRequest1)
+		assert.NoError(t, err)
 
 		openRoomRes1 := readOpenRoomResponse(t, aWebWS, 2)
 		openRoomRes1 = readOpenRoomResponse(t, bWebWS, 2)
 		roomUUID1 := openRoomRes1.Room.UUID
+		_ = roomUUID1
 
 		createRoomRequest2 := &requests.CreateRoomRequest{
 			Members: []*requests.Member{
@@ -59,7 +62,8 @@ func TestRoomAndMessagesPagination(t *testing.T) {
 				},
 			},
 		}
-		openRoom(t, createRoomRequest2)
+		err = openRoom(createRoomRequest2)
+		assert.NoError(t, err)
 		openRoomRes2 := readOpenRoomResponse(t, cWebWS, 2)
 		openRoomRes2 = readOpenRoomResponse(t, aWebWS, 2)
 
@@ -98,7 +102,9 @@ func TestRoomAndMessagesPagination(t *testing.T) {
 				},
 			},
 		}
-		openRoom(t, createRoomReq3)
+		err = openRoom(createRoomReq3)
+		assert.NoError(t, err)
+
 		openRoomRes3 := readOpenRoomResponse(t, dWebWS, 2)
 		openRoomRes3 = readOpenRoomResponse(t, aWebWS, 2)
 		roomUUID3 := openRoomRes3.Room.UUID
@@ -126,7 +132,8 @@ func TestRoomAndMessagesPagination(t *testing.T) {
 			},
 		}
 
-		openRoom(t, openRoomReq4)
+		err = openRoom(openRoomReq4)
+		assert.NoError(t, err)
 		openRoomRes4 := readOpenRoomResponse(t, bWebWS, 2)
 		openRoomRes4 = readOpenRoomResponse(t, cWebWS, 2)
 		roomUUID4 := openRoomRes4.Room.UUID
@@ -153,7 +160,9 @@ func TestRoomAndMessagesPagination(t *testing.T) {
 				},
 			},
 		}
-		openRoom(t, openRoomRequest5)
+		err = openRoom(openRoomRequest5)
+		assert.NoError(t, err)
+
 		openRoomRes5 := readOpenRoomResponse(t, dWebWS, 2)
 		openRoomRes5 = readOpenRoomResponse(t, bWebWS, 2)
 
@@ -198,7 +207,8 @@ func TestAllConnectionsRcvMessages(t *testing.T) {
 				},
 			},
 		}
-		openRoom(t, openRoomEvent)
+		err := openRoom(openRoomEvent)
+		assert.NoError(t, err)
 
 		openRoomRes := readOpenRoomResponse(t, aWebWS, 2)
 		readOpenRoomResponse(t, bWebWS, 2)

@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"log"
+	"messaging-service/controllers/authcontroller"
 	"messaging-service/controllers/channelscontroller"
 	"messaging-service/controllers/connectionscontroller"
 	"messaging-service/controllers/controltower"
 	"messaging-service/handlers"
+	"messaging-service/middleware"
 	redisClient "messaging-service/redis"
 	"messaging-service/repo"
 	"net/http"
@@ -17,35 +18,16 @@ import (
 	"go.uber.org/fx"
 )
 
-func enableCors(w *http.ResponseWriter) {
-	(*w).Header().Set("Access-Control-Allow-Origin", "*")
-	(*w).Header().Set("Access-Control-Allow-Methods", "GET,HEAD,OPTIONS,POST,PUT")
-	(*w).Header().Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, contentType, Content-Type, Accept, Authorization")
-}
-
-type rootHandler func(http.ResponseWriter, *http.Request) (interface{}, error)
-
-func (fn rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	enableCors(&w)
-	w.Header().Set("Content-Type", "application/json")
-
-	res, err := fn(w, r)
-	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	err = json.NewEncoder(w).Encode(res)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-	}
-}
-
 // https://markphelps.me/posts/handling-errors-in-your-http-handlers/
 func main() {
 	godotenv.Load()
 	fx.New(
+		// middleware
+		fx.Provide(middleware.NewJWTAuthMiddleware),
+		fx.Provide(middleware.NewAPIKeyAuthMiddleware),
+		// controllers
 		fx.Provide(channelscontroller.New),
+		fx.Provide(authcontroller.New),
 		fx.Provide(connectionscontroller.New),
 		fx.Provide(NewMuxRouter),
 		fx.Provide(handlers.New),
@@ -56,19 +38,57 @@ func main() {
 	).Run()
 }
 
-func SetupRoutes(h *handlers.Handler, r *mux.Router) {
+/*
+Solution
+pass the middleware thing in here as a param
+and then you can call GetAuthMiddleware, and run it in the array like youa re down below
+*/
+
+type SetupRoutesParams struct {
+	fx.In
+
+	AuthMiddleware    *middleware.APIKeyAuthMiddleware
+	JWTAuthMiddleware *middleware.JWTAuthMiddleware
+	Handler           *handlers.Handler
+	Router            *mux.Router
+}
+
+// func SetupRoutes(h *handlers.Handler, r *mux.Router) {
+func SetupRoutes(p SetupRoutesParams) {
+
+	commonMiddleware := []middleware.Middleware{p.AuthMiddleware}
+
+	// pass in all the middleware to the handler
+	// handler should have methods like SetupCreateRoom
+	// which will then invoke all the midleware and stuff
+	deleteRoomHandler := middleware.New(p.Handler.DeleteRoom, commonMiddleware)
+	leaveRoomHandler := middleware.New(p.Handler.LeaveRoom, commonMiddleware)
+	createRoomHandler := middleware.New(p.Handler.CreateRoom, commonMiddleware)
+	getMessagesByRoomUUIDHandler := middleware.New(p.Handler.GetMessagesByRoomUUID, commonMiddleware)
+	getRoomsByUserUUIDHandler := middleware.New(p.Handler.GetRoomsByUserUUID, commonMiddleware)
+
+	signupHandler := middleware.New(p.Handler.Signup, nil)
+	loginHandler := middleware.New(p.Handler.Login, nil)
+
+	// // probably need a subscribe fn here
+
+	testAuthHandler := middleware.New(p.Handler.TestAuthProfileHandler, []middleware.Middleware{p.JWTAuthMiddleware})
 
 	// websocket
-	r.HandleFunc("/ws", h.SetupWebsocketConnection)
+	p.Router.HandleFunc("/ws", p.Handler.SetupWebsocketConnection)
 
 	// API
-	r.Handle("/delete-room", rootHandler(h.DeleteRoom)).Methods("POST")
-	r.Handle("/leave-room", rootHandler(h.LeaveRoom)).Methods("POST")
-	r.Handle("/create-room", rootHandler(h.CreateRoom)).Methods("POST")
-	r.Handle("/get-messages-by-room-uuid", rootHandler(h.GetMessagesByRoomUUID)).Methods("GET")
-	r.Handle("/get-rooms-by-user-uuid", rootHandler(h.GetRoomsByUserUUID)).Methods("GET")
+	// p.Router.Handle("/test", testHandler).Methods("GET")
+	p.Router.Handle("/test-auth-profile", testAuthHandler).Methods("GET")
+	p.Router.Handle("/signup", signupHandler).Methods("POST")
+	p.Router.Handle("/login", loginHandler).Methods("POST")
+	p.Router.Handle("/delete-room", deleteRoomHandler).Methods("POST")
+	p.Router.Handle("/leave-room", leaveRoomHandler).Methods("POST")
+	p.Router.Handle("/create-room", createRoomHandler).Methods("POST")
+	p.Router.Handle("/get-messages-by-room-uuid", getMessagesByRoomUUIDHandler).Methods("GET")
+	p.Router.Handle("/get-rooms-by-user-uuid", getRoomsByUserUUIDHandler).Methods("GET")
 
-	h.SetupChannels()
+	p.Handler.SetupChannels()
 }
 
 func NewMuxRouter(lc fx.Lifecycle) *mux.Router {

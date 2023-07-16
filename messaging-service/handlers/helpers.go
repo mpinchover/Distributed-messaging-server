@@ -91,11 +91,40 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) (interface{}, e
 	return h.signup(ctx, req)
 }
 
-func (h *Handler) TestAuthProfileHandler(w http.ResponseWriter, r *http.Request) (interface{}, error) {
-	// validation
+func (h *Handler) GetNewAPIKey(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+	ctx := r.Context()
+	return h.getNewAPIKey(ctx)
+}
 
-	req := map[string]interface{}{}
+func (h *Handler) InvalidateAPIKey(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+	ctx := r.Context()
 
-	res, err := h.testAuthProfileHandler(r.Context(), req)
-	return res, err
+	req := &requests.InvalidateAPIKeyRequest{}
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		return nil, err
+	}
+	return h.invalidateAPIKey(ctx, req)
+}
+
+func (h *Handler) RefreshAccessToken(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+	ctx := r.Context()
+	return h.refreshAccessToken(ctx)
+}
+
+func (h *Handler) UpdatePassword(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+	ctx := r.Context()
+	req := &requests.UpdatePasswordRequest{}
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		return nil, err
+	}
+	return h.updatePassword(ctx, req)
+}
+
+func (h *Handler) GeneratePasswordResetLink(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+	ctx := r.Context()
+	req := &requests.GeneratePasswordResetLinkRequest{}
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		return nil, err
+	}
+	return h.generatePasswordResetLink(ctx, req)
 }

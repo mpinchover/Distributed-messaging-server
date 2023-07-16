@@ -276,3 +276,99 @@ func recvSeenMessageEvent(t *testing.T, conn *websocket.Conn, messageUUID string
 	assert.NotEmpty(t, seenMessageEvent.RoomUUID)
 	assert.NotEmpty(t, seenMessageEvent.UserUUID)
 }
+
+func makeSignupRequest(authProfile *requests.SignupRequest) (*requests.SignupResponse, error) {
+	postBody, err := json.Marshal(authProfile)
+	if err != nil {
+		return nil, err
+	}
+	reqBody := bytes.NewBuffer(postBody)
+	resp, err := http.Post("http://localhost:9090/signup", "application/json", reqBody)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode > 300 {
+		return nil, fmt.Errorf("status code is %d", resp.StatusCode)
+	}
+
+	defer resp.Body.Close()
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	response := &requests.SignupResponse{}
+	err = json.Unmarshal(b, response)
+	if err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
+func makeLoginRequest(loginReq *requests.LoginRequest) (*requests.LoginResponse, error) {
+	postBody, err := json.Marshal(loginReq)
+	if err != nil {
+		return nil, err
+	}
+	reqBody := bytes.NewBuffer(postBody)
+	resp, err := http.Post("http://localhost:9090/login", "application/json", reqBody)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode > 300 {
+		return nil, fmt.Errorf("status code is %d", resp.StatusCode)
+	}
+
+	defer resp.Body.Close()
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	response := &requests.LoginResponse{}
+	err = json.Unmarshal(b, response)
+	if err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
+func makeUpdatePasswordRequest(request *requests.UpdatePasswordRequest, token string) (*requests.GenericResponse, error) {
+
+	postBody, err := json.Marshal(request)
+	if err != nil {
+		return nil, err
+	}
+	reqBody := bytes.NewBuffer(postBody)
+
+	req, err := http.NewRequest("POST", "http://localhost:9090/update-password", reqBody)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Authorization", token)
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode > 300 {
+		return nil, fmt.Errorf("status code is %d", resp.StatusCode)
+	}
+
+	defer resp.Body.Close()
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	response := &requests.GenericResponse{}
+	err = json.Unmarshal(b, response)
+	if err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}

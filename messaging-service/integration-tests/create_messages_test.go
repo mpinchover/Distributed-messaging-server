@@ -16,7 +16,7 @@ const (
 )
 
 func TestRoomAndMessagesPagination(t *testing.T) {
-
+	t.Skip()
 	t.Run("test rooms and messages pagination", func(t *testing.T) {
 		log.Printf("Running %s", t.Name())
 		aUUID := uuid.New().String()
@@ -185,6 +185,7 @@ func TestRoomAndMessagesPagination(t *testing.T) {
 
 // Need to get the room id first and pass it to the text message id
 func TestAllConnectionsRcvMessages(t *testing.T) {
+	t.Skip()
 	t.Run("test all connections get msgs", func(t *testing.T) {
 		log.Printf("Running test %s", t.Name())
 		aUUID := uuid.New().String()

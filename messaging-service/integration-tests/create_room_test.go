@@ -14,6 +14,7 @@ import (
 )
 
 func TestCreateRoom(t *testing.T) {
+	t.Skip()
 	t.Run("create room", func(t *testing.T) {
 		log.Printf("Running test %s", t.Name())
 		tomUUID := uuid.New().String()

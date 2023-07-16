@@ -67,6 +67,6 @@ CREATE TABLE auth_profiles (
     deleted_at timestamp,
 
     uuid VARCHAR(36) NOT NULL,
-    hashed_password TINYTEXT NOT NULL,
-    email TINYTEXT NOT NULL
+    hashed_password VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL
 ) ENGINE=INNODB;

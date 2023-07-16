@@ -23,7 +23,7 @@ func main() {
 	godotenv.Load()
 	fx.New(
 		// middleware
-		fx.Provide(middleware.NewJWTAuthMiddleware),
+		fx.Provide(middleware.NewAccessJWTAuthMiddleware),
 		fx.Provide(middleware.NewAPIKeyAuthMiddleware),
 		// controllers
 		fx.Provide(channelscontroller.New),
@@ -38,50 +38,49 @@ func main() {
 	).Run()
 }
 
-/*
-Solution
-pass the middleware thing in here as a param
-and then you can call GetAuthMiddleware, and run it in the array like youa re down below
-*/
-
 type SetupRoutesParams struct {
 	fx.In
 
-	AuthMiddleware    *middleware.APIKeyAuthMiddleware
-	JWTAuthMiddleware *middleware.JWTAuthMiddleware
-	Handler           *handlers.Handler
-	Router            *mux.Router
+	APIKeyAuthMiddleware    *middleware.APIKeyAuthMiddleware
+	AccessJWTAuthMiddleware *middleware.AccessJWTAuthMiddleware
+	Handler                 *handlers.Handler
+	Router                  *mux.Router
 }
 
 // func SetupRoutes(h *handlers.Handler, r *mux.Router) {
 func SetupRoutes(p SetupRoutesParams) {
 
-	commonMiddleware := []middleware.Middleware{p.AuthMiddleware}
-
-	// pass in all the middleware to the handler
-	// handler should have methods like SetupCreateRoom
-	// which will then invoke all the midleware and stuff
-	deleteRoomHandler := middleware.New(p.Handler.DeleteRoom, commonMiddleware)
-	leaveRoomHandler := middleware.New(p.Handler.LeaveRoom, commonMiddleware)
-	createRoomHandler := middleware.New(p.Handler.CreateRoom, commonMiddleware)
-	getMessagesByRoomUUIDHandler := middleware.New(p.Handler.GetMessagesByRoomUUID, commonMiddleware)
-	getRoomsByUserUUIDHandler := middleware.New(p.Handler.GetRoomsByUserUUID, commonMiddleware)
-
-	signupHandler := middleware.New(p.Handler.Signup, nil)
-	loginHandler := middleware.New(p.Handler.Login, nil)
-
-	// // probably need a subscribe fn here
-
-	testAuthHandler := middleware.New(p.Handler.TestAuthProfileHandler, []middleware.Middleware{p.JWTAuthMiddleware})
+	// testing
+	testAuthHandler := middleware.New(p.Handler.TestAuthProfileHandler, []middleware.Middleware{p.AccessJWTAuthMiddleware})
+	testAuthAPIKeyHandler := middleware.New(p.Handler.TestNewAPIKeyHandler, []middleware.Middleware{p.APIKeyAuthMiddleware})
+	p.Router.Handle("/test-auth-profile", testAuthHandler).Methods("GET")
+	p.Router.Handle("/test-auth-api-key", testAuthAPIKeyHandler).Methods("GET")
 
 	// websocket
 	p.Router.HandleFunc("/ws", p.Handler.SetupWebsocketConnection)
 
-	// API
-	// p.Router.Handle("/test", testHandler).Methods("GET")
-	p.Router.Handle("/test-auth-profile", testAuthHandler).Methods("GET")
+	// auth
+	signupHandler := middleware.New(p.Handler.Signup, nil)
+	loginHandler := middleware.New(p.Handler.Login, nil)
+	passwordResetHandler := middleware.New(p.Handler.GeneratePasswordResetLink, nil)
+	apiKeyHandler := middleware.New(p.Handler.GetNewAPIKey, []middleware.Middleware{p.AccessJWTAuthMiddleware})
+	invalidateApiKeyHandler := middleware.New(p.Handler.InvalidateAPIKey, []middleware.Middleware{p.AccessJWTAuthMiddleware})
+	refreshTokenHandler := middleware.New(p.Handler.RefreshAccessToken, []middleware.Middleware{p.AccessJWTAuthMiddleware})
+	updatePasswordHandler := middleware.New(p.Handler.UpdatePassword, []middleware.Middleware{p.AccessJWTAuthMiddleware})
+	p.Router.Handle("/create-reset-password-link", passwordResetHandler).Methods("POST")
+	p.Router.Handle("/get-new-api-key", apiKeyHandler).Methods("GET")
+	p.Router.Handle("/refresh-token", refreshTokenHandler).Methods("GET")
+	p.Router.Handle("/invalidate-api-key", invalidateApiKeyHandler).Methods("POST")
 	p.Router.Handle("/signup", signupHandler).Methods("POST")
 	p.Router.Handle("/login", loginHandler).Methods("POST")
+	p.Router.Handle("/update-password", updatePasswordHandler).Methods("POST")
+
+	// API
+	deleteRoomHandler := middleware.New(p.Handler.DeleteRoom, nil)
+	leaveRoomHandler := middleware.New(p.Handler.LeaveRoom, nil)
+	createRoomHandler := middleware.New(p.Handler.CreateRoom, nil)
+	getMessagesByRoomUUIDHandler := middleware.New(p.Handler.GetMessagesByRoomUUID, nil)
+	getRoomsByUserUUIDHandler := middleware.New(p.Handler.GetRoomsByUserUUID, nil)
 	p.Router.Handle("/delete-room", deleteRoomHandler).Methods("POST")
 	p.Router.Handle("/leave-room", leaveRoomHandler).Methods("POST")
 	p.Router.Handle("/create-room", createRoomHandler).Methods("POST")

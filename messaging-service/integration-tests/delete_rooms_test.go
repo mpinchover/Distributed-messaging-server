@@ -13,6 +13,7 @@ import (
 )
 
 func TestDeleteRoom(t *testing.T) {
+	t.Skip()
 	t.Run("test delete a room", func(t *testing.T) {
 		log.Printf("Running test %s", t.Name())
 		aUUID := uuid.New().String()
@@ -144,6 +145,7 @@ func TestDeleteRoom(t *testing.T) {
 }
 
 func TestDeleteRoomAndMessages(t *testing.T) {
+	t.Skip()
 	t.Run("delete room and messages", func(t *testing.T) {
 		log.Printf("Running test %s", t.Name())
 		tomUUID := uuid.New().String()

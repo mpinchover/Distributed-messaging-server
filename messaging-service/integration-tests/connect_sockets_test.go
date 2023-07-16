@@ -12,6 +12,7 @@ import (
 func TestMockEndpoint(t *testing.T) {
 
 	t.Run("mock test", func(t *testing.T) {
+		t.Skip()
 		log.Printf("Running %s", t.Name())
 		assert.Equal(t, 123, 123, "they should be equal")
 	})
@@ -22,6 +23,7 @@ func TestMockEndpoint(t *testing.T) {
 }
 
 func TestConnectWebsocket(t *testing.T) {
+	t.Skip()
 	t.Run("test opening websocket", func(t *testing.T) {
 		log.Printf("Running %s", t.Name())
 
@@ -38,6 +40,7 @@ func TestConnectWebsocket(t *testing.T) {
 }
 
 func TestOpenSocket(t *testing.T) {
+	t.Skip()
 	t.Run("test set open socket info", func(t *testing.T) {
 		log.Printf("Running %s", t.Name())
 

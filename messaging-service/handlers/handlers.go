@@ -2,12 +2,11 @@ package handlers
 
 import (
 	"context"
-	"encoding/json"
 	"messaging-service/controllers/authcontroller"
 	"messaging-service/controllers/controltower"
 	redisClient "messaging-service/redis"
-	"messaging-service/serrors"
 	"messaging-service/types/requests"
+	"messaging-service/utils"
 	"messaging-service/validation"
 
 	"go.uber.org/fx"
@@ -167,27 +166,61 @@ func (h *Handler) signup(ctx context.Context, req *requests.SignupRequest) (*req
 	return h.AuthController.Signup(req)
 }
 
-func getAuthProfileFromCtx(ctx context.Context) (*requests.AuthProfile, error) {
-	_authProfile := ctx.Value("AUTH_PROFILE")
-
-	authProfile := &requests.AuthProfile{}
-	b, err := json.Marshal(_authProfile)
-	if err != nil {
-		return nil, serrors.AuthError(err)
-	}
-	err = json.Unmarshal(b, authProfile)
-	if err != nil {
-		return nil, serrors.AuthError(err)
-	}
-	return authProfile, nil
-}
-
-func (h *Handler) testAuthProfileHandler(ctx context.Context, req interface{}) (interface{}, error) {
-	// validation
-
-	authProfile, err := getAuthProfileFromCtx(ctx)
+func (h *Handler) getNewAPIKey(ctx context.Context) (*requests.APIKey, error) {
+	key, err := h.AuthController.GenerateAPIKey(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return authProfile, nil
+	return &requests.APIKey{
+		Key: key,
+	}, nil
+}
+
+func (h *Handler) invalidateAPIKey(ctx context.Context, req *requests.InvalidateAPIKeyRequest) (*requests.GenericResponse, error) {
+	err := h.AuthController.RemoveAPIKey(ctx, req.Key)
+	if err != nil {
+		return nil, err
+	}
+	return &requests.GenericResponse{
+		Success: true,
+	}, nil
+}
+
+func (h *Handler) refreshAccessToken(ctx context.Context) (*requests.RefreshAccessTokenResponse, error) {
+	authProfile, err := utils.GetAuthProfileFromCtx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	accessToken, err := h.AuthController.GenerateJWTAccessToken(authProfile)
+	if err != nil {
+		return nil, err
+	}
+	refreshToken, err := h.AuthController.GenerateJWTRefreshToken(authProfile)
+	if err != nil {
+		return nil, err
+	}
+	return &requests.RefreshAccessTokenResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}, nil
+}
+
+func (h *Handler) updatePassword(ctx context.Context, req *requests.UpdatePasswordRequest) (*requests.GenericResponse, error) {
+	err := h.AuthController.UpdatePassword(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return &requests.GenericResponse{
+		Success: true,
+	}, nil
+}
+
+func (h *Handler) generatePasswordResetLink(ctx context.Context, req *requests.GeneratePasswordResetLinkRequest) (*requests.GenericResponse, error) {
+	err := h.AuthController.GeneratePasswordResetLink(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return &requests.GenericResponse{
+		Success: true,
+	}, nil
 }

@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"messaging-service/serrors"
+	"time"
 
 	"os"
 
@@ -64,13 +66,32 @@ func (c *RedisClient) Set(ctx context.Context, key string, value interface{}) er
 	return err
 }
 
+func (c *RedisClient) SetWithTTL(ctx context.Context, key string, value interface{}, ttl time.Duration) error {
+	p, err := json.Marshal(value)
+	if err != nil {
+		return err
+	}
+	_, err = c.Client.Set(ctx, key, p, ttl).Result()
+	return err
+}
+
+func (c *RedisClient) Del(ctx context.Context, key string) error {
+	_, err := c.Client.Del(ctx, key).Result()
+	return err
+}
+
 func (c *RedisClient) Get(ctx context.Context, key string, dest interface{}) error {
 	res := c.Client.Get(ctx, key)
 	if res.Err() == redis.Nil {
-		return nil
+		return serrors.InvalidArgumentErrorf("redis value not found", res.Err())
 	}
 	if res.Err() != nil {
 		return res.Err()
 	}
-	return json.Unmarshal([]byte(res.Val()), dest)
+
+	err := json.Unmarshal([]byte(res.Val()), dest)
+	if err != nil {
+		return err
+	}
+	return nil
 }

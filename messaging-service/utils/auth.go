@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"context"
+	"encoding/json"
 	"messaging-service/serrors"
 	"messaging-service/types/requests"
 	"time"
@@ -14,19 +16,34 @@ var Keyfunc jwt.Keyfunc = func(token *jwt.Token) (interface{}, error) {
 	return []byte("SECRET"), nil
 }
 
-func GenerateAPIToken(authProfile requests.AuthProfile) (string, error) {
+func GetAPIKeyFromCtx(ctx context.Context) (*requests.APIKey, error) {
+	_apiKey := ctx.Value("API_KEY")
 
-	token := jwt.New(jwt.SigningMethodHS256)
-	claims := token.Claims.(jwt.MapClaims)
-	claims["AUTH_PROFILE"] = authProfile
-	claims["EXP"] = time.Now().UTC().Add(20 * time.Minute).Unix()
-	tkn, _ := Keyfunc(token)
-	tokenString, err := token.SignedString(tkn)
+	apiKey := &requests.APIKey{}
+	b, err := json.Marshal(_apiKey)
 	if err != nil {
-		return "", serrors.InternalError(err)
+		return nil, serrors.AuthError(err)
 	}
+	err = json.Unmarshal(b, apiKey)
+	if err != nil {
+		return nil, serrors.AuthError(err)
+	}
+	return apiKey, nil
+}
 
-	return tokenString, nil
+func GetAuthProfileFromCtx(ctx context.Context) (*requests.AuthProfile, error) {
+	_authProfile := ctx.Value("AUTH_PROFILE")
+
+	authProfile := &requests.AuthProfile{}
+	b, err := json.Marshal(_authProfile)
+	if err != nil {
+		return nil, serrors.AuthError(err)
+	}
+	err = json.Unmarshal(b, authProfile)
+	if err != nil {
+		return nil, serrors.AuthError(err)
+	}
+	return authProfile, nil
 }
 
 func GetClaimsFromJWT(jwtToken *jwt.Token) (jwt.MapClaims, error) {

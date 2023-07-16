@@ -49,6 +49,10 @@ type User struct {
 	UserID string
 }
 
+type APIKey struct {
+	Key string
+}
+
 // for ext service, not chat user
 type AuthProfile struct {
 	UUID  string

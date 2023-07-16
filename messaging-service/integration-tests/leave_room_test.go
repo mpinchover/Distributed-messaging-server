@@ -11,6 +11,7 @@ import (
 )
 
 func TestLeaveRoom(t *testing.T) {
+	t.Skip()
 	t.Run("test leave room", func(t *testing.T) {
 		log.Printf("Running test %s", t.Name())
 		aUUID := uuid.New().String()

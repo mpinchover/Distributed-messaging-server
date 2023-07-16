@@ -11,12 +11,12 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
-type JWTAuthMiddleware struct {
+type AccessJWTAuthMiddleware struct {
 	authController *authcontroller.AuthController
 }
 
-func NewJWTAuthMiddleware(authController *authcontroller.AuthController) *JWTAuthMiddleware {
-	return &JWTAuthMiddleware{
+func NewAccessJWTAuthMiddleware(authController *authcontroller.AuthController) *AccessJWTAuthMiddleware {
+	return &AccessJWTAuthMiddleware{
 		authController: authController,
 	}
 }
@@ -38,38 +38,45 @@ https://support.getstream.io/hc/en-us/articles/360060576774-Token-Creation-Best-
 // if the JWT has expired, external service should call this service to generate a new token
 // todo - move this to utils
 
-func (a *JWTAuthMiddleware) execute(h HTTPHandler) HTTPHandler {
+func (a *AccessJWTAuthMiddleware) execute(h HTTPHandler) HTTPHandler {
 	return func(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+		// fmt.Println("0")
 		if r.Header["Authorization"] == nil {
 			return nil, serrors.AuthErrorf("missing auth header", nil)
 		}
 
+		// fmt.Println("1")
 		tokenString := r.Header["Authorization"][0]
 		jwtToken, err := a.authController.VerifyJWT(tokenString)
 		if err != nil {
 			return nil, err
 		}
 
+		// fmt.Println("2")
 		claims, ok := jwtToken.Claims.(jwt.MapClaims)
 		if !ok {
 			return nil, serrors.InternalErrorf("could not get token claims", nil)
 		}
+		// fmt.Println("3")
 		_authProfile, ok := claims["AUTH_PROFILE"]
 		if !ok {
 			return nil, serrors.AuthErrorf("could not get auth profile", nil)
 		}
 
+		// fmt.Println("4")
 		bytes, err := json.Marshal(_authProfile)
 		if err != nil {
 			return nil, serrors.AuthErrorf("could not marshall auth profile", nil)
 		}
 
+		// fmt.Println("5")
 		authProfile := &requests.AuthProfile{}
 		err = json.Unmarshal(bytes, authProfile)
 		if err != nil {
 			return nil, serrors.AuthErrorf("Not Authorized", nil)
 		}
 
+		// fmt.Println("6")
 		ctx := context.WithValue(r.Context(), "AUTH_PROFILE", authProfile)
 		r = r.WithContext(ctx)
 		return h(w, r)

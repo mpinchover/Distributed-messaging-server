@@ -9,6 +9,7 @@ type LeaveRoomEvent struct {
 	EventType string `json:"eventType"`
 	RoomUUID  string `json:"roomUuid"`
 	UserUUID  string `json:"userUuid"`
+	Token     string `json:"token"`
 }
 
 // sennd to clients room has been opened
@@ -26,8 +27,9 @@ type SubscribeToRoomEvent struct {
 
 type SetClientConnectionEvent struct {
 	EventType      string `json:"eventType"`
-	FromUUID       string `json:"fromUuid"`
+	UserUUID       string `json:"userUuid"`
 	ConnectionUUID string `json:"connectionUuid"`
+	Token          string `json:"token"`
 }
 
 type TextMessageEvent struct {
@@ -35,6 +37,7 @@ type TextMessageEvent struct {
 	FromUUID       string   `json:"fromUuid"`
 	ConnectionUUID string   `json:"connectionUuid"`
 	Message        *Message `json:"message"`
+	Token          string   `json:"token"`
 }
 
 // the recpt has read the message
@@ -45,6 +48,7 @@ type SeenMessageEvent struct {
 	MessageUUID string `json:"messageUuid"`
 	UserUUID    string `json:"userUuid"`
 	RoomUUID    string `json:"roomUuid"`
+	Token       string `json:"token"`
 }
 
 type DeleteMessageEvent struct {
@@ -52,4 +56,5 @@ type DeleteMessageEvent struct {
 	MessageUUID string `json:"messageUuid"`
 	UserUUID    string `json:"userUuid"`
 	RoomUUID    string `json:"roomUuid"`
+	Token       string `json:"token"`
 }

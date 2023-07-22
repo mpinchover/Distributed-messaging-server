@@ -2,13 +2,18 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"messaging-service/controllers/authcontroller"
 	"messaging-service/controllers/controltower"
 	redisClient "messaging-service/redis"
 	"messaging-service/types/requests"
 	"messaging-service/utils"
 	"messaging-service/validation"
+	"net/http"
+	"time"
 
+	"github.com/gorilla/schema"
 	"go.uber.org/fx"
 )
 
@@ -16,9 +21,6 @@ type Handler struct {
 	ControlTowerCtrlr *controltower.ControlTowerCtrlr
 	AuthController    *authcontroller.AuthController
 	RedisClient       *redisClient.RedisClient
-
-	// middleware
-	// AuthMiddleware *middleware.AuthMiddleware
 }
 
 type Params struct {
@@ -30,13 +32,6 @@ type Params struct {
 	AuthController *authcontroller.AuthController
 }
 
-// func New(redisClient *redisClient.RedisClient, controlTower *controltower.ControlTowerCtrlr) *Handler {
-// 	return &Handler{
-// 		ControlTowerCtrlr: controlTower,
-// 		RedisClient:       redisClient,
-// 	}
-// }
-
 func New(p Params) *Handler {
 	return &Handler{
 		ControlTowerCtrlr: p.ControlTower,
@@ -46,22 +41,74 @@ func New(p Params) *Handler {
 	}
 }
 
+var decoder = schema.NewDecoder()
+
+func (h *Handler) GetRoomsByUserUUID(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+	// validation
+	req := &requests.GetRoomsByUserUUIDRequest{}
+	err := decoder.Decode(req, r.URL.Query())
+	if err != nil {
+		return nil, err
+	}
+	ctx := r.Context()
+	return h.getRoomsByUserUUID(ctx, req)
+}
+
+func (h *Handler) APIGetRoomsByUserUUID(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+	// validation
+	req := &requests.GetRoomsByUserUUIDRequest{}
+	err := decoder.Decode(req, r.URL.Query())
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	ctx := r.Context()
+	return h.getRoomsByUserUUID(ctx, req)
+}
+
 func (h *Handler) getRoomsByUserUUID(ctx context.Context, req *requests.GetRoomsByUserUUIDRequest) (*requests.GetRoomsByUserUUIDResponse, error) {
 	err := validation.ValidateRequest(req)
 	if err != nil {
+		fmt.Println("ERR 1")
+		fmt.Println(err)
 		return nil, err
 	}
 
 	rooms, err := h.ControlTowerCtrlr.GetRoomsByUserUUID(ctx, req.UserUUID, req.Offset)
 	if err != nil {
+		fmt.Println("ERR 2")
+		fmt.Println(err)
 		return nil, err
 	}
 
-	// TODO - put this all in the controller
 	response := &requests.GetRoomsByUserUUIDResponse{
 		Rooms: rooms,
 	}
 	return response, nil
+}
+
+func (h *Handler) GetMessagesByRoomUUID(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+	// validation
+	req := &requests.GetMessagesByRoomUUIDRequest{}
+	err := decoder.Decode(req, r.URL.Query())
+	if err != nil {
+		return nil, err
+	}
+
+	ctx := r.Context()
+	return h.getMessagesByRoomUUID(ctx, req)
+}
+
+func (h *Handler) APIGetMessagesByRoomUUID(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+	// validation
+	req := &requests.GetMessagesByRoomUUIDRequest{}
+	err := decoder.Decode(req, r.URL.Query())
+	if err != nil {
+		return nil, err
+	}
+
+	ctx := r.Context()
+	return h.getMessagesByRoomUUID(ctx, req)
 }
 
 func (h *Handler) getMessagesByRoomUUID(ctx context.Context, req *requests.GetMessagesByRoomUUIDRequest) (*requests.GetMessagesByRoomUUIDResponse, error) {
@@ -102,6 +149,16 @@ func (h *Handler) getMessagesByRoomUUID(ctx context.Context, req *requests.GetMe
 	return resp, nil
 }
 
+func (h *Handler) DeleteRoom(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+	// TODO - validation
+	req := &requests.DeleteRoomRequest{}
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		return nil, err
+	}
+	ctx := r.Context()
+	return h.deleteRoom(ctx, req)
+}
+
 func (h *Handler) deleteRoom(ctx context.Context, req *requests.DeleteRoomRequest) (*requests.DeleteRoomResponse, error) {
 	err := validation.ValidateRequest(req)
 	if err != nil {
@@ -115,6 +172,19 @@ func (h *Handler) deleteRoom(ctx context.Context, req *requests.DeleteRoomReques
 		return nil, err
 	}
 	return &requests.DeleteRoomResponse{}, nil
+}
+
+func (h *Handler) CreateRoom(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+	// validation
+	// run all the middleware here
+
+	req := &requests.CreateRoomRequest{}
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		return nil, err
+	}
+
+	ctx := r.Context()
+	return h.createRoom(ctx, req)
 }
 
 func (h *Handler) createRoom(ctx context.Context, req *requests.CreateRoomRequest) (*requests.CreateRoomResponse, error) {
@@ -133,6 +203,16 @@ func (h *Handler) createRoom(ctx context.Context, req *requests.CreateRoomReques
 	}, nil
 }
 
+func (h *Handler) LeaveRoom(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+	// validation
+	req := &requests.LeaveRoomRequest{}
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		return nil, err
+	}
+	ctx := r.Context()
+	return h.leaveRoom(ctx, req)
+}
+
 func (h *Handler) leaveRoom(ctx context.Context, req *requests.LeaveRoomRequest) (*requests.LeaveRoomResponse, error) {
 	err := validation.ValidateRequest(req)
 	if err != nil {
@@ -146,6 +226,16 @@ func (h *Handler) leaveRoom(ctx context.Context, req *requests.LeaveRoomRequest)
 	return nil, nil
 }
 
+func (h *Handler) Login(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+	// validation
+	req := &requests.LoginRequest{}
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		return nil, err
+	}
+	ctx := r.Context()
+	return h.login(ctx, req)
+}
+
 func (h *Handler) login(ctx context.Context, req *requests.LoginRequest) (*requests.LoginResponse, error) {
 	err := validation.ValidateRequest(req)
 	if err != nil {
@@ -157,6 +247,16 @@ func (h *Handler) login(ctx context.Context, req *requests.LoginRequest) (*reque
 	return h.AuthController.Login(req)
 }
 
+func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+	// validation
+	req := &requests.SignupRequest{}
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		return nil, err
+	}
+	ctx := r.Context()
+	return h.signup(ctx, req)
+}
+
 func (h *Handler) signup(ctx context.Context, req *requests.SignupRequest) (*requests.SignupResponse, error) {
 	err := validation.ValidateRequest(req)
 	if err != nil {
@@ -164,6 +264,11 @@ func (h *Handler) signup(ctx context.Context, req *requests.SignupRequest) (*req
 	}
 
 	return h.AuthController.Signup(req)
+}
+
+func (h *Handler) GetNewAPIKey(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+	ctx := r.Context()
+	return h.getNewAPIKey(ctx)
 }
 
 func (h *Handler) getNewAPIKey(ctx context.Context) (*requests.APIKey, error) {
@@ -176,6 +281,16 @@ func (h *Handler) getNewAPIKey(ctx context.Context) (*requests.APIKey, error) {
 	}, nil
 }
 
+func (h *Handler) InvalidateAPIKey(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+	ctx := r.Context()
+
+	req := &requests.InvalidateAPIKeyRequest{}
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		return nil, err
+	}
+	return h.invalidateAPIKey(ctx, req)
+}
+
 func (h *Handler) invalidateAPIKey(ctx context.Context, req *requests.InvalidateAPIKeyRequest) (*requests.GenericResponse, error) {
 	err := h.AuthController.RemoveAPIKey(ctx, req.Key)
 	if err != nil {
@@ -184,6 +299,11 @@ func (h *Handler) invalidateAPIKey(ctx context.Context, req *requests.Invalidate
 	return &requests.GenericResponse{
 		Success: true,
 	}, nil
+}
+
+func (h *Handler) RefreshAccessToken(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+	ctx := r.Context()
+	return h.refreshAccessToken(ctx)
 }
 
 func (h *Handler) refreshAccessToken(ctx context.Context) (*requests.RefreshAccessTokenResponse, error) {
@@ -205,6 +325,15 @@ func (h *Handler) refreshAccessToken(ctx context.Context) (*requests.RefreshAcce
 	}, nil
 }
 
+func (h *Handler) UpdatePassword(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+	ctx := r.Context()
+	req := &requests.UpdatePasswordRequest{}
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		return nil, err
+	}
+	return h.updatePassword(ctx, req)
+}
+
 func (h *Handler) updatePassword(ctx context.Context, req *requests.UpdatePasswordRequest) (*requests.GenericResponse, error) {
 	err := h.AuthController.UpdatePassword(ctx, req)
 	if err != nil {
@@ -215,6 +344,34 @@ func (h *Handler) updatePassword(ctx context.Context, req *requests.UpdatePasswo
 	}, nil
 }
 
+func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+	ctx := r.Context()
+	req := &requests.ResetPasswordRequest{}
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		return nil, err
+	}
+	return h.resetPassword(ctx, req)
+}
+
+func (h *Handler) resetPassword(ctx context.Context, req *requests.ResetPasswordRequest) (*requests.GenericResponse, error) {
+	err := h.AuthController.ResetPassword(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return &requests.GenericResponse{
+		Success: true,
+	}, nil
+}
+
+func (h *Handler) GeneratePasswordResetLink(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+	ctx := r.Context()
+	req := &requests.GeneratePasswordResetLinkRequest{}
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		return nil, err
+	}
+	return h.generatePasswordResetLink(ctx, req)
+}
+
 func (h *Handler) generatePasswordResetLink(ctx context.Context, req *requests.GeneratePasswordResetLinkRequest) (*requests.GenericResponse, error) {
 	err := h.AuthController.GeneratePasswordResetLink(ctx, req)
 	if err != nil {
@@ -222,5 +379,28 @@ func (h *Handler) generatePasswordResetLink(ctx context.Context, req *requests.G
 	}
 	return &requests.GenericResponse{
 		Success: true,
+	}, nil
+}
+
+func (h *Handler) GenerateMessagingToken(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+	ctx := r.Context()
+	req := &requests.GenerateMessagingTokenRequest{}
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		return nil, err
+	}
+	return h.generateMessagingToken(ctx, req)
+}
+
+// create a user for this person
+// have they exceeded quota for monthly active users?
+func (h *Handler) generateMessagingToken(ctx context.Context, req *requests.GenerateMessagingTokenRequest) (*requests.GenerateMessagingTokenResponse, error) {
+	userID := req.UserID
+	accessToken, err := h.AuthController.GenerateMessagingToken(userID, 10*time.Minute)
+	if err != nil {
+		return nil, err
+	}
+
+	return &requests.GenerateMessagingTokenResponse{
+		Token: accessToken,
 	}, nil
 }

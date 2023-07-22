@@ -3,6 +3,7 @@ package integrationtests
 import (
 	"fmt"
 	"log"
+	"messaging-service/integration-tests/common"
 	"messaging-service/types/requests"
 	"testing"
 
@@ -11,6 +12,7 @@ import (
 )
 
 func TestResetPassword(t *testing.T) {
+	// t.Skip()
 	t.Run("test signup user and create auth profile", func(t *testing.T) {
 		log.Printf("Running %s", t.Name())
 
@@ -25,14 +27,12 @@ func TestResetPassword(t *testing.T) {
 			ConfirmPassword: confirmPassword,
 		}
 
-		signupResp, err := makeSignupRequest(signupRequest)
-		assert.NoError(t, err)
+		signupResp := common.MakeSignupRequest(t, signupRequest)
 		assert.NotEmpty(t, signupResp.AccessToken)
 		assert.NotEmpty(t, signupResp.RefreshToken)
 
 		// test auth token
-		authProfile, err := makeTestAuthRequest(signupResp.AccessToken)
-		assert.NoError(t, err)
+		authProfile := common.MakeTestAuthRequest(t, signupResp.AccessToken)
 		assert.NotNil(t, authProfile)
 		assert.Equal(t, signupRequest.Email, authProfile.Email)
 		assert.NotEmpty(t, authProfile.UUID)
@@ -42,8 +42,7 @@ func TestResetPassword(t *testing.T) {
 			Email:    email,
 			Password: password,
 		}
-		loginResp, err := makeLoginRequest(loginRequest)
-		assert.NoError(t, err)
+		loginResp := common.MakeLoginRequest(t, loginRequest)
 		assert.NotEmpty(t, loginResp.AccessToken)
 		assert.NotEmpty(t, loginResp.RefreshToken)
 
@@ -53,19 +52,14 @@ func TestResetPassword(t *testing.T) {
 			ConfirmNewPassword: "something-else",
 		}
 		// reset password
-		_, err = makeUpdatePasswordRequest(updatePasswordRequest, loginResp.AccessToken)
-		assert.NoError(t, err)
+		common.MakeUpdatePasswordRequest(t, updatePasswordRequest, loginResp.AccessToken)
 
 		// // should success
-		// loginRequest.Password = "something-else"
-		// _, err = makeLoginRequest(loginRequest)
-		// assert.NoError(t, err)
+		loginRequest.Password = "something-else"
+		common.MakeLoginRequest(t, loginRequest)
 
-		// // should fail
-		// loginRequest.Password = "something-else11"
-		// loginResp, err = makeLoginRequest(loginRequest)
-		// assert.Error(t, err)
-		// assert.Nil(t, loginResp)
-		// assert.Contains(t, err.Error(), "400")
+		// should fail
+		loginRequest.Password = "something-else11"
+		common.MakeLoginRequestFailAuth(t, loginRequest)
 	})
 }

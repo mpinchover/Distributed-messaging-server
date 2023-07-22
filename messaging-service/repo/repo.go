@@ -123,7 +123,7 @@ func (r *Repo) GetRoomsByUserUUID(uuid string, offset int) ([]*records.Room, err
 		roomUUIDs = append(roomUUIDs, m.RoomUUID)
 	}
 
-	err = r.DB.Preload("Members").Preload("Messages").Preload("Messages.SeenBy").Where("uuid in (?)", roomUUIDs).Find(&results).Error
+	err = r.DB.Preload("Members").Preload("Messages").Preload("Messages.SeenBy").Where("uuid in (?)", roomUUIDs).Offset(offset).Limit(PAGINATION_MESSAGES).Find(&results).Error
 	return results, err
 }
 

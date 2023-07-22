@@ -3,6 +3,7 @@ package requests
 type GetRoomsByUserUUIDRequest struct {
 	UserUUID string `schema:"userUuid" validate:"required"`
 	Offset   int    `schema:"offset"`
+	Key      string `schema:"key,-"`
 }
 
 type GetRoomsByUserUUIDResponse struct {
@@ -12,6 +13,7 @@ type GetRoomsByUserUUIDResponse struct {
 type GetMessagesByRoomUUIDRequest struct {
 	RoomUUID string `schema:"roomUuid" validate:"required"`
 	Offset   int    `schema:"offset"`
+	Key      string `schema:"key,-"`
 }
 
 type GetMessagesByRoomUUIDResponse struct {
@@ -61,6 +63,8 @@ type SignupRequest struct {
 type SignupResponse struct {
 	AccessToken  string `json:"accessToken"`
 	RefreshToken string `json:"refreshToken"`
+	UUID         string `json:"uuid"`
+	Email        string `json:"email" validate:"required"`
 }
 
 type InvalidateAPIKeyRequest struct {
@@ -86,6 +90,14 @@ type ResetPasswordRequest struct {
 	Token              string `json:"token"`
 	NewPassword        string `json:"newPassword"`
 	ConfirmNewPassword string `json:"confirmNewPassword"`
+}
+
+type GenerateMessagingTokenRequest struct {
+	UserID string `json:"userId"`
+}
+
+type GenerateMessagingTokenResponse struct {
+	Token string `json:"token"`
 }
 
 type GenericResponse struct {

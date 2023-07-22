@@ -23,3 +23,20 @@ func GetEventType(event string) (string, error) {
 	return val, nil
 }
 
+func GetEventToken(event string) (string, error) {
+	e := map[string]interface{}{}
+	err := json.Unmarshal([]byte(event), &e)
+	if err != nil {
+		return "", err
+	}
+
+	eToken, ok := e["token"]
+	if !ok {
+		return "", errors.New("no event token present")
+	}
+	val, ok := eToken.(string)
+	if !ok {
+		return "", errors.New("could not cast to event token")
+	}
+	return val, nil
+}

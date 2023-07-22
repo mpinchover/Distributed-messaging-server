@@ -209,11 +209,11 @@ func (c *ControlTowerCtrlr) SetupClientConnectionV2(
 
 	connectionUUID := uuid.New().String()
 	msg.ConnectionUUID = connectionUUID
-	userConnection := c.ConnCtrlr.GetConnection(msg.FromUUID)
+	userConnection := c.ConnCtrlr.GetConnection(msg.UserUUID)
 
 	if userConnection == nil {
 		userConnection = &requests.Connection{
-			UserUUID:    msg.FromUUID,
+			UserUUID:    msg.UserUUID,
 			Connections: map[string]*websocket.Conn{},
 		}
 		c.ConnCtrlr.AddConnection(userConnection)

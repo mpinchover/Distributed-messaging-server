@@ -191,7 +191,7 @@ func (a *AuthController) GeneratePasswordResetLink(ctx context.Context, req *req
 	}
 
 	// return a.GenerateJWTToken(authProfile, 10*time.Minute)
-	token, err := generateRandomString(20)
+	token, err := generateRandomString(40)
 	if err != nil {
 		return err
 	}
@@ -233,12 +233,8 @@ func (a *AuthController) GeneratePasswordResetLink(ctx context.Context, req *req
 	auth := smtp.PlainAuth("", from, password, smtpHost)
 
 	t.Execute(&body, struct {
-		Name      string
-		Message   string
 		ResetLink string
 	}{
-		Name:      "Puneet Singh",
-		Message:   "This is a test message in a HTML template",
 		ResetLink: fmt.Sprintf("http://localhost:9090/reset-password/%s", token),
 	})
 
@@ -249,6 +245,23 @@ func (a *AuthController) GeneratePasswordResetLink(ctx context.Context, req *req
 		return err
 	}
 	return nil
+}
+
+func (a *AuthController) GenerateMessagingToken(userID string, dur time.Duration) (string, error) {
+	token := jwt.New(jwt.SigningMethodHS256)
+	claims := token.Claims.(jwt.MapClaims)
+	claims["USER_ID"] = requests.ChatProfile{
+		UserID: userID,
+	}
+	claims["EXP"] = time.Now().UTC().Add(dur).Unix()
+	token.Claims = claims
+
+	tokenString, err := token.SignedString([]byte("SECRET"))
+	if err != nil {
+		return "", goerrors.Wrap(err, 0)
+	}
+
+	return tokenString, nil
 }
 
 func (a *AuthController) GenerateJWTToken(authProfile *requests.AuthProfile, dur time.Duration) (string, error) {
@@ -334,6 +347,8 @@ func (a *AuthController) Signup(req *requests.SignupRequest) (*requests.SignupRe
 	return &requests.SignupResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
+		UUID:         authUserUUID,
+		Email:        recordAuthProfile.Email,
 	}, nil
 }
 
@@ -355,7 +370,7 @@ func (a *AuthController) RemoveAPIKey(ctx context.Context, apiKey string) error 
 	return nil
 }
 
-func (a *AuthController) VerifyJWT(tokenString string) (*jwt.Token, error) {
+func (a *AuthController) VerifyJWT(tokenString string, checkExp bool) (*jwt.Token, error) {
 	token, err := jwt.Parse(tokenString, utils.Keyfunc)
 	if err != nil {
 		return nil, serrors.InternalError(err)
@@ -365,7 +380,7 @@ func (a *AuthController) VerifyJWT(tokenString string) (*jwt.Token, error) {
 		return nil, err
 	}
 
-	if isExpired {
+	if checkExp && isExpired {
 		return nil, serrors.AuthErrorf("token is expired", nil)
 	}
 

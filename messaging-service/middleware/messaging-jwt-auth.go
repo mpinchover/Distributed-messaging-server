@@ -2,20 +2,19 @@ package middleware
 
 import (
 	"context"
+	"fmt"
 	"messaging-service/controllers/authcontroller"
 	"messaging-service/serrors"
 	"messaging-service/utils"
 	"net/http"
 )
 
-type APIKeyAuthMiddleware struct {
+type MessagingJWT struct {
 	authController *authcontroller.AuthController
 }
 
-func NewAPIKeyAuthMiddleware(
-	authController *authcontroller.AuthController,
-) *APIKeyAuthMiddleware {
-	return &APIKeyAuthMiddleware{
+func NewMessagingJWT(authController *authcontroller.AuthController) *MessagingJWT {
+	return &MessagingJWT{
 		authController: authController,
 	}
 }
@@ -37,21 +36,47 @@ https://support.getstream.io/hc/en-us/articles/360060576774-Token-Creation-Best-
 // if the JWT has expired, external service should call this service to generate a new token
 // todo - move this to utils
 
-func (a *APIKeyAuthMiddleware) execute(h HTTPHandler) HTTPHandler {
+func (a *MessagingJWT) execute(h HTTPHandler) HTTPHandler {
 	return func(w http.ResponseWriter, r *http.Request) (interface{}, error) {
-		apiKey := utils.GetAPIKeyFromURL(r)
+		var tokenString, apiKey *string
+
+		apiKey = utils.GetAPIKeyFromURL(r)
 		if apiKey == nil {
-			return nil, serrors.AuthError(nil)
+			tokenString = utils.GetAuthTokenFromHeaders(r)
 		}
-		existingApiKey, err := a.authController.VerifyAPIKeyExists(r.Context(), *apiKey)
-		if err != nil {
-			return nil, err
+
+		if apiKey == nil && tokenString == nil {
+			return nil, serrors.AuthErrorf("could not get auth header or api key", nil)
 		}
-		if existingApiKey == nil {
-			return nil, serrors.AuthError(nil)
+
+		if apiKey != nil {
+			existingApiKey, err := a.authController.VerifyAPIKeyExists(r.Context(), *apiKey)
+			if err != nil {
+				return nil, err
+			}
+			if existingApiKey == nil {
+				return nil, serrors.AuthError(nil)
+			}
+			ctx := context.WithValue(r.Context(), "API_KEY", existingApiKey)
+			r = r.WithContext(ctx)
+			fmt.Println("MADE IT OTO END OF MIDDLWARE")
+		} else {
+			tokenString = utils.GetAuthTokenFromHeaders(r)
+			if tokenString == nil {
+				return nil, serrors.AuthErrorf("could not get auth header", nil)
+			}
+
+			jwtToken, err := a.authController.VerifyJWT(*tokenString, true)
+			if err != nil {
+				return nil, err
+			}
+			ctx, err := utils.SetChatProfileToContext(jwtToken, r.Context())
+			if err != nil {
+				return nil, err
+			}
+			r = r.WithContext(ctx)
 		}
-		ctx := context.WithValue(r.Context(), "API_KEY", existingApiKey)
-		r = r.WithContext(ctx)
+
 		return h(w, r)
 	}
 }

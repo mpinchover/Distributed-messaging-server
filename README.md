@@ -68,16 +68,18 @@ docker-compose up -d --no-deps --build <service_name>
 
 ### P1
 
+- clean up naming
+- don't use middleware.New for http route
+- ensure order of messages are good
+- don't return messages and the get rooms by user uuid
+- order the rooms return response
+- set up middelware to allow for both jwt and api key
+- ensure secret for JWT is not hardcoded
 - ensure passwords match in signup
 - ensure password, email are correct formats
 - implement delete, update authprofile
 - implement password reset
-- generate new token after sucesfull call
-
-- Add an API key/auth in some way
-
-  - once the client connects they should get back a JWT. For all socket related req, just use JWT.
-  - use redis to track API keys
+- ensure that socket connection has auth
 
 - allow members, rooms to have a stringified text field that can track whatever the user wants.
 - update tests to run in go routines to mimic high, concurrent volumes
@@ -100,3 +102,11 @@ docker-compose up -d --no-deps --build <service_name>
 - LeaveRoom should also save messages that someone has left the chat
 - app should show if someone screenshotted
 - add in a user permissions table to link to member table
+
+# Testing
+
+Run a single test
+`go test -v -run TestRoomAndMessagesPaginationByApiKey`
+
+Run all tests
+`go test ./... -count=1`

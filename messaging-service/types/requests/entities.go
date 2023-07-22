@@ -58,3 +58,7 @@ type AuthProfile struct {
 	UUID  string
 	Email string
 }
+
+type ChatProfile struct {
+	UserID string
+}

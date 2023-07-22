@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"log"
 	"messaging-service/types/enums"
 	"messaging-service/types/requests"
@@ -44,6 +43,14 @@ func (h *Handler) SetupWebsocketConnection(w http.ResponseWriter, r *http.Reques
 
 }
 
+func sendClientError(conn *websocket.Conn, err error) error {
+	errResp := requests.ErrorResponse{
+		Message: err.Error(),
+	}
+	conn.WriteJSON(errResp)
+	return err
+}
+
 func (h *Handler) handleIncomingSocketEvents(conn *websocket.Conn) error {
 
 	for {
@@ -65,52 +72,51 @@ func (h *Handler) handleIncomingSocketEvents(conn *websocket.Conn) error {
 		// 	}
 		// }
 
+		// TODO – error message for websockets, don't just panic
 		msgType, err := utils.GetEventType(string(p))
 		if err != nil {
-			panic(err)
+			errResp := requests.ErrorResponse{
+				Message: err.Error(),
+			}
+			conn.WriteJSON(errResp)
+		}
+
+		msgToken, err := utils.GetEventToken(string(p))
+		if err != nil {
+			sendClientError(conn, err)
+		}
+
+		var authErr error
+		if msgType == enums.EVENT_SET_CLIENT_SOCKET.String() {
+			_, authErr = h.AuthController.VerifyJWT(msgToken, true)
+		} else {
+			_, authErr = h.AuthController.VerifyJWT(msgToken, false)
+		}
+
+		if authErr != nil {
+			return sendClientError(conn, err)
 		}
 
 		if msgType == enums.EVENT_SET_CLIENT_SOCKET.String() {
+			err := h.handleSetClientSocket(conn, p)
+			if err != nil {
+				return sendClientError(conn, err)
+			}
 
-			// TODO – have a new event that doesn't include the connectionUUID
-			msg := &requests.SetClientConnectionEvent{}
-			err := json.Unmarshal(p, msg)
-			if err != nil {
-				return err
-			}
-			resp, err := h.ControlTowerCtrlr.SetupClientConnectionV2(conn, msg)
-			if err != nil {
-				return err
-			}
-			err = conn.WriteJSON(resp)
-			if err != nil {
-				return err
-			}
 		}
 
 		if msgType == enums.EVENT_TEXT_MESSAGE.String() {
-			msg := &requests.TextMessageEvent{}
-			err := json.Unmarshal(p, msg)
+			err := h.handleClientEventTextMessage(conn, p)
 			if err != nil {
-				return err
-			}
-			// break this up into processTextMessage and SaveTextMessage
-			_, err = h.ControlTowerCtrlr.ProcessTextMessage(msg)
-			if err != nil {
-				err = conn.WriteJSON([]byte("could not send text message"))
-				if err != nil {
-					log.Println("error sending err msg")
-				}
+				sendClientError(conn, err)
 			}
 		}
 
 		if msgType == enums.EVENT_SEEN_MESSAGE.String() {
-			msg := &requests.SeenMessageEvent{}
-			err := json.Unmarshal(p, msg)
+			err := h.handleClientEventSeenMessage(conn, p)
 			if err != nil {
-				return err
+				sendClientError(conn, err)
 			}
-			h.ControlTowerCtrlr.SaveSeenBy(msg)
 		}
 	}
 

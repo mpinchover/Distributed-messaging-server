@@ -178,6 +178,8 @@ func (r *Repo) GetRoomsByUserUUID(uuid string, offset int) ([]*records.Room, err
 		Preload("Members").
 		Where("id in (?)", roomIDs).Find(&results).Error
 
+	// todo, sort by room id if messages are blank for both
+	// just open a new message as incoming from the server itself
 	sort.Slice(results, func(i, j int) bool {
 		if len(results[i].Messages) == 0 {
 			return false

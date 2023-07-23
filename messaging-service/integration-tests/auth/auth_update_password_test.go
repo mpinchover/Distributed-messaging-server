@@ -26,7 +26,7 @@ func TestResetPassword(t *testing.T) {
 			Password:        password,
 			ConfirmPassword: confirmPassword,
 		}
-
+		//
 		signupResp := common.MakeSignupRequest(t, signupRequest)
 		assert.NotEmpty(t, signupResp.AccessToken)
 		assert.NotEmpty(t, signupResp.RefreshToken)

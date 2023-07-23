@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"context"
-	"fmt"
 	"messaging-service/controllers/authcontroller"
 	"messaging-service/serrors"
 	"messaging-service/utils"
@@ -59,7 +58,7 @@ func (a *MessagingJWT) execute(h HTTPHandler) HTTPHandler {
 			}
 			ctx := context.WithValue(r.Context(), "API_KEY", existingApiKey)
 			r = r.WithContext(ctx)
-			fmt.Println("MADE IT OTO END OF MIDDLWARE")
+
 		} else {
 			tokenString = utils.GetAuthTokenFromHeaders(r)
 			if tokenString == nil {

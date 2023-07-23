@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"messaging-service/types/records"
 	"os"
+	"sort"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -108,22 +109,86 @@ func (r *Repo) GetMessagesByRoomUUID(roomUUID string, offset int) ([]*records.Me
 	return results, err
 }
 
+func (r *Repo) GetMessagesByRoomUUIDs(roomUUIDs string, offset int) ([]*records.Message, error) {
+	results := []*records.Message{}
+
+	query := r.DB.Preload("SeenBy").Where("room_uuid in (?)", roomUUIDs)
+	err := query.Find(&results).Error
+
+	return results, err
+}
+
+// order the rooms by what the latest message is
+// TODO - possibly switch to go routines to handle the timeouts
 func (r *Repo) GetRoomsByUserUUID(uuid string, offset int) ([]*records.Room, error) {
 	results := []*records.Room{}
 
-	members := []*records.Member{}
-	err := r.DB.Where("user_uuid = ?", uuid).Find(&members).Error
+	// query := `
+	// 	SELECT r.id AS room_id, r.uuid AS room_uuid, r.created_at AS room_created_at, r.updated_at AS room_updated_at
+	// 	FROM rooms r
+	// 	INNER JOIN members m ON r.id = m.room_id
+	// 	LEFT JOIN (
+	// 		SELECT room_id, MAX(id) AS latest_message_id
+	// 		FROM messages
+	// 		GROUP BY room_id
+	// 	) latest_msg ON r.id = latest_msg.room_id
+	// 	LEFT JOIN messages msg ON latest_msg.latest_message_id = msg.id
+	// 	WHERE m.user_uuid = ?
+	// 	ORDER BY latest_msg.latest_message_id DESC
+	// 	LIMIT ?,?;
+	// `
+	query := `
+		SELECT r.id AS room_id
+		FROM rooms r
+		INNER JOIN members m ON r.id = m.room_id
+		LEFT JOIN (
+			SELECT room_id, MAX(id) AS latest_message_id
+			FROM messages
+			WHERE deleted_at is null
+			GROUP BY room_id
+		) latest_msg ON r.id = latest_msg.room_id
+		LEFT JOIN messages msg ON latest_msg.latest_message_id = msg.id
+		WHERE m.user_uuid = ? AND m.deleted_at is null and r.deleted_at is null
+		ORDER BY latest_msg.latest_message_id DESC
+		LIMIT ?,?;
+	`
+
+	// get the last message content as well
+	roomIDs := []int{}
+	err := r.DB.Raw(query, uuid, offset, PAGINATION_ROOMS).Scan(&roomIDs).Error
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO – what if roomUUIDs is empty?
-	roomUUIDs := []string{}
-	for _, m := range members {
-		roomUUIDs = append(roomUUIDs, m.RoomUUID)
-	}
+	// fmt.Println("ROOM IDS")
+	// fmt.Println(roomIDs)
+	// panic("STOP")
 
-	err = r.DB.Preload("Members").Preload("Messages").Preload("Messages.SeenBy").Where("uuid in (?)", roomUUIDs).Offset(offset).Limit(PAGINATION_MESSAGES).Find(&results).Error
+	// preload messages
+	// https://stackoverflow.com/questions/57782293/how-to-limit-results-of-preload-of-gorm
+	err = r.DB.
+		// Preload("Messages", func(tx *gorm.DB) *gorm.DB {
+		// 	return tx.Order("id desc")
+		// }).
+		Preload("Messages", func(tx *gorm.DB) *gorm.DB {
+			return tx.Order("id desc").Find(&records.Message{})
+			// return tx.Raw("select * from messages order by id desc")
+		}).
+		Preload("Messages.SeenBy").
+		Preload("Members").
+		Where("id in (?)", roomIDs).Find(&results).Error
+
+	sort.Slice(results, func(i, j int) bool {
+		if len(results[i].Messages) == 0 {
+			return false
+		}
+		if len(results[j].Messages) == 0 {
+			return true
+		}
+		return results[i].Messages[0].ID > results[j].Messages[0].ID
+	})
+
+	// now that you know which rooms to get, run a query that gets the hydrated rooms
 	return results, err
 }
 

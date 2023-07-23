@@ -21,6 +21,22 @@ const (
 	SocketURL = "ws://localhost:9090/ws"
 )
 
+func SendSingleTextMessage(t *testing.T, fromUserUUID string, connectionUUID string, roomUUID string, conn *websocket.Conn, token string) {
+	msgText := "text"
+	msgEventOut := &requests.TextMessageEvent{
+		FromUUID:       fromUserUUID,
+		ConnectionUUID: connectionUUID,
+		EventType:      enums.EVENT_TEXT_MESSAGE.String(),
+		Message: &requests.Message{
+			RoomUUID:    roomUUID,
+			MessageText: msgText,
+		},
+		Token: token,
+	}
+	SendTextMessage(t, conn, msgEventOut)
+
+}
+
 func SendMessages(t *testing.T, fromUserUUID string, connectionUUID string, roomUUID string, conn *websocket.Conn, token string) {
 	for i := 0; i < 25; i++ {
 		msgText := fmt.Sprintf("Message %d", i)

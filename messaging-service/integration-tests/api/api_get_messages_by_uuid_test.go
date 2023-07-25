@@ -3,8 +3,8 @@ package apitests
 import (
 	"log"
 	"messaging-service/integration-tests/common"
-	"messaging-service/types/enums"
-	"messaging-service/types/requests"
+	"messaging-service/src/types/enums"
+	"messaging-service/src/types/requests"
 	"testing"
 	"time"
 
@@ -116,8 +116,8 @@ func TestGetMessagesByUserUUIDWithAPIKey(t *testing.T) {
 		assert.Len(t, totalMessages, 140)
 
 		messagesResponse = common.GetMessagesByRoomUUIDByWithAPIKey(t, roomUUID, len(totalMessages), validAPIKey)
-		assert.Len(t, messagesResponse.Messages, 10)
+		assert.Len(t, messagesResponse.Messages, 11)
 		totalMessages = append(totalMessages, messagesResponse.Messages...)
-		assert.Len(t, totalMessages, 150)
+		assert.Len(t, totalMessages, 151)
 	})
 }

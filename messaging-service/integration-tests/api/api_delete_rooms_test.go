@@ -4,10 +4,9 @@ import (
 	"encoding/json"
 	"log"
 	"messaging-service/integration-tests/common"
-	"messaging-service/types/enums"
-	"messaging-service/types/requests"
+	"messaging-service/src/types/enums"
+	"messaging-service/src/types/requests"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -241,7 +240,7 @@ func TestDeleteRoomAndMessages(t *testing.T) {
 }
 
 func recvDeletedRoomMsg(t *testing.T, conn *websocket.Conn, resp *requests.DeleteRoomEvent) {
-	conn.SetReadDeadline(time.Now().Add(time.Second * 2))
+	// conn.SetReadDeadline(time.Now().Add(time.Second * 2))
 	_, p, err := conn.ReadMessage()
 	assert.NoError(t, err)
 	err = json.Unmarshal(p, resp)

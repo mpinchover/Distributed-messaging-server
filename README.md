@@ -1,6 +1,6 @@
 # To run the service
 
-## Create the docket network
+## Create the docker network
 
 ```
 docker network create external-example
@@ -73,7 +73,6 @@ docker-compose up -d --no-deps --build <service_name>
 - ensure order of messages are good
 - don't return messages and the get rooms by user uuid
 - order the rooms return response
-- set up middelware to allow for both jwt and api key
 - ensure secret for JWT is not hardcoded
 - ensure passwords match in signup
 - ensure password, email are correct formats

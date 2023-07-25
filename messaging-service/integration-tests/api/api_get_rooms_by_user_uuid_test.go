@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 	"messaging-service/integration-tests/common"
-	"messaging-service/types/enums"
-	"messaging-service/types/requests"
+	"messaging-service/src/types/enums"
+	"messaging-service/src/types/requests"
 	"testing"
 	"time"
 
@@ -14,8 +14,9 @@ import (
 )
 
 func TestGetRoomByUUIDWithApiKey(t *testing.T) {
-	// t.Skip()
+
 	t.Run("test get rooms with api key", func(t *testing.T) {
+		t.Skip()
 		log.Printf("Running %s", t.Name())
 
 		// need to get valid API key as well

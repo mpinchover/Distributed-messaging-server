@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"messaging-service/integration-tests/common"
-	"messaging-service/types/requests"
+	"messaging-service/src/types/requests"
 	"testing"
 
 	"github.com/google/uuid"

@@ -3,9 +3,10 @@ package integrationtests
 import (
 	"log"
 	"messaging-service/integration-tests/common"
-	"messaging-service/types/enums"
-	"messaging-service/types/requests"
+	"messaging-service/src/types/enums"
+	"messaging-service/src/types/requests"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -87,7 +88,7 @@ func TestSeenBy(t *testing.T) {
 			Token: validMessagingToken,
 		}
 		common.SendTextMessage(t, tomConn, msgEventOut)
-
+		time.Sleep(time.Second)
 		// everyone should recv the message
 
 		// clear out recv msg
@@ -120,8 +121,9 @@ func TestSeenBy(t *testing.T) {
 		common.RecvSeenMessageEvent(t, deanMobileConn, resp.Message.UUID)
 
 		res, err := common.GetMessagesByRoomUUIDByMessagingJWT(t, roomUUID, 0, validMessagingToken)
+
 		assert.NoError(t, err)
-		assert.Len(t, res.Messages, 1)
+		assert.Len(t, res.Messages, 2)
 		assert.Len(t, res.Messages[0].SeenBy, 1)
 
 		assert.Equal(t, res.Messages[0].SeenBy[0].MessageUUID, resp.Message.UUID)

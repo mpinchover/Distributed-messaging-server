@@ -3,8 +3,8 @@ package integrationtests
 import (
 	"log"
 	"messaging-service/integration-tests/common"
-	"messaging-service/types/enums"
-	"messaging-service/types/requests"
+	"messaging-service/src/types/enums"
+	"messaging-service/src/types/requests"
 	"testing"
 	"time"
 

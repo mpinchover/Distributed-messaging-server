@@ -41,7 +41,7 @@ func (a *AuthProfileJWT) execute(h HTTPHandler) HTTPHandler {
 			return nil, serrors.AuthErrorf("could not get auth header", nil)
 		}
 
-		jwtToken, err := a.authController.VerifyJWT(*tokenString, true)
+		jwtToken, err := utils.VerifyJWT(*tokenString, true)
 		if err != nil {
 			return nil, err
 		}

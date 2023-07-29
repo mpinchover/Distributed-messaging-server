@@ -3,42 +3,11 @@ package repo
 import (
 	"fmt"
 	"messaging-service/src/types/records"
-	"os"
+
 	"sort"
 
-	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
-
-const (
-	PAGINATION_MESSAGES = 20
-	PAGINATION_ROOMS    = 10
-)
-
-type Repo struct {
-	DB *gorm.DB
-}
-
-func connect() (*gorm.DB, error) {
-	dsn := fmt.Sprintf("root:root@tcp(%s:%s)/messaging?charset=utf8mb4&parseTime=True&loc=Local", os.Getenv("MYSQL_HOST"), os.Getenv("MYSQL_PORT"))
-	return gorm.Open(mysql.Open(dsn), &gorm.Config{
-		// Logger: logger.Default.LogMode(logger.Info),
-		// FullSaveAssociations: true,
-	})
-}
-
-func New() *Repo {
-	var db *gorm.DB
-	// refer https://github.com/go-sql-driver/mysql#dsn-data-source-name for details
-	db, err := connect()
-	if err != nil {
-		panic(err)
-	}
-
-	return &Repo{
-		DB: db,
-	}
-}
 
 func (r *Repo) SaveRoom(room *records.Room) error {
 	return r.DB.Create(room).Error
@@ -167,6 +136,7 @@ func (r *Repo) GetRoomsByUserUUID(uuid string, offset int) ([]*records.Room, err
 		// Preload("Messages", func(tx *gorm.DB) *gorm.DB {
 		// 	return tx.Order("id desc")
 		// }).
+		// TODO probably need custom functionality here
 		Preload("Messages", func(tx *gorm.DB) *gorm.DB {
 			return tx.Order("id desc").Find(&records.Message{})
 			// return tx.Raw("select * from messages order by id desc")

@@ -13,20 +13,18 @@ import (
 	"messaging-service/src/types/records"
 	"messaging-service/src/types/requests"
 	"messaging-service/src/utils"
-	"net/http"
 	"net/smtp"
 	"os"
 	"time"
 
-	goerrors "github.com/go-errors/errors"
-	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthController struct {
-	repo        *repo.Repo
-	redisClient *redisClient.RedisClient
+	repo repo.RepoInteface
+	// redisClient *redisClient.RedisClient
+	redisClient redisClient.RedisInterface
 }
 
 func New(
@@ -71,7 +69,7 @@ func (a *AuthController) Login(req *requests.LoginRequest) (*requests.LoginRespo
 	}
 
 	if !doPasswordsMatch(authProfile.HashedPassword, req.Password) {
-		return nil, serrors.AuthErrorf("password/email does not match", nil)
+		return nil, serrors.AuthErrorf("old/new passwords do not match", nil)
 	}
 
 	rAuthProfile := &requests.AuthProfile{
@@ -79,11 +77,11 @@ func (a *AuthController) Login(req *requests.LoginRequest) (*requests.LoginRespo
 		UUID:  authProfile.UUID,
 	}
 
-	accessToken, err := a.GenerateJWTAccessToken(rAuthProfile)
+	accessToken, err := utils.GenerateJWTToken(rAuthProfile, time.Now().Add(time.Minute*10))
 	if err != nil {
 		return nil, serrors.InternalError(err)
 	}
-	refreshToken, err := a.GenerateJWTRefreshToken(rAuthProfile)
+	refreshToken, err := utils.GenerateJWTToken(rAuthProfile, time.Now().Add(time.Hour*utils.NumberOfHoursInSixMonths))
 	if err != nil {
 		return nil, serrors.InternalError(err)
 	}
@@ -109,10 +107,10 @@ func (a *AuthController) UpdatePassword(
 	}
 
 	if existingAuthProfile == nil {
-		return serrors.AuthError(err)
+		return serrors.AuthErrorf("no account matching email found", nil)
 	}
 	if !doPasswordsMatch(existingAuthProfile.HashedPassword, req.CurrentPassword) {
-		return serrors.AuthErrorf("password/email does not match", nil)
+		return serrors.AuthErrorf("old/new passwords do not match", nil)
 	}
 
 	// validate the new and confirm password match
@@ -142,10 +140,9 @@ func generateRandomString(length int) (string, error) {
 
 // validate passwordmatch
 func (a *AuthController) ResetPassword(ctx context.Context, req *requests.ResetPasswordRequest) error {
-	var email string
-	err := a.redisClient.Get(ctx, req.Token, &email)
-	if err != nil && serrors.GetStatusCode(err) == http.StatusBadRequest {
-		return serrors.AuthError(nil)
+	email, err := a.redisClient.GetEmailByPasswordResetToken(ctx, req.Token)
+	if err != nil {
+		return serrors.InternalError(nil)
 	}
 
 	if email == "" {
@@ -247,38 +244,6 @@ func (a *AuthController) GeneratePasswordResetLink(ctx context.Context, req *req
 	return nil
 }
 
-func (a *AuthController) GenerateMessagingToken(userID string, dur time.Duration) (string, error) {
-	token := jwt.New(jwt.SigningMethodHS256)
-	claims := token.Claims.(jwt.MapClaims)
-	claims["USER_ID"] = requests.ChatProfile{
-		UserID: userID,
-	}
-	claims["EXP"] = time.Now().UTC().Add(dur).Unix()
-	token.Claims = claims
-
-	tokenString, err := token.SignedString([]byte("SECRET"))
-	if err != nil {
-		return "", goerrors.Wrap(err, 0)
-	}
-
-	return tokenString, nil
-}
-
-func (a *AuthController) GenerateJWTToken(authProfile *requests.AuthProfile, dur time.Duration) (string, error) {
-	token := jwt.New(jwt.SigningMethodHS256)
-	claims := token.Claims.(jwt.MapClaims)
-	claims["AUTH_PROFILE"] = authProfile
-	claims["EXP"] = time.Now().UTC().Add(dur).Unix()
-	token.Claims = claims
-
-	tokenString, err := token.SignedString([]byte("SECRET"))
-	if err != nil {
-		return "", goerrors.Wrap(err, 0)
-	}
-
-	return tokenString, nil
-}
-
 func (a *AuthController) GenerateAPIKey(ctx context.Context) (string, error) {
 	key := uuid.New().String()
 	apiKey := requests.APIKey{
@@ -293,11 +258,13 @@ func (a *AuthController) GenerateAPIKey(ctx context.Context) (string, error) {
 }
 
 func (a *AuthController) VerifyAPIKeyExists(ctx context.Context, key string) (*requests.APIKey, error) {
-	apiKey := &requests.APIKey{}
-
-	err := a.redisClient.Get(ctx, key, apiKey)
+	apiKey, err := a.redisClient.GetAPIKey(ctx, key)
 	if err != nil {
 		return nil, err
+	}
+
+	if apiKey == nil {
+		return nil, serrors.AuthErrorf("could not find API key", nil)
 	}
 
 	return apiKey, nil
@@ -335,11 +302,11 @@ func (a *AuthController) Signup(req *requests.SignupRequest) (*requests.SignupRe
 		UUID:  recordAuthProfile.UUID,
 	}
 
-	accessToken, err := a.GenerateJWTAccessToken(rAuthProfile)
+	accessToken, err := utils.GenerateJWTToken(rAuthProfile, time.Now().Add(time.Minute*10))
 	if err != nil {
 		return nil, serrors.InternalError(err)
 	}
-	refreshToken, err := a.GenerateJWTRefreshToken(rAuthProfile)
+	refreshToken, err := utils.GenerateJWTToken(rAuthProfile, time.Now().Add(time.Hour*utils.NumberOfHoursInSixMonths))
 	if err != nil {
 		return nil, serrors.InternalError(err)
 	}
@@ -352,40 +319,6 @@ func (a *AuthController) Signup(req *requests.SignupRequest) (*requests.SignupRe
 	}, nil
 }
 
-func (a *AuthController) GenerateJWTAccessToken(authProfile *requests.AuthProfile) (string, error) {
-	return a.GenerateJWTToken(authProfile, 20*time.Minute)
-}
-
-func (a *AuthController) GenerateJWTRefreshToken(authProfile *requests.AuthProfile) (string, error) {
-	return a.GenerateJWTToken(authProfile, utils.NumberOfHoursInSixMonths*time.Minute)
-}
-
 func (a *AuthController) RemoveAPIKey(ctx context.Context, apiKey string) error {
-	fmt.Println("REMOVING THE API KEY ", apiKey)
-
-	err := a.redisClient.Del(ctx, apiKey)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (a *AuthController) VerifyJWT(tokenString string, checkExp bool) (*jwt.Token, error) {
-	token, err := jwt.Parse(tokenString, utils.Keyfunc)
-	if err != nil {
-		return nil, serrors.InternalError(err)
-	}
-	isExpired, err := utils.IsTokenExpired(token)
-	if err != nil {
-		return nil, err
-	}
-
-	if checkExp && isExpired {
-		return nil, serrors.AuthErrorf("token is expired", nil)
-	}
-
-	if !token.Valid {
-		return nil, serrors.InternalErrorf("token is not valid", nil)
-	}
-	return token, nil
+	return a.redisClient.Del(ctx, apiKey)
 }

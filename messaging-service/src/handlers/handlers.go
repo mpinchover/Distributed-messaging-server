@@ -311,11 +311,11 @@ func (h *Handler) refreshAccessToken(ctx context.Context) (*requests.RefreshAcce
 	if err != nil {
 		return nil, err
 	}
-	accessToken, err := h.AuthController.GenerateJWTAccessToken(authProfile)
+	accessToken, err := utils.GenerateJWTToken(authProfile, time.Now().Add(time.Minute*10))
 	if err != nil {
 		return nil, err
 	}
-	refreshToken, err := h.AuthController.GenerateJWTRefreshToken(authProfile)
+	refreshToken, err := utils.GenerateJWTToken(authProfile, time.Now().Add(time.Hour*utils.NumberOfHoursInSixMonths))
 	if err != nil {
 		return nil, err
 	}
@@ -395,7 +395,7 @@ func (h *Handler) GenerateMessagingToken(w http.ResponseWriter, r *http.Request)
 // have they exceeded quota for monthly active users?
 func (h *Handler) generateMessagingToken(ctx context.Context, req *requests.GenerateMessagingTokenRequest) (*requests.GenerateMessagingTokenResponse, error) {
 	userID := req.UserID
-	accessToken, err := h.AuthController.GenerateMessagingToken(userID, 10*time.Minute)
+	accessToken, err := utils.GenerateMessagingToken(userID, time.Now().Add(10*time.Minute))
 	if err != nil {
 		return nil, err
 	}

@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	goerrors "github.com/go-errors/errors"
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
 )
@@ -35,7 +36,9 @@ func GetAPIKeyFromCtx(ctx context.Context) (*requests.APIKey, error) {
 
 func GetAuthProfileFromCtx(ctx context.Context) (*requests.AuthProfile, error) {
 	_authProfile := ctx.Value("AUTH_PROFILE")
-
+	if _authProfile == nil {
+		return nil, serrors.AuthErrorf("could not get auth profile", nil)
+	}
 	authProfile := &requests.AuthProfile{}
 	b, err := json.Marshal(_authProfile)
 	if err != nil {
@@ -154,4 +157,56 @@ func GetChatProfileFromTokenClaims(claims jwt.MapClaims) (*requests.ChatProfile,
 	chatProfile := &requests.ChatProfile{}
 	err = json.Unmarshal(bytes, chatProfile)
 	return chatProfile, err
+}
+
+func GenerateMessagingToken(userID string, exp time.Time) (string, error) {
+	token := jwt.New(jwt.SigningMethodHS256)
+	claims := token.Claims.(jwt.MapClaims)
+	claims["USER_ID"] = requests.ChatProfile{
+		UserID: userID,
+	}
+	claims["EXP"] = exp
+	token.Claims = claims
+
+	tokenString, err := token.SignedString([]byte("SECRET"))
+	if err != nil {
+		return "", goerrors.Wrap(err, 0)
+	}
+
+	return tokenString, nil
+}
+
+func GenerateJWTToken(authProfile *requests.AuthProfile, exp time.Time) (string, error) {
+	token := jwt.New(jwt.SigningMethodHS256)
+	claims := token.Claims.(jwt.MapClaims)
+	claims["AUTH_PROFILE"] = authProfile
+	claims["EXP"] = exp
+	token.Claims = claims
+
+	tokenString, err := token.SignedString([]byte("SECRET"))
+	if err != nil {
+		return "", goerrors.Wrap(err, 0)
+	}
+
+	return tokenString, nil
+}
+
+func VerifyJWT(tokenString string, checkExp bool) (*jwt.Token, error) {
+	token, err := jwt.Parse(tokenString, Keyfunc)
+	if err != nil {
+		return nil, serrors.InternalError(err)
+	}
+	isExpired, err := IsTokenExpired(token)
+	if err != nil {
+		return nil, err
+	}
+
+	if checkExp && isExpired {
+		return nil, serrors.AuthErrorf("token is expired", nil)
+	}
+
+	if !token.Valid {
+		return nil, serrors.InternalErrorf("token is not valid", nil)
+	}
+	return token, nil
 }

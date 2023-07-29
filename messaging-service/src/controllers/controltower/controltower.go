@@ -29,7 +29,7 @@ type ControlTowerCtrlr struct {
 
 	MapLock *sync.Mutex
 
-	Repo *repo.Repo
+	Repo repo.RepoInteface
 }
 
 func New(

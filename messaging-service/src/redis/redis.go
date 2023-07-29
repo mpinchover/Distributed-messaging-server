@@ -5,13 +5,23 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"messaging-service/src/serrors"
+	"messaging-service/src/types/requests"
 	"time"
 
 	"os"
 
 	"github.com/redis/go-redis/v9"
 )
+
+type RedisInterface interface {
+	SetupChannel(channelName string) *redis.PubSub
+	PublishToRedisChannel(channelName string, bytes []byte)
+	Set(ctx context.Context, key string, value interface{}) error
+	SetWithTTL(ctx context.Context, key string, value interface{}, ttl time.Duration) error
+	Del(ctx context.Context, key string) error
+	GetAPIKey(ctx context.Context, key string) (*requests.APIKey, error)
+	GetEmailByPasswordResetToken(ctx context.Context, key string) (string, error)
+}
 
 type RedisClient struct {
 	Client *redis.Client
@@ -80,18 +90,32 @@ func (c *RedisClient) Del(ctx context.Context, key string) error {
 	return err
 }
 
-func (c *RedisClient) Get(ctx context.Context, key string, dest interface{}) error {
+func (c *RedisClient) GetAPIKey(ctx context.Context, key string) (*requests.APIKey, error) {
+
 	res := c.Client.Get(ctx, key)
 	if res.Err() == redis.Nil {
-		return serrors.InvalidArgumentErrorf("redis value not found", res.Err())
+		return nil, nil
 	}
 	if res.Err() != nil {
-		return res.Err()
+		return nil, res.Err()
 	}
 
-	err := json.Unmarshal([]byte(res.Val()), dest)
+	apiKey := &requests.APIKey{}
+	err := json.Unmarshal([]byte(res.Val()), apiKey)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return apiKey, nil
+}
+
+func (c *RedisClient) GetEmailByPasswordResetToken(ctx context.Context, key string) (string, error) {
+	res := c.Client.Get(ctx, key)
+	if res.Err() == redis.Nil {
+		return "", nil
+	}
+	if res.Err() != nil {
+		return "", res.Err()
+	}
+
+	return string(res.Val()), nil
 }

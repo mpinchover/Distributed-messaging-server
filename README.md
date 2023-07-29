@@ -68,6 +68,8 @@ docker-compose up -d --no-deps --build <service_name>
 
 ### P1
 
+- ResetPassword, GeneratePasswordLink test later
+- custom error mapping, last step should just translate the error befor sending it back customer err code -> http code
 - clean up naming
 - don't use middleware.New for http route
 - ensure order of messages are good
@@ -109,3 +111,8 @@ Run a single test
 
 Run all tests
 `go test ./... -count=1`
+
+# Mocks
+
+To generate mocks for all interfaces, run
+`mockery --all --keeptree`

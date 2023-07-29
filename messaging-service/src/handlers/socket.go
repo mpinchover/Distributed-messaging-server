@@ -88,9 +88,9 @@ func (h *Handler) handleIncomingSocketEvents(conn *websocket.Conn) error {
 
 		var authErr error
 		if msgType == enums.EVENT_SET_CLIENT_SOCKET.String() {
-			_, authErr = h.AuthController.VerifyJWT(msgToken, true)
+			_, authErr = utils.VerifyJWT(msgToken, true)
 		} else {
-			_, authErr = h.AuthController.VerifyJWT(msgToken, false)
+			_, authErr = utils.VerifyJWT(msgToken, false)
 		}
 
 		if authErr != nil {

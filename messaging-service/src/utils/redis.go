@@ -10,20 +10,6 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func GetClientConnectionFromRedis(ctx context.Context, client *redisClient.RedisClient, userUUID string) (*requests.Connection, error) {
-	var connection *requests.Connection
-	err := client.Get(ctx, userUUID, connection)
-	if err != nil {
-		return nil, err
-	}
-
-	if connection == nil {
-		return nil, nil
-	}
-
-	return connection, nil
-}
-
 func SetClientConnectionToRedis(ctx context.Context, client *redisClient.RedisClient, connection *requests.Connection) error {
 	return client.Set(ctx, connection.UserUUID, connection)
 }

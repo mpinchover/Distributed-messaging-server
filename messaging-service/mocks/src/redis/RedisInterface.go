@@ -83,8 +83,17 @@ func (_m *RedisInterface) GetEmailByPasswordResetToken(ctx context.Context, key 
 }
 
 // PublishToRedisChannel provides a mock function with given fields: channelName, bytes
-func (_m *RedisInterface) PublishToRedisChannel(channelName string, bytes []byte) {
-	_m.Called(channelName, bytes)
+func (_m *RedisInterface) PublishToRedisChannel(channelName string, bytes []byte) error {
+	ret := _m.Called(channelName, bytes)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, []byte) error); ok {
+		r0 = rf(channelName, bytes)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
 // Set provides a mock function with given fields: ctx, key, value

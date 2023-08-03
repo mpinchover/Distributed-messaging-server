@@ -9,6 +9,7 @@ CREATE TABLE rooms (
     deleted_at timestamp,
 
     uuid VARCHAR(36) NOT NULL,
+    created_at_nano DOUBLE NOT NULL,
     PRIMARY KEY (id)
 ) ENGINE=INNODB;
 
@@ -24,6 +25,7 @@ CREATE TABLE messages (
     room_uuid VARCHAR(36) NOT NULL,
     room_id INT,
     message_status TINYTEXT NOT NULL,
+    created_at_nano DOUBLE NOT NULL,
 
     PRIMARY KEY (id),
     FOREIGN KEY (room_id)

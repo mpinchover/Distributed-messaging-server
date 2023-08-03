@@ -12,6 +12,8 @@ type Message struct {
 	MessageText   string
 	UUID          string
 	MessageStatus string
+	MessageType   string
+	CreatedAtNano float64 `json:"createdAtNano"`
 
 	SeenBy []*SeenBy
 }
@@ -34,9 +36,10 @@ func (SeenBy) TableName() string {
 
 type Room struct {
 	gorm.Model
-	UUID     string
-	Members  []*Member  `gorm:"foreignKey:RoomID;"`
-	Messages []*Message `gorm:"foreignKey:RoomID;"`
+	UUID          string
+	CreatedAtNano float64    `json:"createdAtNano"`
+	Members       []*Member  `gorm:"foreignKey:RoomID;"`
+	Messages      []*Message `gorm:"foreignKey:RoomID;"`
 }
 
 type Member struct {

@@ -21,7 +21,7 @@ type AuthControllerSuite struct {
 	suite.Suite
 
 	authCtrlr       *AuthController
-	mockRepoClient  *mockRepo.RepoInteface
+	mockRepoClient  *mockRepo.RepoInterface
 	mockRedisClient *mockRedis.RedisInterface
 }
 
@@ -29,7 +29,7 @@ type AuthControllerSuite struct {
 func (s *AuthControllerSuite) SetupSuite() {
 	fmt.Println(">>> From SetupSuite")
 
-	s.mockRepoClient = mockRepo.NewRepoInteface(s.T())
+	s.mockRepoClient = mockRepo.NewRepoInterface(s.T())
 	s.mockRedisClient = mockRedis.NewRedisInterface(s.T())
 	s.authCtrlr = &AuthController{
 		repo:        s.mockRepoClient,
@@ -41,21 +41,6 @@ func (s *AuthControllerSuite) SetupSuite() {
 func TestAuthControllerSuite(t *testing.T) {
 	suite.Run(t, new(AuthControllerSuite))
 }
-
-// this function executes after all tests executed
-// func (suite *AuthControllerSuite) TearDownSuite() {
-// 	fmt.Println(">>> From TearDownSuite")
-// }
-
-// this function executes before each test case
-// func (suite *AuthControllerSuite) SetupTest() {
-// 	fmt.Println("-- From SetupTest")
-// }
-
-// this function executes after each test case
-// func (suite *AuthControllerSuite) TearDownTest() {
-// 	fmt.Println("-- From TearDownTest")
-// }
 
 func (s *AuthControllerSuite) TestLogin() {
 

@@ -231,9 +231,9 @@ func OpenRoom(t *testing.T, openRoomEvent *requests.CreateRoomRequest, apiKey st
 	assert.NoError(t, err)
 	reqBody := bytes.NewBuffer(postBody)
 	resp, err := http.Post(fmt.Sprintf("http://localhost:9090/create-room?key=%s", apiKey), "application/json", reqBody)
-	fmt.Println("ERR", err)
+	// fmt.Println("ERR", err)
 	assert.NoError(t, err)
-	fmt.Println("Status code", resp.StatusCode)
+	// fmt.Println("Status code", resp.StatusCode)
 	assert.GreaterOrEqual(t, resp.StatusCode, 200)
 	assert.Less(t, resp.StatusCode, 300)
 }
@@ -330,9 +330,9 @@ func QueryMessagesByMessagingJWT(t *testing.T, userUUID string, roomUUID string,
 
 	resp, err = GetMessagesByRoomUUIDByMessagingJWT(t, roomUUID, len(totalMessages), jwtToken)
 	assert.NoError(t, err)
-	assert.Equal(t, 11, len(resp.Messages))
+	assert.Equal(t, 10, len(resp.Messages))
 	totalMessages = append(totalMessages, resp.Messages...)
-	assert.Equal(t, 51, len(totalMessages))
+	assert.Equal(t, 50, len(totalMessages))
 
 	// jump by 15 because the msgs are being sent too fast.
 	for i := 15; i < len(totalMessages); i++ {

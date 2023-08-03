@@ -15,7 +15,7 @@ import (
 
 type RedisInterface interface {
 	SetupChannel(channelName string) *redis.PubSub
-	PublishToRedisChannel(channelName string, bytes []byte)
+	PublishToRedisChannel(channelName string, bytes []byte) error
 	Set(ctx context.Context, key string, value interface{}) error
 	SetWithTTL(ctx context.Context, key string, value interface{}, ttl time.Duration) error
 	Del(ctx context.Context, key string) error
@@ -63,8 +63,8 @@ func (c *RedisClient) SetupChannel(channelName string) *redis.PubSub {
 }
 
 // publish message to redis channel
-func (c *RedisClient) PublishToRedisChannel(channelName string, bytes []byte) {
-	c.Client.Publish(context.Background(), channelName, bytes)
+func (c *RedisClient) PublishToRedisChannel(channelName string, bytes []byte) error {
+	return c.Client.Publish(context.Background(), channelName, bytes).Err()
 }
 
 func (c *RedisClient) Set(ctx context.Context, key string, value interface{}) error {

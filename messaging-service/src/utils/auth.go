@@ -65,8 +65,9 @@ func IsTokenExpired(jwtToken *jwt.Token) (bool, error) {
 		return false, err
 	}
 
-	expiration := int64(claims["EXP"].(float64))
-	return expiration < time.Now().Unix(), nil
+	expirationTime := claims["EXP"].(float64)
+	now := time.Now().Unix()
+	return expirationTime < float64(now), nil
 }
 
 func IsValidUUID(u string) bool {
@@ -165,7 +166,7 @@ func GenerateMessagingToken(userID string, exp time.Time) (string, error) {
 	claims["USER_ID"] = requests.ChatProfile{
 		UserID: userID,
 	}
-	claims["EXP"] = exp
+	claims["EXP"] = exp.Unix()
 	token.Claims = claims
 
 	tokenString, err := token.SignedString([]byte("SECRET"))
@@ -180,7 +181,7 @@ func GenerateJWTToken(authProfile *requests.AuthProfile, exp time.Time) (string,
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
 	claims["AUTH_PROFILE"] = authProfile
-	claims["EXP"] = exp
+	claims["EXP"] = exp.Unix()
 	token.Claims = claims
 
 	tokenString, err := token.SignedString([]byte("SECRET"))

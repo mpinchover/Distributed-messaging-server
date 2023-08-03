@@ -1,7 +1,6 @@
 package repo
 
 import (
-	"fmt"
 	"messaging-service/src/types/records"
 
 	"sort"
@@ -108,14 +107,13 @@ func (r *Repo) GetRoomsByUserUUID(uuid string, offset int) ([]*records.Room, err
 		FROM rooms r
 		INNER JOIN members m ON r.id = m.room_id
 		LEFT JOIN (
-			SELECT room_id, MAX(id) AS latest_message_id
+			SELECT room_id, MAX(created_at_nano) AS latest_message_created_at
 			FROM messages
 			WHERE deleted_at is null
 			GROUP BY room_id
 		) latest_msg ON r.id = latest_msg.room_id
-		LEFT JOIN messages msg ON latest_msg.latest_message_id = msg.id
 		WHERE m.user_uuid = ? AND m.deleted_at is null and r.deleted_at is null
-		ORDER BY latest_msg.latest_message_id DESC
+		ORDER BY COALESCE(latest_msg.latest_message_created_at, r.created_at_nano) DESC
 		LIMIT ?,?;
 	`
 
@@ -138,6 +136,7 @@ func (r *Repo) GetRoomsByUserUUID(uuid string, offset int) ([]*records.Room, err
 		// }).
 		// TODO probably need custom functionality here
 		Preload("Messages", func(tx *gorm.DB) *gorm.DB {
+			// TODO - might need to change to created_at_nano
 			return tx.Order("id desc").Find(&records.Message{})
 			// return tx.Raw("select * from messages order by id desc")
 		}).
@@ -147,10 +146,30 @@ func (r *Repo) GetRoomsByUserUUID(uuid string, offset int) ([]*records.Room, err
 
 	// TODO – if there are no  messages, then go by createdAt
 	sort.Slice(results, func(i, j int) bool {
-		if len(results[i].Messages) == 0 || len(results[j].Messages) == 0 {
-			fmt.Println("FOUND A 0")
+		iCreatedAt := results[i].CreatedAtNano
+		jCreatedAt := results[j].CreatedAtNano
+
+		if len(results[i].Messages) > 0 {
+			iCreatedAt = results[i].Messages[0].CreatedAtNano
 		}
-		return results[i].Messages[0].ID > results[j].Messages[0].ID
+		if len(results[j].Messages) > 0 {
+			jCreatedAt = results[j].Messages[0].CreatedAtNano
+		}
+		// fmt.Println("ROOM I")
+		// fmt.Println(results[i].UUID)
+		// fmt.Println(iCreatedAt)
+		// if len(results[i].Messages) > 0 {
+		// 	fmt.Println("FOUND MESSAGES ", len(results[i].Messages))
+		// }
+		// fmt.Println("ROOM J")
+		// fmt.Println(results[j].UUID)
+		// fmt.Println(jCreatedAt)
+		// if len(results[j].Messages) > 0 {
+		// 	fmt.Println("FOUND MESSAGES ", len(results[j].Messages))
+		// }
+		// fmt.Println("")
+		// fmt.Println("")
+		return iCreatedAt > jCreatedAt
 	})
 
 	// for _, r := range results {

@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"messaging-service/src/controllers/authcontroller"
 	"messaging-service/src/serrors"
 	"messaging-service/src/utils"
@@ -43,6 +44,8 @@ func (a *AuthProfileJWT) execute(h HTTPHandler) HTTPHandler {
 
 		jwtToken, err := utils.VerifyJWT(*tokenString, true)
 		if err != nil {
+			fmt.Println("ERROR IS ")
+			fmt.Println(err)
 			return nil, err
 		}
 		ctx, err := utils.SetAuthProfileToContext(jwtToken, r.Context())

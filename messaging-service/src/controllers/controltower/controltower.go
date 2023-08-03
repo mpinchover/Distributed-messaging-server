@@ -4,16 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
+	"log"
+	"time"
 
 	"messaging-service/src/controllers/channelscontroller"
 	"messaging-service/src/controllers/connectionscontroller"
 	redisClient "messaging-service/src/redis"
 	"messaging-service/src/repo"
+	"messaging-service/src/serrors"
 	"messaging-service/src/types/enums"
 	"messaging-service/src/types/records"
 	"messaging-service/src/types/requests"
-	"messaging-service/src/utils"
 	"sync"
 
 	"github.com/google/uuid"
@@ -21,15 +22,15 @@ import (
 )
 
 type ControlTowerCtrlr struct {
-	RedisClient   *redisClient.RedisClient
-	ConnCtrlr     *connectionscontroller.ConnectionsController
+	RedisClient redisClient.RedisInterface
+	Repo        repo.RepoInterface
+
+	ConnCtrlr     connectionscontroller.ConnectionsControllerInterface
 	ChannelsCtrlr *channelscontroller.ChannelsController
 	// track active rooms/channels on this server
 	ServerChannels map[string]*requests.ServerChannel
 
 	MapLock *sync.Mutex
-
-	Repo repo.RepoInteface
 }
 
 func New(
@@ -38,8 +39,6 @@ func New(
 	connCtrlr *connectionscontroller.ConnectionsController,
 	channelsCtrlr *channelscontroller.ChannelsController,
 ) *ControlTowerCtrlr {
-	// connections := map[string]*requests.Connection{}
-	// serverChannels := map[string]*requests.ServerChannel{}
 
 	var mu sync.Mutex
 	controlTower := &ControlTowerCtrlr{
@@ -70,7 +69,6 @@ func (c *ControlTowerCtrlr) CreateRoom(
 	roomUUID := uuid.New().String()
 	repoMembers := make([]*records.Member, len(members))
 
-	// TODO – if member is nil, make it a default type
 	for i, member := range members {
 		repoMembers[i] = &records.Member{
 			UUID:     member.UUID,
@@ -79,32 +77,31 @@ func (c *ControlTowerCtrlr) CreateRoom(
 		}
 	}
 
+	createdAtNano := float64(time.Now().UnixNano()) //  1e6
 	repoRoom := &records.Room{
-		UUID:    roomUUID,
-		Members: repoMembers,
-		Messages: []*records.Message{
-			{
-				RoomUUID:    roomUUID,
-				MessageText: "Beginning of chat",
-			},
-		},
+		UUID:          roomUUID,
+		Members:       repoMembers,
+		CreatedAtNano: createdAtNano,
 	}
 
 	err := c.Repo.SaveRoom(repoRoom)
 	if err != nil {
-		fmt.Println("PROBLEM SAVING ROOM")
+		log.Println("PROBLEM SAVING ROOM")
 		return nil, err
 	}
 
 	newRoom := &requests.Room{
-		Members: members,
-		UUID:    roomUUID,
-		Messages: []*requests.Message{
-			{
-				RoomUUID:    roomUUID,
-				MessageText: "Beginning of chat",
-			},
-		},
+		Members:       members,
+		UUID:          roomUUID,
+		CreatedAtNano: createdAtNano,
+		// Messages: []*requests.Message{
+		// 	{
+		// 		CreatedAtNano: createdAtNano,
+		// 		MessageType:   "NOTIFICATION",
+		// 		RoomUUID:      roomUUID,
+		// 		MessageText:   "Beginning of chat",
+		// 	},
+		// },
 	}
 
 	openRoomEvent := requests.OpenRoomEvent{
@@ -112,7 +109,12 @@ func (c *ControlTowerCtrlr) CreateRoom(
 		Room:      newRoom,
 	}
 
-	err = utils.PublishToRedisChannel(c.RedisClient, enums.CHANNEL_SERVER_EVENTS, openRoomEvent)
+	bytes, err := json.Marshal(openRoomEvent)
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.RedisClient.PublishToRedisChannel(enums.CHANNEL_SERVER_EVENTS, bytes)
 	if err != nil {
 		return nil, err
 	}
@@ -162,8 +164,7 @@ func (c *ControlTowerCtrlr) LeaveRoom(ctx context.Context, userUUID string, room
 		if err != nil {
 			return err
 		}
-		c.RedisClient.PublishToRedisChannel(roomUUID, msgBytes)
-		return nil
+		return c.RedisClient.PublishToRedisChannel(roomUUID, msgBytes)
 	}
 
 	err = c.Repo.LeaveRoom(userUUID, roomUUID)
@@ -180,8 +181,7 @@ func (c *ControlTowerCtrlr) LeaveRoom(ctx context.Context, userUUID string, room
 		return err
 	}
 
-	c.RedisClient.PublishToRedisChannel(roomUUID, msgBytes)
-	return nil
+	return c.RedisClient.PublishToRedisChannel(roomUUID, msgBytes)
 }
 
 func (c *ControlTowerCtrlr) DeleteRoom(ctx context.Context, roomUUID string) error {
@@ -190,7 +190,7 @@ func (c *ControlTowerCtrlr) DeleteRoom(ctx context.Context, roomUUID string) err
 		return err
 	}
 	if room == nil {
-		return errors.New("room not found")
+		return serrors.InternalErrorf("room not found", nil)
 	}
 
 	// put in helper function
@@ -213,8 +213,7 @@ func (c *ControlTowerCtrlr) DeleteRoom(ctx context.Context, roomUUID string) err
 		return err
 	}
 
-	c.RedisClient.PublishToRedisChannel(roomUUID, msgBytes)
-	return nil
+	return c.RedisClient.PublishToRedisChannel(roomUUID, msgBytes)
 }
 
 func (c *ControlTowerCtrlr) SetupClientConnectionV2(
@@ -262,8 +261,7 @@ func (c *ControlTowerCtrlr) SaveSeenBy(msg *requests.SeenMessageEvent) error {
 	if err != nil {
 		return err
 	}
-	c.RedisClient.PublishToRedisChannel(msg.RoomUUID, bytes)
-	return nil
+	return c.RedisClient.PublishToRedisChannel(msg.RoomUUID, bytes)
 }
 
 func (c *ControlTowerCtrlr) GetRoomsByUserUUID(ctx context.Context, userUUID string, offset int) ([]*requests.Room, error) {

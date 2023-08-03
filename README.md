@@ -68,6 +68,8 @@ docker-compose up -d --no-deps --build <service_name>
 
 ### P1
 
+- test createdAtNano
+- separate chat notifications from messages, or just fix messages to relay messagse from server
 - ResetPassword, GeneratePasswordLink test later
 - custom error mapping, last step should just translate the error befor sending it back customer err code -> http code
 - clean up naming

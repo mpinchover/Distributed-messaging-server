@@ -134,12 +134,12 @@ func (h *Handler) getMessagesByRoomUUID(ctx context.Context, req *requests.GetMe
 		}
 
 		requestMsgs[i] = &requests.Message{
-			UUID:        msg.UUID,
-			FromUUID:    msg.FromUUID,
-			RoomUUID:    msg.RoomUUID,
-			MessageText: msg.MessageText,
-			CreatedAt:   msg.Model.CreatedAt.UnixMilli(),
-			SeenBy:      seenBy,
+			UUID:          msg.UUID,
+			FromUUID:      msg.FromUUID,
+			RoomUUID:      msg.RoomUUID,
+			MessageText:   msg.MessageText,
+			CreatedAtNano: msg.CreatedAtNano,
+			SeenBy:        seenBy,
 		}
 	}
 

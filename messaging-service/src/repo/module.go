@@ -14,7 +14,7 @@ const (
 	PAGINATION_ROOMS    = 10
 )
 
-type RepoInteface interface {
+type RepoInterface interface {
 	GetAuthProfileByEmail(email string) (*records.AuthProfile, error)
 	SaveAuthProfile(authProfile *records.AuthProfile) error
 	UpdatePassword(email string, hashedPassword string) error

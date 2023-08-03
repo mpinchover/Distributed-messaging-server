@@ -1,7 +1,6 @@
 package apitests
 
 import (
-	"fmt"
 	"log"
 	"messaging-service/integration-tests/common"
 	"messaging-service/src/types/enums"
@@ -16,7 +15,6 @@ import (
 func TestGetRoomByUUIDWithApiKey(t *testing.T) {
 
 	t.Run("test get rooms with api key", func(t *testing.T) {
-		t.Skip()
 		log.Printf("Running %s", t.Name())
 
 		// need to get valid API key as well
@@ -82,8 +80,8 @@ func TestGetRoomByUUIDWithApiKey(t *testing.T) {
 
 		assert.Len(t, roomsResponse.Rooms, 5)
 
-		// // send messages between A and B
-		// // send 150 messages
+		// send messages between A and B
+		// send 150 messages
 		// common.SendMessages(t, aClient.UserUUID, aClient.ConnectionUUID, roomUUID, aConn, validMessagingToken)
 		// common.SendMessages(t, bClient.UserUUID, bClient.ConnectionUUID, roomUUID, bConn, validMessagingToken)
 		// common.SendMessages(t, aClient.UserUUID, aClient.ConnectionUUID, roomUUID, aConn, validMessagingToken)
@@ -174,9 +172,9 @@ func TestGetRoomByUUIDWithApiKey(t *testing.T) {
 		common.ReadOpenRoomResponse(t, daveConn, 2)
 		openRoomEvent = common.ReadOpenRoomResponse(t, tomConn, 2)
 		roomUUID3 := openRoomEvent.Room.UUID
-		fmt.Println("Room 1", roomUUID1)
-		fmt.Println("Room 2", roomUUID2)
-		fmt.Println("Room 3", roomUUID3)
+		// fmt.Println("Room 1", roomUUID1)
+		// fmt.Println("Room 2", roomUUID2)
+		// fmt.Println("Room 3", roomUUID3)
 
 		roomsResponse := common.GetRoomsByUserUUIDWithApiKey(t, tom, 0, validAPIKey)
 		assert.NotNil(t, roomsResponse)

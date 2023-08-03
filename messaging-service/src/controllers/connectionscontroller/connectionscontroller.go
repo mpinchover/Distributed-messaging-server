@@ -7,6 +7,14 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+type ConnectionsControllerInterface interface {
+	GetConnection(userUUID string) *requests.Connection
+	AddConnection(connection *requests.Connection)
+	AddClient(connection *requests.Connection,
+		connectionUUID string,
+		conn *websocket.Conn)
+}
+
 type ConnectionsController struct {
 	Mu   *sync.Mutex
 	Cxns map[string]*requests.Connection

@@ -123,7 +123,7 @@ func TestSeenBy(t *testing.T) {
 		res, err := common.GetMessagesByRoomUUIDByMessagingJWT(t, roomUUID, 0, validMessagingToken)
 
 		assert.NoError(t, err)
-		assert.Len(t, res.Messages, 2)
+		assert.Len(t, res.Messages, 1)
 		assert.Len(t, res.Messages[0].SeenBy, 1)
 
 		assert.Equal(t, res.Messages[0].SeenBy[0].MessageUUID, resp.Message.UUID)

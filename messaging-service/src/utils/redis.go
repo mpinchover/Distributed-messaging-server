@@ -2,7 +2,6 @@ package utils
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	redisClient "messaging-service/src/redis"
 	"messaging-service/src/types/requests"
@@ -32,15 +31,15 @@ func SetupChannel(c *redisClient.RedisClient, channelName string) *redis.PubSub 
 }
 
 // TODO use context from handler
-func PublishToRedisChannel(c *redisClient.RedisClient, channelName string, v interface{}) error {
-	bytes, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
+// func PublishToRedisChannel(c *redisClient.RedisClient, channelName string, v interface{}) error {
+// 	bytes, err := json.Marshal(v)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	res := c.Client.Publish(context.Background(), channelName, bytes)
-	if res.Err() != nil {
-		return res.Err()
-	}
-	return nil
-}
+// 	res := c.Client.Publish(context.Background(), channelName, bytes)
+// 	if res.Err() != nil {
+// 		return res.Err()
+// 	}
+// 	return nil
+// }

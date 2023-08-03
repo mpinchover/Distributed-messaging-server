@@ -116,8 +116,8 @@ func TestGetMessagesByUserUUIDWithAPIKey(t *testing.T) {
 		assert.Len(t, totalMessages, 140)
 
 		messagesResponse = common.GetMessagesByRoomUUIDByWithAPIKey(t, roomUUID, len(totalMessages), validAPIKey)
-		assert.Len(t, messagesResponse.Messages, 11)
+		assert.Len(t, messagesResponse.Messages, 10)
 		totalMessages = append(totalMessages, messagesResponse.Messages...)
-		assert.Len(t, totalMessages, 151)
+		assert.Len(t, totalMessages, 150)
 	})
 }

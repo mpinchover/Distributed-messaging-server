@@ -11,9 +11,10 @@ type Member struct {
 }
 
 type Room struct {
-	UUID     string     `json:"uuid"`
-	Members  []*Member  `json:"members"`
-	Messages []*Message `json:"messages"`
+	UUID          string     `json:"uuid"`
+	Members       []*Member  `json:"members"`
+	Messages      []*Message `json:"messages"`
+	CreatedAtNano float64    `json:"createdAtNano"`
 }
 
 type Message struct {
@@ -21,7 +22,7 @@ type Message struct {
 	FromUUID      string    `json:"fromUuid"`
 	RoomUUID      string    `json:"roomUuid"`
 	MessageText   string    `json:"messageText"`
-	CreatedAt     int64     `json:"createdAt"`
+	CreatedAtNano float64   `json:"createdAtNano"`
 	MessageStatus string    `json:"messageStatus"`
 	SeenBy        []*SeenBy `json:"seenBy"`
 }

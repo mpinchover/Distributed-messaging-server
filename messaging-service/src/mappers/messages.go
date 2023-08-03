@@ -20,11 +20,11 @@ func FromRecordsMessageToRequestMessage(msg *records.Message) *requests.Message 
 		msg.MessageText = ""
 	}
 	return &requests.Message{
-		UUID:        msg.UUID,
-		FromUUID:    msg.FromUUID,
-		RoomUUID:    msg.RoomUUID,
-		MessageText: msg.MessageText,
-		CreatedAt:   msg.CreatedAt.Unix(),
+		UUID:          msg.UUID,
+		FromUUID:      msg.FromUUID,
+		RoomUUID:      msg.RoomUUID,
+		MessageText:   msg.MessageText,
+		CreatedAtNano: msg.CreatedAtNano,
 	}
 }
 

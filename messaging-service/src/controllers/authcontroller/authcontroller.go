@@ -22,7 +22,7 @@ import (
 )
 
 type AuthController struct {
-	repo repo.RepoInteface
+	repo repo.RepoInterface
 	// redisClient *redisClient.RedisClient
 	redisClient redisClient.RedisInterface
 }

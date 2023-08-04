@@ -1,7 +1,6 @@
 package apitests
 
 import (
-	"log"
 	"messaging-service/integration-tests/common"
 	"messaging-service/src/types/enums"
 	"messaging-service/src/types/requests"
@@ -15,13 +14,14 @@ import (
 func TestGetRoomByUUIDWithApiKey(t *testing.T) {
 
 	t.Run("test get rooms with api key", func(t *testing.T) {
-		log.Printf("Running %s", t.Name())
+		t.Parallel()
+		t.Logf("Runningg test %s at %d", t.Name(), time.Now().UnixNano())
 
 		// need to get valid API key as well
 		_, validAPIKey := common.GetValidToken(t)
 
-		tom := uuid.New().String()
-		jerry := uuid.New().String()
+		tom := uuid.New().String() + "_1"
+		jerry := uuid.New().String() + "_2"
 
 		for i := 0; i < 25; i++ {
 			createRoomRequest := &requests.CreateRoomRequest{
@@ -34,6 +34,7 @@ func TestGetRoomByUUIDWithApiKey(t *testing.T) {
 					},
 				},
 			}
+
 			common.OpenRoom(t, createRoomRequest, validAPIKey)
 		}
 
@@ -48,6 +49,7 @@ func TestGetRoomByUUIDWithApiKey(t *testing.T) {
 					},
 				},
 			}
+
 			common.OpenRoom(t, createRoomRequest, validAPIKey)
 		}
 
@@ -93,15 +95,16 @@ func TestGetRoomByUUIDWithApiKey(t *testing.T) {
 		// common.GetRoomsByUserUUIDWithApiKey(t, aClient.UserUUID, roomUUID, 2, validAPIKey)
 	})
 	t.Run("test get rooms in correct order with api key", func(t *testing.T) {
-		log.Printf("Running %s", t.Name())
+		t.Parallel()
+		t.Logf("Runningg test %s at %d", t.Name(), time.Now().UnixNano())
 
 		// need to get valid API key as well
 		validMessagingToken, validAPIKey := common.GetValidToken(t)
 
-		tom := uuid.New().String()
-		jerry := uuid.New().String()
-		alice := uuid.New().String()
-		dave := uuid.New().String()
+		tom := uuid.New().String() + "_3"
+		jerry := uuid.New().String() + "_4"
+		alice := uuid.New().String() + "_5"
+		dave := uuid.New().String() + "_6"
 
 		clientTom, tomConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
@@ -137,6 +140,7 @@ func TestGetRoomByUUIDWithApiKey(t *testing.T) {
 				},
 			},
 		}
+
 		common.OpenRoom(t, createRoomRequest, validAPIKey)
 		common.ReadOpenRoomResponse(t, jerryConn, 2)
 		openRoomEvent := common.ReadOpenRoomResponse(t, tomConn, 2)
@@ -153,6 +157,7 @@ func TestGetRoomByUUIDWithApiKey(t *testing.T) {
 				},
 			},
 		}
+
 		common.OpenRoom(t, createRoomRequest, validAPIKey)
 		common.ReadOpenRoomResponse(t, aliceConn, 2)
 		openRoomEvent = common.ReadOpenRoomResponse(t, tomConn, 2)
@@ -168,6 +173,7 @@ func TestGetRoomByUUIDWithApiKey(t *testing.T) {
 				},
 			},
 		}
+
 		common.OpenRoom(t, createRoomRequest, validAPIKey)
 		common.ReadOpenRoomResponse(t, daveConn, 2)
 		openRoomEvent = common.ReadOpenRoomResponse(t, tomConn, 2)

@@ -67,29 +67,19 @@ docker-compose up -d --no-deps --build <service_name>
 ## TODO's
 
 ### P1
-
-- test createdAtNano
-- separate chat notifications from messages, or just fix messages to relay messagse from server
-- ResetPassword, GeneratePasswordLink test later
+- change the delete to deleteByRoomId
+- change uuid to the test name
 - custom error mapping, last step should just translate the error befor sending it back customer err code -> http code
 - clean up naming
 - don't use middleware.New for http route
-- ensure order of messages are good
-- don't return messages and the get rooms by user uuid
-- order the rooms return response
+- don't return all messages in getroomsbyuserUUID
 - ensure secret for JWT is not hardcoded
-- ensure passwords match in signup
-- ensure password, email are correct formats
-- implement delete, update authprofile
-- implement password reset
-- ensure that socket connection has auth
-
-- allow members, rooms to have a stringified text field that can track whatever the user wants.
-- update tests to run in go routines to mimic high, concurrent volumes
-- create endpoints to allow user to generate and delete api key
 
 ### P2
-
+- ensure passwords match in signup
+- ensure password, email are correct formats
+- update tests to run in go routines to mimic high, concurrent volumes
+- separate chat notifications from messages, or just fix messages to relay messagse from server
 - separate out channel and client events
 - allow someone to be invited to the chat
 - Add a "typing" attribute/event to the message
@@ -99,6 +89,8 @@ docker-compose up -d --no-deps --build <service_name>
 
 ### P3
 
+- implement delete, update authprofile
+- ResetPassword, GeneratePasswordLink test later
 - controltower should be parent of
   - realtime controller (sockets)
   - message controller (sync flows for messages)

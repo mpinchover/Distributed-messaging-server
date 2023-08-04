@@ -1,7 +1,6 @@
 package apitests
 
 import (
-	"log"
 	"messaging-service/integration-tests/common"
 	"messaging-service/src/types/enums"
 	"messaging-service/src/types/requests"
@@ -16,13 +15,14 @@ func TestGetMessagesByUserUUIDWithAPIKey(t *testing.T) {
 	// t.Skip()
 
 	t.Run("test get messages with api key", func(t *testing.T) {
-		log.Printf("Running %s", t.Name())
+		t.Parallel()
+		t.Logf("Runningg test %s at %d", t.Name(), time.Now().UnixNano())
 
 		// need to get valid API key as well
 		validMessagingToken, validAPIKey := common.GetValidToken(t)
 
-		tom := uuid.New().String()
-		jerry := uuid.New().String()
+		tom := uuid.New().String() + "_12"
+		jerry := uuid.New().String() + "_12"
 
 		tomClient, tomConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
@@ -46,6 +46,7 @@ func TestGetMessagesByUserUUIDWithAPIKey(t *testing.T) {
 				},
 			},
 		}
+
 		common.OpenRoom(t, createRoomRequest, validAPIKey)
 
 		// test tom

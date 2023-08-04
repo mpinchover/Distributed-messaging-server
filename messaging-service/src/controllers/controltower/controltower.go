@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"messaging-service/src/controllers/channelscontroller"
@@ -15,7 +17,6 @@ import (
 	"messaging-service/src/types/enums"
 	"messaging-service/src/types/records"
 	"messaging-service/src/types/requests"
-	"sync"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -29,8 +30,6 @@ type ControlTowerCtrlr struct {
 	ChannelsCtrlr *channelscontroller.ChannelsController
 	// track active rooms/channels on this server
 	ServerChannels map[string]*requests.ServerChannel
-
-	MapLock *sync.Mutex
 }
 
 func New(
@@ -40,14 +39,12 @@ func New(
 	channelsCtrlr *channelscontroller.ChannelsController,
 ) *ControlTowerCtrlr {
 
-	var mu sync.Mutex
 	controlTower := &ControlTowerCtrlr{
 		RedisClient:   redisClient,
 		ConnCtrlr:     connCtrlr,
 		ChannelsCtrlr: channelsCtrlr,
 
-		Repo:    repo,
-		MapLock: &mu,
+		Repo: repo,
 	}
 
 	return controlTower
@@ -267,6 +264,8 @@ func (c *ControlTowerCtrlr) SaveSeenBy(msg *requests.SeenMessageEvent) error {
 func (c *ControlTowerCtrlr) GetRoomsByUserUUID(ctx context.Context, userUUID string, offset int) ([]*requests.Room, error) {
 	rooms, err := c.Repo.GetRoomsByUserUUID(userUUID, offset)
 	if err != nil {
+		fmt.Println("ERROR")
+		fmt.Println(err)
 		return nil, err
 	}
 
@@ -298,4 +297,31 @@ func (c *ControlTowerCtrlr) GetRoomsByUserUUID(ctx context.Context, userUUID str
 		}
 	}
 	return requestRooms, nil
+}
+
+// maybe store the rooms each member is part of as memebersOnServer
+func (c *ControlTowerCtrlr) RemoveClientFromServer(userUUID string, connectionUUID string) error {
+	// remove the user from connections
+
+	var mu sync.Mutex
+	mu.Lock()
+	defer mu.Unlock()
+	// TODO - can you put these all in one lock?
+	c.ConnCtrlr.DelClient(userUUID, connectionUUID)
+
+	// TODO - optimize
+	channelsForUser := c.ChannelsCtrlr.GetChannelsByUserUUID(userUUID)
+
+	// fmt.Println("FOUND ", len(channelsForUser), "channels for user ", userUUID)
+	// if this user is the last member of the channel on this server, delete the channel
+	for _, ch := range channelsForUser {
+		c.ChannelsCtrlr.DeleteUser(ch.UUID, userUUID)
+	}
+
+	channelsForUser = c.ChannelsCtrlr.GetChannelsByUserUUID(userUUID)
+
+	// fmt.Println("AFTER DELETE")
+	// fmt.Println("FOUND ", len(channelsForUser), "channels for user ", userUUID)
+	// fmt.Println("\n\n\n")
+	return nil
 }

@@ -18,6 +18,7 @@ services:
       REDIS_URL: redisCache:6379
       MYSQL_HOST: mysqldb
       MYSQL_PORT: 3306
+      JWT_SECRET: secret
     ports:
       - 9090:9090
     command: go run main.go

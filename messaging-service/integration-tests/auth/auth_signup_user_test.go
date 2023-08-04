@@ -1,7 +1,6 @@
 package integrationtests
 
 import (
-	"log"
 	"messaging-service/integration-tests/common"
 	"messaging-service/src/types/requests"
 	"testing"
@@ -13,7 +12,7 @@ import (
 func TestSignupUser(t *testing.T) {
 	// t.Skip()
 	t.Run("test signup user and create auth profile", func(t *testing.T) {
-		log.Printf("Running %s", t.Name())
+		t.Logf("Runningg test %s at %d", t.Name(), time.Now().UnixNano())
 
 		signupResponse := common.CreateRandomUser(t)
 		common.MakeTestAuthRequest(t, signupResponse.AccessToken)

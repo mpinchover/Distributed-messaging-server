@@ -2,11 +2,11 @@ package apitests
 
 import (
 	"encoding/json"
-	"log"
 	"messaging-service/integration-tests/common"
 	"messaging-service/src/types/enums"
 	"messaging-service/src/types/requests"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -16,7 +16,8 @@ import (
 func TestDeleteRoom(t *testing.T) {
 	// t.Skip()
 	t.Run("test delete a room", func(t *testing.T) {
-		log.Printf("Running test %s", t.Name())
+		t.Parallel()
+		t.Logf("Runningg test %s at %d", t.Name(), time.Now().UnixNano())
 		validMessagingToken, validAPIKey := common.GetValidToken(t)
 
 		// TODO - problem is here.
@@ -24,19 +25,19 @@ func TestDeleteRoom(t *testing.T) {
 		aClient, aConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
 			Token:     validMessagingToken,
-			UserUUID:  uuid.New().String(),
+			UserUUID:  uuid.New().String() + "_9",
 		})
 
 		bClient, bConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
 			Token:     validMessagingToken,
-			UserUUID:  uuid.New().String(),
+			UserUUID:  uuid.New().String() + "_10",
 		})
 
 		cClient, cConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
 			Token:     validMessagingToken,
-			UserUUID:  uuid.New().String(),
+			UserUUID:  uuid.New().String() + "_11",
 		})
 		openRoomEvent := &requests.CreateRoomRequest{
 			Members: []*requests.Member{
@@ -48,6 +49,7 @@ func TestDeleteRoom(t *testing.T) {
 				},
 			},
 		}
+
 		common.OpenRoom(t, openRoomEvent, validAPIKey)
 		common.ReadOpenRoomResponse(t, aConn, 2)
 		openRoomRes := common.ReadOpenRoomResponse(t, bConn, 2)
@@ -63,6 +65,7 @@ func TestDeleteRoom(t *testing.T) {
 				},
 			},
 		}
+
 		common.OpenRoom(t, openRoomEvent, validAPIKey)
 		common.ReadOpenRoomResponse(t, aConn, 2)
 		openRoomRes = common.ReadOpenRoomResponse(t, cConn, 2)
@@ -142,7 +145,8 @@ func TestDeleteRoom(t *testing.T) {
 func TestDeleteRoomAndMessages(t *testing.T) {
 	// t.Skip()
 	t.Run("delete room and messages", func(t *testing.T) {
-		log.Printf("Running test %s", t.Name())
+		t.Parallel()
+		t.Logf("Runningg test %s at %d", t.Name(), time.Now().UnixNano())
 
 		validMessagingToken, validAPIKey := common.GetValidToken(t)
 		tomClient, tomConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
@@ -211,6 +215,7 @@ func TestDeleteRoomAndMessages(t *testing.T) {
 		common.ReadOpenRoomResponse(t, benDeviceTwoConn, 4)
 
 		roomUUID := tomOpenRoomEventResponse.Room.UUID
+
 		common.SendMessages(t, tomClient.UserUUID, tomClient.ConnectionUUID, roomUUID, tomConn, validMessagingToken)
 		common.RecvMessages(t, jerryConn)
 		common.RecvMessages(t, aliceConn)
@@ -224,6 +229,7 @@ func TestDeleteRoomAndMessages(t *testing.T) {
 		deleteRoomRequest := &requests.DeleteRoomRequest{
 			RoomUUID: roomUUID,
 		}
+
 		common.DeleteRoom(t, deleteRoomRequest, validAPIKey)
 		res, _ = common.GetMessagesByRoomUUIDByMessagingJWT(t, roomUUID, 0, validMessagingToken)
 		assert.Len(t, res.Messages, 0)

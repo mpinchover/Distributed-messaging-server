@@ -27,7 +27,6 @@ type AuthControllerSuite struct {
 
 // this function executes before the test suite begins execution
 func (s *AuthControllerSuite) SetupSuite() {
-	fmt.Println(">>> From SetupSuite")
 
 	s.mockRepoClient = mockRepo.NewRepoInterface(s.T())
 	s.mockRedisClient = mockRedis.NewRedisInterface(s.T())
@@ -35,6 +34,7 @@ func (s *AuthControllerSuite) SetupSuite() {
 		repo:        s.mockRepoClient,
 		redisClient: s.mockRedisClient,
 	}
+
 	//
 }
 

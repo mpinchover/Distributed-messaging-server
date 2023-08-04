@@ -1,7 +1,6 @@
 package integrationtests
 
 import (
-	"log"
 	"messaging-service/integration-tests/common"
 	"messaging-service/src/types/enums"
 	"messaging-service/src/types/requests"
@@ -15,32 +14,32 @@ import (
 func TestSeenBy(t *testing.T) {
 	// t.Skip()
 	t.Run("delete room and messages", func(t *testing.T) {
-
-		log.Printf("Running test %s", t.Name())
+		t.Parallel()
+		t.Logf("Runningg test %s at %d", t.Name(), time.Now().UnixNano())
 
 		validMessagingToken, validAPIKey := common.GetValidToken(t)
 		tomClient, tomConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
 			Token:     validMessagingToken,
-			UserUUID:  uuid.New().String(),
+			UserUUID:  uuid.New().String() + "_44",
 		})
 
 		aliceClient, aliceConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
 			Token:     validMessagingToken,
-			UserUUID:  uuid.New().String(),
+			UserUUID:  uuid.New().String() + "_43",
 		})
 
 		jerryClient, jerryConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
 			Token:     validMessagingToken,
-			UserUUID:  uuid.New().String(),
+			UserUUID:  uuid.New().String() + "_42",
 		})
 
 		deanClient, deanConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
 			Token:     validMessagingToken,
-			UserUUID:  uuid.New().String(),
+			UserUUID:  uuid.New().String() + "_41",
 		})
 
 		_, deanMobileConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{

@@ -24,6 +24,10 @@ func (h *Handler) SetupWebsocketConnection(w http.ResponseWriter, r *http.Reques
 		panic(err)
 	}
 
+	ws := &requests.Websocket{
+		Conn: conn,
+	}
+	// handle breaking the connection
 	defer func() {
 		conn.Close()
 	}()
@@ -36,39 +40,46 @@ func (h *Handler) SetupWebsocketConnection(w http.ResponseWriter, r *http.Reques
 		return nil
 	})
 
-	err = h.handleIncomingSocketEvents(conn)
-	if err != nil {
+	// update the conn to have a connectionUUID and pass this in instead
+	err = h.handleIncomingSocketEvents(ws)
+	if err != nil && websocket.IsCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+		if ws.UserUUID != nil && ws.ConnectionUUID != nil {
+			h.ControlTowerCtrlr.RemoveClientFromServer(*ws.UserUUID, *ws.ConnectionUUID)
+		}
+	} else if err != nil {
 		log.Println(err)
 	}
-
 }
 
-func sendClientError(conn *websocket.Conn, err error) error {
+func sendClientError(ws *requests.Websocket, err error) error {
 	errResp := requests.ErrorResponse{
 		Message: err.Error(),
 	}
-	conn.WriteJSON(errResp)
+	ws.Conn.WriteJSON(errResp)
 	return err
 }
 
-func (h *Handler) handleIncomingSocketEvents(conn *websocket.Conn) error {
+func (h *Handler) handleIncomingSocketEvents(ws *requests.Websocket) error {
 
 	for {
 		// read in a message
-		_, p, err := conn.ReadMessage()
+		_, p, err := ws.Conn.ReadMessage()
+
+		// if err != nil && websocket.IsCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+		// 	return err
+		// }
 		if err != nil {
-			break
+			return err
 		}
 
 		// add in token authenticator
 
-		// if err != nil && websocket.IsCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-		// 	break
-		// }
-
 		// if err != nil {
+		// 	fmt.Println("is error")
+
 		// 	if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-		// 		break
+		// 		fmt.Println("closing ws!!")
+		// 		return err
 		// 	}
 		// }
 
@@ -78,12 +89,12 @@ func (h *Handler) handleIncomingSocketEvents(conn *websocket.Conn) error {
 			errResp := requests.ErrorResponse{
 				Message: err.Error(),
 			}
-			conn.WriteJSON(errResp)
+			ws.Conn.WriteJSON(errResp)
 		}
 
 		msgToken, err := utils.GetEventToken(string(p))
 		if err != nil {
-			sendClientError(conn, err)
+			sendClientError(ws, err)
 		}
 
 		var authErr error
@@ -94,28 +105,28 @@ func (h *Handler) handleIncomingSocketEvents(conn *websocket.Conn) error {
 		}
 
 		if authErr != nil {
-			return sendClientError(conn, err)
+			return sendClientError(ws, err)
 		}
 
 		if msgType == enums.EVENT_SET_CLIENT_SOCKET.String() {
-			err := h.handleSetClientSocket(conn, p)
+			err := h.handleSetClientSocket(ws, p)
 			if err != nil {
-				return sendClientError(conn, err)
+				return sendClientError(ws, err)
 			}
 
 		}
 
 		if msgType == enums.EVENT_TEXT_MESSAGE.String() {
-			err := h.handleClientEventTextMessage(conn, p)
+			err := h.handleClientEventTextMessage(ws.Conn, p)
 			if err != nil {
-				sendClientError(conn, err)
+				sendClientError(ws, err)
 			}
 		}
 
 		if msgType == enums.EVENT_SEEN_MESSAGE.String() {
-			err := h.handleClientEventSeenMessage(conn, p)
+			err := h.handleClientEventSeenMessage(ws.Conn, p)
 			if err != nil {
-				sendClientError(conn, err)
+				sendClientError(ws, err)
 			}
 		}
 	}

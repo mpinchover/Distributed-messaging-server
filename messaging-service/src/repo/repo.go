@@ -144,7 +144,13 @@ func (r *Repo) GetRoomsByUserUUID(uuid string, offset int) ([]*records.Room, err
 		Preload("Members").
 		Where("id in (?)", roomIDs).Find(&results).Error
 
-	// TODO – if there are no  messages, then go by createdAt
+	for i := 0; i < len(results); i++ {
+		// get subset of messages here
+		if len(results[i].Messages) > 0 {
+			results[i].Messages = results[i].Messages[:1]
+		}
+	}
+
 	sort.Slice(results, func(i, j int) bool {
 		iCreatedAt := results[i].CreatedAtNano
 		jCreatedAt := results[j].CreatedAtNano
@@ -155,34 +161,10 @@ func (r *Repo) GetRoomsByUserUUID(uuid string, offset int) ([]*records.Room, err
 		if len(results[j].Messages) > 0 {
 			jCreatedAt = results[j].Messages[0].CreatedAtNano
 		}
-		// fmt.Println("ROOM I")
-		// fmt.Println(results[i].UUID)
-		// fmt.Println(iCreatedAt)
-		// if len(results[i].Messages) > 0 {
-		// 	fmt.Println("FOUND MESSAGES ", len(results[i].Messages))
-		// }
-		// fmt.Println("ROOM J")
-		// fmt.Println(results[j].UUID)
-		// fmt.Println(jCreatedAt)
-		// if len(results[j].Messages) > 0 {
-		// 	fmt.Println("FOUND MESSAGES ", len(results[j].Messages))
-		// }
-		// fmt.Println("")
-		// fmt.Println("")
 		return iCreatedAt > jCreatedAt
 	})
 
-	// for _, r := range results {
-	// 	fmt.Println("ROOM")
-	// 	fmt.Println(r.UUID)
-	// 	fmt.Println(r.ID)
-	// 	if len(r.Messages) > 0 {
-	// 		fmt.Println("MSG ID IS", r.Messages[0].ID)
-	// 	}
 
-	// }
-
-	// now that you know which rooms to get, run a query that gets the hydrated rooms
 	return results, err
 }
 

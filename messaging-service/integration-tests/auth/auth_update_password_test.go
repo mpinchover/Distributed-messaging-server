@@ -2,10 +2,10 @@ package integrationtests
 
 import (
 	"fmt"
-	"log"
 	"messaging-service/integration-tests/common"
 	"messaging-service/src/types/requests"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -14,7 +14,7 @@ import (
 func TestResetPassword(t *testing.T) {
 	// t.Skip()
 	t.Run("test signup user and create auth profile", func(t *testing.T) {
-		log.Printf("Running %s", t.Name())
+		t.Logf("Runningg test %s at %d", t.Name(), time.Now().UnixNano())
 
 		password := uuid.New().String()
 		confirmPassword := password

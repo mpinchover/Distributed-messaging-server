@@ -1,7 +1,6 @@
 package integrationtests
 
 import (
-	"log"
 	"messaging-service/integration-tests/common"
 	"messaging-service/src/types/enums"
 	"messaging-service/src/types/requests"
@@ -14,33 +13,37 @@ import (
 func TestRoomAndMessagesPagination(t *testing.T) {
 	// t.Skip()
 	t.Run("test rooms and messages pagination", func(t *testing.T) {
-		log.Printf("Running %s", t.Name())
+		t.Parallel()
+		// log.Printf("Running %s", t.Name())
+		t.Logf("Runningg test %s at %d", t.Name(), time.Now().UnixNano())
 
 		// need to get valid API key as well
 		validMessagingToken, validAPIKey := common.GetValidToken(t)
 
+		// issue is here with deadlock
 		aClient, aConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
 			Token:     validMessagingToken,
-			UserUUID:  uuid.New().String(),
+			UserUUID:  uuid.New().String() + "_31",
 		})
 
 		bClient, bConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
 			Token:     validMessagingToken,
-			UserUUID:  uuid.New().String(),
+			UserUUID:  uuid.New().String() + "_32",
 		})
 
+		// issue is here deadlock
 		cClient, cConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
 			Token:     validMessagingToken,
-			UserUUID:  uuid.New().String(),
+			UserUUID:  uuid.New().String() + "_33",
 		})
 
 		dClient, dConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
 			Token:     validMessagingToken,
-			UserUUID:  uuid.New().String(),
+			UserUUID:  uuid.New().String() + "_34",
 		})
 
 		createRoomRequest1 := &requests.CreateRoomRequest{
@@ -53,12 +56,15 @@ func TestRoomAndMessagesPagination(t *testing.T) {
 				},
 			},
 		}
+		// fmt.Println("CREATING ROOM 12 ")
 		common.OpenRoom(t, createRoomRequest1, validAPIKey)
 
 		openRoomRes1 := common.ReadOpenRoomResponse(t, aConn, 2)
 		openRoomRes1 = common.ReadOpenRoomResponse(t, bConn, 2)
 		roomUUID1 := openRoomRes1.Room.UUID
+		// fmt.Println("R_UUID", roomUUID1)
 
+		// deadlock is here on this creaete room
 		createRoomRequest2 := &requests.CreateRoomRequest{
 			Members: []*requests.Member{
 				{
@@ -69,10 +75,12 @@ func TestRoomAndMessagesPagination(t *testing.T) {
 				},
 			},
 		}
+		// fmt.Println("CREATING ROOM 13 ")
 		common.OpenRoom(t, createRoomRequest2, validAPIKey)
 		openRoomRes2 := common.ReadOpenRoomResponse(t, cConn, 2)
 		openRoomRes2 = common.ReadOpenRoomResponse(t, aConn, 2)
 		roomUUID2 := openRoomRes2.Room.UUID
+		// fmt.Println("R_UUID", roomUUID2)
 
 		// send messages between A and B
 		common.SendMessages(t, aClient.UserUUID, aClient.ConnectionUUID, roomUUID1, aConn, validMessagingToken)
@@ -107,11 +115,13 @@ func TestRoomAndMessagesPagination(t *testing.T) {
 				},
 			},
 		}
+		// fmt.Println("CREATING ROOM 15 ")
 		common.OpenRoom(t, createRoomReq3, validAPIKey)
 
 		openRoomRes3 := common.ReadOpenRoomResponse(t, dConn, 2)
 		openRoomRes3 = common.ReadOpenRoomResponse(t, aConn, 2)
 		roomUUID3 := openRoomRes3.Room.UUID
+		// fmt.Println("R_UUID", roomUUID3)
 
 		// send messages between A and D
 		common.SendMessages(t, aClient.UserUUID, aClient.ConnectionUUID, roomUUID3, aConn, validMessagingToken)
@@ -136,10 +146,12 @@ func TestRoomAndMessagesPagination(t *testing.T) {
 			},
 		}
 
+		// fmt.Println("CREATING ROOM 16 ")
 		common.OpenRoom(t, openRoomReq4, validAPIKey)
 		openRoomRes4 := common.ReadOpenRoomResponse(t, bConn, 2)
 		openRoomRes4 = common.ReadOpenRoomResponse(t, cConn, 2)
 		roomUUID4 := openRoomRes4.Room.UUID
+		// fmt.Println("R_UUID", roomUUID4)
 
 		// send messages between B and C
 		common.SendMessages(t, bClient.UserUUID, bClient.ConnectionUUID, roomUUID4, bConn, validMessagingToken)
@@ -163,6 +175,7 @@ func TestRoomAndMessagesPagination(t *testing.T) {
 				},
 			},
 		}
+		// fmt.Println("CREATING ROOM 17 ")
 		common.OpenRoom(t, openRoomRequest5, validAPIKey)
 
 		openRoomRes5 := common.ReadOpenRoomResponse(t, dConn, 2)
@@ -170,6 +183,7 @@ func TestRoomAndMessagesPagination(t *testing.T) {
 
 		// the mobiel device will get the open room msg as well
 		roomUUID5 := openRoomRes5.Room.UUID
+		// fmt.Println("R_UUID", roomUUID5)
 
 		// send messages between B and D
 		common.SendMessages(t, bClient.UserUUID, bClient.ConnectionUUID, roomUUID5, bConn, validMessagingToken)
@@ -187,8 +201,11 @@ func TestRoomAndMessagesPagination(t *testing.T) {
 // Need to get the room id first and pass it to the text message id
 func TestAllConnectionsRcvMessages(t *testing.T) {
 	// t.Skip()
+
 	t.Run("test all connections get msgs", func(t *testing.T) {
-		log.Printf("Running test %s", t.Name())
+		t.Parallel()
+		// log.Printf("Running test %s", t.Name())
+		t.Logf("Runningg test %s at %d", t.Name(), time.Now().UnixNano())
 
 		// need to get valid API key as well
 		validMessagingToken, validAPIKey := common.GetValidToken(t)
@@ -196,13 +213,13 @@ func TestAllConnectionsRcvMessages(t *testing.T) {
 		aClient, aConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
 			Token:     validMessagingToken,
-			UserUUID:  uuid.New().String(),
+			UserUUID:  uuid.New().String() + "_36",
 		})
 
 		bClient, bConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
 			Token:     validMessagingToken,
-			UserUUID:  uuid.New().String(),
+			UserUUID:  uuid.New().String() + "_37",
 		})
 
 		_, bMobileConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
@@ -221,12 +238,14 @@ func TestAllConnectionsRcvMessages(t *testing.T) {
 				},
 			},
 		}
+		// fmt.Println("CREATING ROOM 18 ")
 		common.OpenRoom(t, openRoomEvent, validAPIKey)
 
 		openRoomRes := common.ReadOpenRoomResponse(t, aConn, 2)
 		common.ReadOpenRoomResponse(t, bConn, 2)
 		common.ReadOpenRoomResponse(t, bMobileConn, 2)
 		roomUUID := openRoomRes.Room.UUID
+		// fmt.Println("R_UUID", roomUUID)
 
 		common.SendMessages(t, aClient.UserUUID, aClient.ConnectionUUID, roomUUID, aConn, validMessagingToken)
 		common.SendMessages(t, bClient.UserUUID, bClient.ConnectionUUID, roomUUID, bConn, validMessagingToken)

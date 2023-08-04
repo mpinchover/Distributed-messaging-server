@@ -7,6 +7,7 @@ import (
 	"messaging-service/src/serrors"
 	"messaging-service/src/types/requests"
 	"net/http"
+	"os"
 	"time"
 
 	goerrors "github.com/go-errors/errors"
@@ -16,7 +17,7 @@ import (
 
 var Keyfunc jwt.Keyfunc = func(token *jwt.Token) (interface{}, error) {
 	// return []byte(os.Getenv("JWT_SECRET")), nil
-	return []byte("SECRET"), nil
+	return []byte(os.Getenv("JWT_SECRET")), nil
 }
 
 func GetAPIKeyFromCtx(ctx context.Context) (*requests.APIKey, error) {
@@ -168,8 +169,7 @@ func GenerateMessagingToken(userID string, exp time.Time) (string, error) {
 	}
 	claims["EXP"] = exp.Unix()
 	token.Claims = claims
-
-	tokenString, err := token.SignedString([]byte("SECRET"))
+	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
 		return "", goerrors.Wrap(err, 0)
 	}
@@ -184,7 +184,7 @@ func GenerateJWTToken(authProfile *requests.AuthProfile, exp time.Time) (string,
 	claims["EXP"] = exp.Unix()
 	token.Claims = claims
 
-	tokenString, err := token.SignedString([]byte("SECRET"))
+	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
 		return "", goerrors.Wrap(err, 0)
 	}

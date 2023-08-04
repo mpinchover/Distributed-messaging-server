@@ -25,6 +25,11 @@ func (_m *ConnectionsControllerInterface) AddConnection(connection *requests.Con
 	_m.Called(connection)
 }
 
+// DelClient provides a mock function with given fields: userUUID, connectionUUID
+func (_m *ConnectionsControllerInterface) DelClient(userUUID string, connectionUUID string) {
+	_m.Called(userUUID, connectionUUID)
+}
+
 // GetConnection provides a mock function with given fields: userUUID
 func (_m *ConnectionsControllerInterface) GetConnection(userUUID string) *requests.Connection {
 	ret := _m.Called(userUUID)

@@ -5,6 +5,12 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+type Websocket struct {
+	Conn           *websocket.Conn
+	ConnectionUUID *string
+	UserUUID       *string
+}
+
 type Member struct {
 	UUID     string `json:"uuid"`
 	UserUUID string `json:"userUuid"`

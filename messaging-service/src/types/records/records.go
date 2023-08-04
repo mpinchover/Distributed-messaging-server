@@ -12,7 +12,6 @@ type Message struct {
 	MessageText   string
 	UUID          string
 	MessageStatus string
-	MessageType   string
 	CreatedAtNano float64 `json:"createdAtNano"`
 
 	SeenBy []*SeenBy

@@ -1,11 +1,11 @@
 package apitests
 
 import (
-	"log"
 	"messaging-service/integration-tests/common"
 	"messaging-service/src/types/enums"
 	"messaging-service/src/types/requests"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -14,32 +14,33 @@ import (
 func TestLeaveRoom(t *testing.T) {
 	// t.Skip()
 	t.Run("test leave room", func(t *testing.T) {
-		log.Printf("Running test %s", t.Name())
+		t.Parallel()
+		t.Logf("Runningg test %s at %d", t.Name(), time.Now().UnixNano())
 
 		validMessagingToken, validAPIKey := common.GetValidToken(t)
 
 		aClient, aConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
 			Token:     validMessagingToken,
-			UserUUID:  uuid.New().String(),
+			UserUUID:  uuid.New().String() + "_20",
 		})
 
 		bClient, bConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
 			Token:     validMessagingToken,
-			UserUUID:  uuid.New().String(),
+			UserUUID:  uuid.New().String() + "_21",
 		})
 
 		cClient, cConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
 			Token:     validMessagingToken,
-			UserUUID:  uuid.New().String(),
+			UserUUID:  uuid.New().String() + "_22",
 		})
 
 		dClient, dConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
 			Token:     validMessagingToken,
-			UserUUID:  uuid.New().String(),
+			UserUUID:  uuid.New().String() + "_23",
 		})
 
 		_, dMobileConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
@@ -64,6 +65,7 @@ func TestLeaveRoom(t *testing.T) {
 				},
 			},
 		}
+
 		common.OpenRoom(t, openRoomEvent, validAPIKey)
 		common.ReadOpenRoomResponse(t, aConn, 4)
 		common.ReadOpenRoomResponse(t, bConn, 4)

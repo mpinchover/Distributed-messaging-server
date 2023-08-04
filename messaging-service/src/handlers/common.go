@@ -23,7 +23,9 @@ func (h *Handler) BroadcastEventToChannelSubscribersClientExclusive(channelUUID 
 
 	for _, m := range members {
 		connection := h.ControlTowerCtrlr.ConnCtrlr.GetConnection(m.UserUUID)
-
+		if connection == nil {
+			continue
+		}
 		for clientUUID, conn := range connection.Connections {
 			if clientUUID == fromClientUUID {
 				continue

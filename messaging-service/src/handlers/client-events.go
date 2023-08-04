@@ -30,16 +30,18 @@ func (h *Handler) handleClientEventTextMessage(conn *websocket.Conn, p []byte) e
 	return nil
 }
 
-func (h *Handler) handleSetClientSocket(conn *websocket.Conn, p []byte) error {
+func (h *Handler) handleSetClientSocket(ws *requests.Websocket, p []byte) error {
 	// TODO – have a new event that doesn't include the connectionUUID
 	msg := &requests.SetClientConnectionEvent{}
 	err := json.Unmarshal(p, msg)
 	if err != nil {
 		return err
 	}
-	resp, err := h.ControlTowerCtrlr.SetupClientConnectionV2(conn, msg)
+	resp, err := h.ControlTowerCtrlr.SetupClientConnectionV2(ws.Conn, msg)
 	if err != nil {
 		return err
 	}
-	return conn.WriteJSON(resp)
+	ws.ConnectionUUID = &resp.ConnectionUUID
+	ws.UserUUID = &resp.UserUUID
+	return ws.Conn.WriteJSON(resp)
 }

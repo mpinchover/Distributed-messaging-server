@@ -13,6 +13,8 @@ type ConnectionsControllerInterface interface {
 	AddClient(connection *requests.Connection,
 		connectionUUID string,
 		conn *websocket.Conn)
+	DelClient(userUUID string,
+		connectionUUID string)
 }
 
 type ConnectionsController struct {
@@ -55,4 +57,20 @@ func (s *ConnectionsController) AddClient(connection *requests.Connection,
 	defer s.Mu.Unlock()
 
 	connection.Connections[connectionUUID] = conn
+}
+
+func (s *ConnectionsController) DelClient(userUUID string,
+	connectionUUID string) {
+	s.Mu.Lock()
+	defer s.Mu.Unlock()
+
+	connection, ok := s.Cxns[userUUID]
+	if !ok {
+		return
+	}
+
+	delete(connection.Connections, connectionUUID)
+	if len(connection.Connections) == 0 {
+		delete(s.Cxns, userUUID)
+	}
 }

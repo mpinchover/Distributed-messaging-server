@@ -7,6 +7,7 @@ import (
 	"messaging-service/src/types/enums"
 	"messaging-service/src/types/requests"
 	"messaging-service/src/utils"
+	"sync"
 
 	"github.com/gorilla/websocket"
 )
@@ -226,10 +227,7 @@ func (h *Handler) handleOpenRoomEvent(event *requests.OpenRoomEvent) error {
 			h.ControlTowerCtrlr.ChannelsCtrlr.AddChannel(room)
 		}
 
-		// add the member to the server
-		h.ControlTowerCtrlr.MapLock.Lock()
-		room.MembersOnServer[member.UserUUID] = true
-		h.ControlTowerCtrlr.MapLock.Unlock()
+		h.ControlTowerCtrlr.ChannelsCtrlr.AddUserToChannel(room.UUID, member.UserUUID)
 
 		// for all connections, write the openRoomEvent
 		for _, conn := range connection.Connections {
@@ -237,9 +235,9 @@ func (h *Handler) handleOpenRoomEvent(event *requests.OpenRoomEvent) error {
 		}
 	}
 
-	h.ControlTowerCtrlr.MapLock.Lock()
-	defer h.ControlTowerCtrlr.MapLock.Unlock()
-
+	var mu sync.Mutex
+	mu.Lock()
+	defer mu.Unlock()
 	for _, conn := range connectionsToWrite {
 		err := conn.WriteJSON(event)
 		if err != nil {

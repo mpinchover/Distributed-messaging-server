@@ -8,7 +8,7 @@ CREATE TABLE rooms (
     updated_at timestamp,
     deleted_at timestamp,
 
-    uuid VARCHAR(36) NOT NULL,
+    uuid VARCHAR(50) NOT NULL,
     created_at_nano DOUBLE NOT NULL,
     PRIMARY KEY (id)
 ) ENGINE=INNODB;
@@ -19,10 +19,10 @@ CREATE TABLE messages (
     updated_at timestamp,
     deleted_at timestamp,
     
-    uuid VARCHAR(36) NOT NULL,
+    uuid VARCHAR(50) NOT NULL,
     message_text TEXT NOT NULL,
-    from_uuid VARCHAR(36) NOT NULL,
-    room_uuid VARCHAR(36) NOT NULL,
+    from_uuid VARCHAR(50) NOT NULL,
+    room_uuid VARCHAR(50) NOT NULL,
     room_id INT,
     message_status TINYTEXT NOT NULL,
     created_at_nano DOUBLE NOT NULL,
@@ -38,8 +38,8 @@ CREATE TABLE seen_by (
     updated_at timestamp,
     deleted_at timestamp,
     
-    message_uuid VARCHAR(36) NOT NULL,
-    user_uuid VARCHAR(36) NOT NULL,
+    message_uuid VARCHAR(50) NOT NULL,
+    user_uuid VARCHAR(50) NOT NULL,
     message_id INT,
     PRIMARY KEY (id),
     UNIQUE KEY `user_message_uuids` (`user_uuid`,`message_uuid`),
@@ -53,10 +53,10 @@ CREATE TABLE members (
     updated_at timestamp,
     deleted_at timestamp,
 
-    uuid VARCHAR(36) NOT NULL,
-    room_uuid VARCHAR(36) NOT NULL,
+    uuid VARCHAR(50) NOT NULL,
+    room_uuid VARCHAR(50) NOT NULL,
     room_id INT,
-    user_uuid VARCHAR(36) NOT NULL,
+    user_uuid VARCHAR(50) NOT NULL,
     PRIMARY KEY (id),
     FOREIGN KEY (room_id)
         REFERENCES rooms(id)
@@ -68,7 +68,7 @@ CREATE TABLE auth_profiles (
     updated_at timestamp,
     deleted_at timestamp,
 
-    uuid VARCHAR(36) NOT NULL,
+    uuid VARCHAR(50) NOT NULL,
     hashed_password VARCHAR(100) NOT NULL,
     email VARCHAR(100) NOT NULL
 ) ENGINE=INNODB;

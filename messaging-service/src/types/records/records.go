@@ -49,10 +49,25 @@ type Member struct {
 	UserUUID string
 }
 
+/* AUTH   */
 // for ext service, not chat user
 type AuthProfile struct {
 	gorm.Model
 	UUID           string
 	Email          string
 	HashedPassword string
+}
+
+/* MATCHING   */
+
+// after user has answered
+type TrackedQuestion struct {
+	gorm.Model
+	UUID         string
+	Text         string
+	Index        int64
+	Category     string
+	UserUUID     string
+	QuestionUUID string
+	Liked        bool
 }

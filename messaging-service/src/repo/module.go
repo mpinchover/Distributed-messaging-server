@@ -30,6 +30,7 @@ type RepoInterface interface {
 	GetRoomsByUserUUID(uuid string, offset int) ([]*records.Room, error)
 	DeleteRoom(roomUUID string) error
 	SaveRoom(room *records.Room) error
+	GetTrackedQuestionsByUserUUID(userUUID string) ([]*records.TrackedQuestion, error)
 }
 
 type Repo struct {

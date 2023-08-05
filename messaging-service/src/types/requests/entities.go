@@ -69,3 +69,31 @@ type AuthProfile struct {
 type ChatProfile struct {
 	UserID string
 }
+
+// what the user sees
+type Question struct {
+	Text     string
+	Index    int64
+	Category string
+	UUID     string
+}
+
+// after user has answered
+type TrackedQuestion struct {
+	UUID         string
+	Text         string
+	Index        int64
+	Category     string
+	UserUUID     string
+	QuestionUUID string
+	Liked        bool
+}
+
+type Profile struct {
+	UUID string
+}
+
+// after user has answered
+// type RankingResult struct {
+// 	CommonLikes []*Question
+// }

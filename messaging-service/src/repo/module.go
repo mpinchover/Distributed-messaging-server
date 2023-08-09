@@ -3,7 +3,9 @@ package repo
 import (
 	"fmt"
 	"messaging-service/src/types/records"
+	"messaging-service/src/types/requests"
 	"os"
+	"time"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -15,9 +17,12 @@ const (
 )
 
 type RepoInterface interface {
+	// auth
 	GetAuthProfileByEmail(email string) (*records.AuthProfile, error)
 	SaveAuthProfile(authProfile *records.AuthProfile) error
 	UpdatePassword(email string, hashedPassword string) error
+
+	// messaging
 	LeaveRoom(userUUID string, roomUUID string) error
 	UpdateMessage(message *records.Message) error
 	GetMembersByRoomUUID(roomUUID string) ([]*records.Member, error)
@@ -30,7 +35,19 @@ type RepoInterface interface {
 	GetRoomsByUserUUID(uuid string, offset int) ([]*records.Room, error)
 	DeleteRoom(roomUUID string) error
 	SaveRoom(room *records.Room) error
+
+	// matching
 	GetTrackedQuestionsByUserUUID(userUUID string) ([]*records.TrackedQuestion, error)
+	// GetLikedTrackedQuestionsByQuestionUUIDs(questionUUIDs []string) ([]*records.TrackedQuestion, error)
+	GetCandidatesByMatchingPreferences(matchingPrefs *records.MatchingPreferences, filters *requests.MatchingFilter) ([]string, error)
+	// GetLikedTrackedQuestionsByUserUUID(userUUID string) ([]*records.TrackedQuestion, error)
+	UpdateTrackedQuestion(trackedQuestions *records.TrackedQuestion) error
+	// GetLikedQuestionsByUserUUID(userUUID string) ([]*records.TrackedQuestion, error)
+	GetRecentlyMatchedUUIDs(uuid string, t time.Time) ([]string, error)
+	GetLikedQuestionUUIDsByUserUUID(userUUID string) ([]string, error)
+	GetBlockedCandidatesByUser(userUUID string) ([]string, error)
+	GetQuestionsLikedByMatchedCandidateUUIDs(questionUUIDs []string, candidateUUIDs []string) ([]*records.TrackedQuestion, error)
+	GetLikedTrackedQuestionByUserUUIDAndCandidates(userUUID string, candidateUUIDs []string) ([]*records.TrackedQuestion, error)
 }
 
 type Repo struct {

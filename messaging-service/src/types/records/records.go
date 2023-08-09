@@ -64,10 +64,20 @@ type AuthProfile struct {
 type TrackedQuestion struct {
 	gorm.Model
 	UUID         string
-	Text         string
-	Index        int64
+	QuestionText string
 	Category     string
 	UserUUID     string
 	QuestionUUID string
 	Liked        bool
+}
+
+type MatchingPreferences struct {
+	gorm.Model
+	Zipcode          string
+	Gender           string
+	GenderPreference string
+	Age              int64
+	MinAgePref       int64
+	MaxAgePref       int64
+	UserUUID         string
 }

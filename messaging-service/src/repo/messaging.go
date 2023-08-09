@@ -32,6 +32,7 @@ func (r *Repo) GetMembersByRoomUUID(roomUUID string) ([]*records.Member, error) 
 	return result, nil
 }
 
+// todo, handle by nil or first
 func (r *Repo) GetMessageByUUID(uuid string) (*records.Message, error) {
 	result := &records.Message{}
 	err := r.DB.Preload("SeenBy").Where("uuid = ?", uuid).Find(result).Error
@@ -163,7 +164,6 @@ func (r *Repo) GetRoomsByUserUUID(uuid string, offset int) ([]*records.Room, err
 		}
 		return iCreatedAt > jCreatedAt
 	})
-
 
 	return results, err
 }

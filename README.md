@@ -27,6 +27,18 @@ cd messaging-service/integration-tests
 go test
 ```
 
+## Read files
+
+```
+
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+  t, err := template.ParseFiles(wd + "/assets/templates/template.html")
+
+```
+
 # Misc.
 
 ```
@@ -67,6 +79,13 @@ docker-compose up -d --no-deps --build <service_name>
 ## TODO's
 
 ### P1
+
+- make a makefile with a testfile that checks for the test db and restarts it
+- use mysql long/lat to detect distance?
+- get all the tracked questions this user has liked. Search for all tracked questions with likes on those q's.
+  then get those users. Then just do a mapping and see if the largest numbers have over the threshold.
+- need mappers for room
+- test out matching + recv events
 - change the delete to deleteByRoomId
 - change uuid to the test name
 - custom error mapping, last step should just translate the error befor sending it back customer err code -> http code
@@ -76,6 +95,7 @@ docker-compose up -d --no-deps --build <service_name>
 - ensure secret for JWT is not hardcoded
 
 ### P2
+
 - ensure passwords match in signup
 - ensure password, email are correct formats
 - update tests to run in go routines to mimic high, concurrent volumes
@@ -98,6 +118,14 @@ docker-compose up -d --no-deps --build <service_name>
 - app should show if someone screenshotted
 - add in a user permissions table to link to member table
 
+### ranking
+
+- show how many people also liked that card
+  - get this before you send it back
+- for each person that you swipe on, event back to server to check and see if this is a match. If it is, send an event letting the app know there's been a match.
+- run through every question and show the matches based off the top 3 or so from each category.
+- store the question in an excel sheet and and in s3 and version it so you can roll it back. Store the UUID in there too and save to DB.
+
 # Testing
 
 Run a single test
@@ -108,5 +136,5 @@ Run all tests
 
 # Mocks
 
-To generate mocks for all interfaces, run
+To generate mocks for all interfaces, go to `messaging-service` and run
 `mockery --all --keeptree`

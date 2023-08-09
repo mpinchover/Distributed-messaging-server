@@ -2,13 +2,14 @@ DROP DATABASE IF EXISTS messaging;
 CREATE DATABASE messaging;
 USE messaging;
 
+
 CREATE TABLE rooms (
     id INT NOT NULL AUTO_INCREMENT,
     created_at timestamp,
     updated_at timestamp,
     deleted_at timestamp,
 
-    uuid VARCHAR(50) NOT NULL,
+    uuid VARCHAR(50) UNIQUE  NOT NULL,
     created_at_nano DOUBLE NOT NULL,
     PRIMARY KEY (id)
 ) ENGINE=INNODB;
@@ -19,7 +20,7 @@ CREATE TABLE messages (
     updated_at timestamp,
     deleted_at timestamp,
     
-    uuid VARCHAR(50) NOT NULL,
+    uuid VARCHAR(50) UNIQUE NOT NULL,
     message_text TEXT NOT NULL,
     from_uuid VARCHAR(50) NOT NULL,
     room_uuid VARCHAR(50) NOT NULL,
@@ -53,7 +54,7 @@ CREATE TABLE members (
     updated_at timestamp,
     deleted_at timestamp,
 
-    uuid VARCHAR(50) NOT NULL,
+    uuid VARCHAR(50) UNIQUE NOT NULL,
     room_uuid VARCHAR(50) NOT NULL,
     room_id INT,
     user_uuid VARCHAR(50) NOT NULL,
@@ -71,4 +72,33 @@ CREATE TABLE auth_profiles (
     uuid VARCHAR(50) NOT NULL,
     hashed_password VARCHAR(100) NOT NULL,
     email VARCHAR(100) NOT NULL
+) ENGINE=INNODB;
+
+CREATE TABLE tracked_questions (
+    id int NOT NULL UNIQUE AUTO_INCREMENT,
+    created_at timestamp,
+    updated_at timestamp,
+    deleted_at timestamp,
+
+    uuid VARCHAR(50) UNIQUE NOT NULL,
+    question_text TEXT,
+    category TINYTEXT,
+    user_uuid VARCHAR(50) NOT NULL,
+    question_uuid VARCHAR(50) NOT NULL,
+    liked boolean
+) ENGINE=INNODB;
+
+CREATE TABLE matching_preferences (
+    id int NOT NULL UNIQUE AUTO_INCREMENT,
+    created_at timestamp,
+    updated_at timestamp,
+    deleted_at timestamp,
+
+    gender VARCHAR(50) NOT NULL,
+    gender_preference VARCHAR(50) NOT NULL,
+    age int,
+    min_age_pref int,
+    max_age_pref int, 
+    user_uuid VARCHAR(50) UNIQUE NOT NULL,
+    zipcode VARCHAR(50) NOT NULL
 ) ENGINE=INNODB;

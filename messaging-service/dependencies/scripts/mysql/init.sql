@@ -88,7 +88,20 @@ CREATE TABLE tracked_questions (
     liked boolean
 ) ENGINE=INNODB;
 
-CREATE TABLE matching_preferences (
+
+CREATE TABLE tracked_like (
+    id int NOT NULL UNIQUE AUTO_INCREMENT,
+    created_at timestamp,
+    updated_at timestamp,
+    deleted_at timestamp,
+
+    uuid VARCHAR(50) UNIQUE NOT NULL,
+    user_uuid  VARCHAR(50),
+    target_uuid  VARCHAR(50),
+    liked boolean
+) ENGINE=INNODB;
+
+CREATE TABLE discover_profiles (
     id int NOT NULL UNIQUE AUTO_INCREMENT,
     created_at timestamp,
     updated_at timestamp,
@@ -100,5 +113,6 @@ CREATE TABLE matching_preferences (
     min_age_pref int,
     max_age_pref int, 
     user_uuid VARCHAR(50) UNIQUE NOT NULL,
-    zipcode VARCHAR(50) NOT NULL
+    current_lng DECIMAL,
+    current_lat DECIMAL
 ) ENGINE=INNODB;

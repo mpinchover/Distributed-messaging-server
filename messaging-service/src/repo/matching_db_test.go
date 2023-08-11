@@ -3,8 +3,11 @@ package repo
 import (
 	"fmt"
 	"messaging-service/src/types/records"
+	"messaging-service/src/types/requests"
+	"messaging-service/src/utils"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -89,8 +92,7 @@ func (r *RepoSuite) TestCreateMatchingPreferences() {
 	// r.repo.DB = r.mainDB.Begin()
 	defer r.repo.DB.Rollback()
 
-	mp := &records.MatchingPreferences{
-		Zipcode:          "06117",
+	mp := &records.DiscoverProfile{
 		Gender:           "MALE",
 		GenderPreference: "FEMALE",
 		Age:              30,
@@ -98,7 +100,7 @@ func (r *RepoSuite) TestCreateMatchingPreferences() {
 		MaxAgePref:       35,
 		UserUUID:         "user-uuid-0",
 	}
-	err := r.repo.CreateMatchingPreferences(mp)
+	err := r.repo.CreateDiscoverProfile(mp)
 	r.NoError(err)
 
 	// can use env variable to get the path of the working directory
@@ -106,7 +108,6 @@ func (r *RepoSuite) TestCreateMatchingPreferences() {
 	res, err := r.repo.GetMatchingPreferencesByUserUUID("user-uuid-0")
 	r.NoError(err)
 
-	r.Equal(mp.Zipcode, res.Zipcode)
 	r.Equal(mp.Gender, res.Gender)
 	r.Equal(mp.GenderPreference, res.GenderPreference)
 	r.Equal(mp.Age, res.Age)
@@ -123,29 +124,77 @@ func (r *RepoSuite) TestCreateMatchingPreferences() {
 	r.Nil(res)
 }
 
-func (r *RepoSuite) TestGetCandidatesByMatchingPreferences() {
+func (r *RepoSuite) TestGetCandidateDiscoverProfile() {
+	defer r.repo.DB.Rollback()
 
-	userMP := &records.MatchingPreferences{
-		Zipcode:          "06117",
-		Gender:           "MALE",
-		GenderPreference: "FEMALE",
-		Age:              30,
-		MinAgePref:       25,
-		MaxAgePref:       35,
-		UserUUID:         "user-uuid-0",
+	// 11217
+	candidateOneUUID := uuid.New().String()
+	candidate1 := &records.DiscoverProfile{
+		Gender:           "FEMALE",
+		GenderPreference: "MALE",
+		UserUUID:         candidateOneUUID,
+		CurrentLat:       40.687995,
+		CurrentLng:       -73.9820318,
 	}
-	err := r.repo.CreateMatchingPreferences(userMP)
+	err := r.repo.CreateDiscoverProfile(candidate1)
 	r.NoError(err)
 
-	candidates := []*records.MatchingPreferences{
-		{
-			Zipcode:          "06112",
-			Gender:           "FEMALE",
-			GenderPreference: "FEMALE",
-			Age:              30,
-			MinAgePref:       25,
-			MaxAgePref:       35,
-			UserUUID:         "user-uuid-0",
-		}
+	// denver
+	candidateTwoUUID := uuid.New().String()
+	candidate1 = &records.DiscoverProfile{
+		Gender:           "FEMALE",
+		GenderPreference: "MALE",
+		UserUUID:         candidateTwoUUID,
+		CurrentLat:       39.7642224,
+		CurrentLng:       -105.0199203,
 	}
+	err = r.repo.CreateDiscoverProfile(candidate1)
+	r.NoError(err)
+
+	// 06117
+	candidateThreeUUID := uuid.New().String()
+	profileLat := 41.8054284
+	profileLng := -72.7391128
+	maxDistanceMeters := int64(162000)
+	filters := &requests.ProfileFilter{
+		UserUUID:                &candidateThreeUUID,
+		ProfileGender:           utils.ToStrPtr("MALE"),
+		ProfileGenderPreference: utils.ToStrPtr("FEMALE"),
+		ProfileLat:              &profileLat,
+		ProfileLng:              &profileLng,
+		MaxDistanceMeters:       &maxDistanceMeters,
+	}
+
+	profiles, err := r.repo.GetCandidateDiscoverProfile(filters)
+	r.NoError(err)
+	r.Len(profiles, 1)
+	r.Equal(profiles[0].UserUUID, candidateOneUUID)
+
 }
+
+// func (r *RepoSuite) TestGetCandidatesByMatchingPreferences() {
+
+// 	userMP := &records.MatchingPreferences{
+// 		Zipcode:          "06117",
+// 		Gender:           "MALE",
+// 		GenderPreference: "FEMALE",
+// 		Age:              30,
+// 		MinAgePref:       25,
+// 		MaxAgePref:       35,
+// 		UserUUID:         "user-uuid-0",
+// 	}
+// 	err := r.repo.CreateMatchingPreferences(userMP)
+// 	r.NoError(err)
+
+// 	candidates := []*records.MatchingPreferences{
+// 		{
+// 			Zipcode:          "06112",
+// 			Gender:           "FEMALE",
+// 			GenderPreference: "FEMALE",
+// 			Age:              30,
+// 			MinAgePref:       25,
+// 			MaxAgePref:       35,
+// 			UserUUID:         "user-uuid-0",
+// 		}
+// 	}
+// }

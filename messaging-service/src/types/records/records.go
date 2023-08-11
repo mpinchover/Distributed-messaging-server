@@ -56,6 +56,7 @@ type AuthProfile struct {
 	UUID           string
 	Email          string
 	HashedPassword string
+	Mobile         string
 }
 
 /* MATCHING   */
@@ -71,13 +72,22 @@ type TrackedQuestion struct {
 	Liked        bool
 }
 
-type MatchingPreferences struct {
+type DiscoverProfile struct {
 	gorm.Model
-	Zipcode          string
 	Gender           string
 	GenderPreference string
 	Age              int64
 	MinAgePref       int64
 	MaxAgePref       int64
 	UserUUID         string
+	CurrentLat       float64
+	CurrentLng       float64
+}
+
+type TrackedLike struct {
+	gorm.Model
+	UUID       string
+	UserUUID   string
+	TargetUUID string
+	Liked      bool
 }

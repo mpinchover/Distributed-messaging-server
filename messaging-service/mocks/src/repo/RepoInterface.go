@@ -83,25 +83,25 @@ func (_m *RepoInterface) GetBlockedCandidatesByUser(userUUID string) ([]string, 
 	return r0, r1
 }
 
-// GetCandidatesByMatchingPreferences provides a mock function with given fields: matchingPrefs, filters
-func (_m *RepoInterface) GetCandidatesByMatchingPreferences(matchingPrefs *records.MatchingPreferences, filters *requests.MatchingFilter) ([]string, error) {
-	ret := _m.Called(matchingPrefs, filters)
+// GetCandidateDiscoverProfile provides a mock function with given fields: filters
+func (_m *RepoInterface) GetCandidateDiscoverProfile(filters *requests.ProfileFilter) ([]*records.DiscoverProfile, error) {
+	ret := _m.Called(filters)
 
-	var r0 []string
+	var r0 []*records.DiscoverProfile
 	var r1 error
-	if rf, ok := ret.Get(0).(func(*records.MatchingPreferences, *requests.MatchingFilter) ([]string, error)); ok {
-		return rf(matchingPrefs, filters)
+	if rf, ok := ret.Get(0).(func(*requests.ProfileFilter) ([]*records.DiscoverProfile, error)); ok {
+		return rf(filters)
 	}
-	if rf, ok := ret.Get(0).(func(*records.MatchingPreferences, *requests.MatchingFilter) []string); ok {
-		r0 = rf(matchingPrefs, filters)
+	if rf, ok := ret.Get(0).(func(*requests.ProfileFilter) []*records.DiscoverProfile); ok {
+		r0 = rf(filters)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]string)
+			r0 = ret.Get(0).([]*records.DiscoverProfile)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(*records.MatchingPreferences, *requests.MatchingFilter) error); ok {
-		r1 = rf(matchingPrefs, filters)
+	if rf, ok := ret.Get(1).(func(*requests.ProfileFilter) error); ok {
+		r1 = rf(filters)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -291,17 +291,17 @@ func (_m *RepoInterface) GetQuestionsLikedByMatchedCandidateUUIDs(questionUUIDs 
 	return r0, r1
 }
 
-// GetRecentlyMatchedUUIDs provides a mock function with given fields: uuid, t
-func (_m *RepoInterface) GetRecentlyMatchedUUIDs(uuid string, t time.Time) ([]string, error) {
-	ret := _m.Called(uuid, t)
+// GetRecentTrackedLikedTargetsByUserUUID provides a mock function with given fields: userUUID, t
+func (_m *RepoInterface) GetRecentTrackedLikedTargetsByUserUUID(userUUID string, t time.Time) ([]string, error) {
+	ret := _m.Called(userUUID, t)
 
 	var r0 []string
 	var r1 error
 	if rf, ok := ret.Get(0).(func(string, time.Time) ([]string, error)); ok {
-		return rf(uuid, t)
+		return rf(userUUID, t)
 	}
 	if rf, ok := ret.Get(0).(func(string, time.Time) []string); ok {
-		r0 = rf(uuid, t)
+		r0 = rf(userUUID, t)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]string)
@@ -309,7 +309,33 @@ func (_m *RepoInterface) GetRecentlyMatchedUUIDs(uuid string, t time.Time) ([]st
 	}
 
 	if rf, ok := ret.Get(1).(func(string, time.Time) error); ok {
-		r1 = rf(uuid, t)
+		r1 = rf(userUUID, t)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetRecentlyMatchedUUIDs provides a mock function with given fields: uuid
+func (_m *RepoInterface) GetRecentlyMatchedUUIDs(uuid string) ([]string, error) {
+	ret := _m.Called(uuid)
+
+	var r0 []string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string) ([]string, error)); ok {
+		return rf(uuid)
+	}
+	if rf, ok := ret.Get(0).(func(string) []string); ok {
+		r0 = rf(uuid)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(uuid)
 	} else {
 		r1 = ret.Error(1)
 	}

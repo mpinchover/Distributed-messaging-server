@@ -87,7 +87,7 @@ func (s *ChannelsController) AddChannel(ch *requests.ServerChannel) *requests.Se
 func (s *ChannelsController) GetChannelsByUserUUID(userUUID string) []*requests.ServerChannel {
 	s.Mu.Lock()
 	defer s.Mu.Unlock()
-	
+
 	res := []*requests.ServerChannel{}
 
 	for _, ch := range s.Chnls {

@@ -38,12 +38,13 @@ type RepoInterface interface {
 
 	// matching
 	GetTrackedQuestionsByUserUUID(userUUID string) ([]*records.TrackedQuestion, error)
+	GetRecentTrackedLikedTargetsByUserUUID(userUUID string, t time.Time) ([]string, error)
 	// GetLikedTrackedQuestionsByQuestionUUIDs(questionUUIDs []string) ([]*records.TrackedQuestion, error)
-	GetCandidatesByMatchingPreferences(matchingPrefs *records.MatchingPreferences, filters *requests.MatchingFilter) ([]string, error)
+	GetCandidateDiscoverProfile(filters *requests.ProfileFilter) ([]*records.DiscoverProfile, error)
 	// GetLikedTrackedQuestionsByUserUUID(userUUID string) ([]*records.TrackedQuestion, error)
 	UpdateTrackedQuestion(trackedQuestions *records.TrackedQuestion) error
 	// GetLikedQuestionsByUserUUID(userUUID string) ([]*records.TrackedQuestion, error)
-	GetRecentlyMatchedUUIDs(uuid string, t time.Time) ([]string, error)
+	GetRecentlyMatchedUUIDs(uuid string) ([]string, error)
 	GetLikedQuestionUUIDsByUserUUID(userUUID string) ([]string, error)
 	GetBlockedCandidatesByUser(userUUID string) ([]string, error)
 	GetQuestionsLikedByMatchedCandidateUUIDs(questionUUIDs []string, candidateUUIDs []string) ([]*records.TrackedQuestion, error)

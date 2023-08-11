@@ -23,6 +23,9 @@ type MatchingControllerSuite struct {
 // this function executes before the test suite begins execution
 func (s *MatchingControllerSuite) SetupSuite() {
 
+}
+
+func (s *MatchingControllerSuite) SetupTest() {
 	s.mockStorage = mockStorage.NewStorageInterface(s.T())
 	s.matchingController = &MatchingController{
 		Storage: s.mockStorage,
@@ -36,13 +39,6 @@ func TestMatchingControllerSuite(t *testing.T) {
 func (s *MatchingControllerSuite) TestGetQuestionsForMatching() {
 
 	headers := []string{"category", "text", "index", "uuid"}
-	// records := [][]string{
-	// 	{"category", "text", "index", "uuid"},
-	// 	{"category 1", "question 1", "1", "uuid-1"},
-	// 	{"category 2", "question 2", "2", "uuid-2"},
-	// 	{"category 3", "question 3", "3", "uuid-3"},
-	// 	{"category 4", "question 4", "4", "uuid-4"},
-	// }
 
 	records := [][]string{
 		headers,
@@ -61,10 +57,13 @@ func (s *MatchingControllerSuite) TestGetQuestionsForMatching() {
 	s.NotNil(questions)
 	// s.Len(questions, len(records)-1)
 
-	for _, q := range questions {
+	for i, q := range questions {
 		s.NotEmpty(q.Category)
+		s.Equal(fmt.Sprintf("category %d", i+1), q.Category)
 		s.NotEmpty(q.Text)
+		s.Equal(fmt.Sprintf("question %d", i+1), q.Text)
 		s.NotZero(q.Index)
+		s.Equal(int64(i+1), q.Index)
 		s.NotEmpty(q.UUID)
 	}
 	totalQuestions := []*requests.Question{}
@@ -78,10 +77,13 @@ func (s *MatchingControllerSuite) TestGetQuestionsForMatching() {
 	s.NotNil(questions)
 	// s.Len(questions, len(records)-1)
 
-	for _, q := range questions {
+	for i, q := range questions {
 		s.NotEmpty(q.Category)
+		s.Equal(fmt.Sprintf("category %d", i+1+len(totalQuestions)), q.Category)
 		s.NotEmpty(q.Text)
+		s.Equal(fmt.Sprintf("question %d", i+1+len(totalQuestions)), q.Text)
 		s.NotZero(q.Index)
+		s.Equal(int64(i+1+len(totalQuestions)), q.Index)
 		s.NotEmpty(q.UUID)
 	}
 	totalQuestions = append(totalQuestions, questions...)
@@ -94,10 +96,13 @@ func (s *MatchingControllerSuite) TestGetQuestionsForMatching() {
 	s.NotNil(questions)
 	// s.Len(questions, len(records)-1)
 
-	for _, q := range questions {
+	for i, q := range questions {
 		s.NotEmpty(q.Category)
+		s.Equal(fmt.Sprintf("category %d", i+1+len(totalQuestions)), q.Category)
 		s.NotEmpty(q.Text)
+		s.Equal(fmt.Sprintf("question %d", i+1+len(totalQuestions)), q.Text)
 		s.NotZero(q.Index)
+		s.Equal(int64(i+1+len(totalQuestions)), q.Index)
 		s.NotEmpty(q.UUID)
 	}
 	totalQuestions = append(totalQuestions, questions...)

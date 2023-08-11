@@ -58,3 +58,23 @@ func (m MessageStatus) String() string {
 	}
 	return "UNKNOWN"
 }
+
+type AbortCode int64
+
+const (
+	ABORT_CODE_NEED_MORE_LIKED_QUESTIONS AbortCode = iota
+	ABORT_CODE_NO_MATCHES
+	ABORT_CODE_NO_OVERLAPPING_QUESTIONS
+)
+
+func (m AbortCode) String() string {
+	switch m {
+	case ABORT_CODE_NEED_MORE_LIKED_QUESTIONS:
+		return "ABORT_CODE_NEED_MORE_LIKED_QUESTIONS"
+	case ABORT_CODE_NO_MATCHES:
+		return "ABORT_CODE_NO_MATCHES"
+	case ABORT_CODE_NO_OVERLAPPING_QUESTIONS:
+		return "ABORT_CODE_NO_OVERLAPPING_QUESTIONS"
+	}
+	return "UNKNOWN"
+}

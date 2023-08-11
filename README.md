@@ -80,6 +80,8 @@ docker-compose up -d --no-deps --build <service_name>
 
 ### P1
 
+- have a trackedLike to determine whther or not the user has liked this candidate. When searching for candidates to show, don't show a candiate if the trackedlike if within the last [TIME]
+- todo, figure out how to geomatch
 - make a makefile with a testfile that checks for the test db and restarts it
 - use mysql long/lat to detect distance?
 - get all the tracked questions this user has liked. Search for all tracked questions with likes on those q's.

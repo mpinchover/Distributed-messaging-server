@@ -4,21 +4,22 @@ import (
 	"messaging-service/src/types/records"
 	"messaging-service/src/types/requests"
 	"time"
-
-	"gorm.io/gorm"
 )
 
-func (r *Repo) CreateMatchingPreferences(mp *records.MatchingPreferences) error {
+func (r *Repo) CreateDiscoverProfile(mp *records.DiscoverProfile) error {
 	return r.DB.Create(mp).Error
 }
 
-func (r *Repo) GetMatchingPreferencesByUserUUID(userUUID string) (*records.MatchingPreferences, error) {
-	res := &records.MatchingPreferences{}
-	err := r.DB.Where("user_uuid = ?", userUUID).First(res).Error
-	if err != nil && err == gorm.ErrRecordNotFound {
+func (r *Repo) GetMatchingPreferencesByUserUUID(userUUID string) (*records.DiscoverProfile, error) {
+	profile := &records.DiscoverProfile{}
+	res := r.DB.Where("user_uuid = ?", userUUID).Find(profile)
+	if res.Error != nil {
+		return nil, res.Error
+	}
+	if res.RowsAffected == 0 {
 		return nil, nil
 	}
-	return res, err
+	return profile, nil
 }
 
 // auth profile uuid
@@ -42,19 +43,43 @@ func (r *Repo) UpdateTrackedQuestion(trackedQuestions *records.TrackedQuestion) 
 	return err
 }
 
-func (r *Repo) GetCandidatesByMatchingPreferences(matchingPrefs *records.MatchingPreferences, filters *requests.MatchingFilter) ([]string, error) {
-	uuids := []string{}
-	err := r.DB.Model(&records.MatchingPreferences{}).
-		Where("zipcode in (?)", filters.Zipcodes).
-		Where("gender = ?", matchingPrefs.GenderPreference).
-		Where("gender_preference = ?", matchingPrefs.Gender).
-		Where("age <= ?", matchingPrefs.MaxAgePref).
-		Where("age >= ?", matchingPrefs.MinAgePref).
-		Where("min_age_pref <= ", matchingPrefs.Age).
-		Where("max_age_pref >= ", matchingPrefs.Age).
-		Where("user_uuid not in (?)", filters.ExcludeUUIDs).
-		Select("user_uuid").Find(&uuids).Error
-	return uuids, err
+// distance reeturned in meters
+// TODO - put a limit on this and then if no candidates return, make another query
+// profile = user
+func (r *Repo) GetCandidateDiscoverProfile(filters *requests.ProfileFilter) ([]*records.DiscoverProfile, error) {
+	res := []*records.DiscoverProfile{}
+	query := r.DB.Model(&records.DiscoverProfile{})
+
+	if filters.ProfileGenderPreference != nil {
+		query = query.Where("gender = ?", *filters.ProfileGenderPreference)
+	}
+
+	if filters.ProfileGender != nil {
+		query = query.Where("gender_preference = ?", *filters.ProfileGender)
+	}
+
+	if filters.ProfileMaxAgePreference != nil {
+		query = query.Where("age <= ?", *filters.ProfileMaxAgePreference)
+	}
+
+	if filters.ProfileMinAgePreference != nil {
+		query = query.Where("age >= ?", *filters.ProfileMinAgePreference)
+	}
+
+	if filters.ProfileAge != nil {
+		query = query.Where("min_age_pref <= ", *filters.ProfileAge)
+	}
+
+	if len(filters.ExcludeUUIDs) > 0 {
+		query = query.Where("user_uuid not in (?)", filters.ExcludeUUIDs)
+	}
+
+	if filters.ProfileLat != nil && filters.ProfileLng != nil && filters.MaxDistanceMeters != nil {
+		query = query.Where("ST_Distance_Sphere(point(?,?), point(current_lng, current_lat)) < ?", *filters.ProfileLng, *filters.ProfileLat, *filters.MaxDistanceMeters)
+	}
+
+	err := query.Find(&res).Error
+	return res, err
 }
 
 func (r *Repo) GetBlockedCandidatesByUser(userUUID string) ([]string, error) {
@@ -62,7 +87,15 @@ func (r *Repo) GetBlockedCandidatesByUser(userUUID string) ([]string, error) {
 	return blockedCandidates, nil
 }
 
-func (r *Repo) GetRecentlyMatchedUUIDs(uuid string, t time.Time) ([]string, error) {
+// get all the candidates the user has made a decision on
+func (r *Repo) GetRecentTrackedLikedTargetsByUserUUID(userUUID string, t time.Time) ([]string, error) {
+	trackedLikes := []string{}
+	err := r.DB.Where("user_uuid = ?", userUUID).Where("created_at <= ", t).Select("target_uuid").Find(&trackedLikes).Error
+	return trackedLikes, err
+}
+
+// TODO - this query is wrong, you need to record when the match was sent out for the person to view
+func (r *Repo) GetRecentlyMatchedUUIDs(uuid string) ([]string, error) {
 	uuids := []string{}
 	query := `
 	SELECT DISTINCT m.user_uuid
@@ -73,9 +106,8 @@ func (r *Repo) GetRecentlyMatchedUUIDs(uuid string, t time.Time) ([]string, erro
 		FROM members
 		WHERE user_uuid = ?
 	)
-	AND r.created_at < ?
 	`
-	err := r.DB.Raw(query, uuid, t).Scan(&uuids).Error
+	err := r.DB.Raw(query, uuid).Scan(&uuids).Error
 	return uuids, err
 }
 

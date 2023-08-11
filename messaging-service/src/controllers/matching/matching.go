@@ -4,6 +4,7 @@ import (
 	"messaging-service/src/gateways/storage"
 	redisClient "messaging-service/src/redis"
 	"messaging-service/src/repo"
+	"messaging-service/src/types/enums"
 	"messaging-service/src/types/records"
 	"messaging-service/src/types/requests"
 	"sort"
@@ -46,28 +47,23 @@ func (m *MatchingController) UpdateQuestionResponse(q *requests.TrackedQuestion)
 	// for now, just update the `liked`
 }
 
-// user has swiped on a question, check to see if there are any potential matches
-func (m *MatchingController) CheckMatchesForUser(userMatchingPrefs *requests.MatchingPreferences, filters *requests.MatchingFilter) ([]string, error) {
-
-	// get the questions the user has liked first
-	userLikedQuestions, err := m.Repo.GetLikedQuestionUUIDsByUserUUID(userMatchingPrefs.UserUUID)
-	if err != nil {
-		return nil, err
-	}
-
-	// if the user hasn't liked enough questions, just abort here.
-	if len(userLikedQuestions) < 50 {
-		return nil, nil
-	}
-
+func (m *MatchingController) CreateMatchingFilters(userDiscoverProfile *requests.DiscoverProfile) (*requests.ProfileFilter, error) {
+	filters := &requests.ProfileFilter{}
 	// get everyone this user has blocked
-	blockedUUIDs, err := m.Repo.GetBlockedCandidatesByUser(userMatchingPrefs.UserUUID)
+	blockedUUIDs, err := m.Repo.GetBlockedCandidatesByUser(userDiscoverProfile.UserUUID)
 	if err != nil {
 		return nil, err
 	}
 
 	// get everything that appeared in the last two days
-	recentlyMatchedUUIDs, err := m.Repo.GetRecentlyMatchedUUIDs(userMatchingPrefs.UserUUID, time.Now().Add(48*time.Hour*-1))
+	recentlyMatchedUUIDs, err := m.Repo.GetRecentlyMatchedUUIDs(userDiscoverProfile.UserUUID)
+	if err != nil {
+		return nil, err
+	}
+
+	// find everyone this user has already made a decision on within the past 3 days
+	t := time.Now().Add(time.Hour * 24 * 3 * -1)
+	recentlyMadeDecisionOn, err := m.Repo.GetRecentTrackedLikedTargetsByUserUUID(userDiscoverProfile.UserUUID, t)
 	if err != nil {
 		return nil, err
 	}
@@ -75,33 +71,99 @@ func (m *MatchingController) CheckMatchesForUser(userMatchingPrefs *requests.Mat
 	// add these uuids to exclude them from matching
 	filters.ExcludeUUIDs = append(filters.ExcludeUUIDs, recentlyMatchedUUIDs...)
 	filters.ExcludeUUIDs = append(filters.ExcludeUUIDs, blockedUUIDs...)
+	filters.ExcludeUUIDs = append(filters.ExcludeUUIDs, recentlyMadeDecisionOn...)
 
-	userMatchPrefsAsRecord := &records.MatchingPreferences{
-		Zipcode: userMatchingPrefs.Zipcode, // TODO get list of zipcodes or use lat/lng
+	filters.ProfileMaxAgePreference = &userDiscoverProfile.MaxAgePref
+	filters.ProfileMinAgePreference = &userDiscoverProfile.MinAgePref
+	filters.CandidateGender = &userDiscoverProfile.GenderPreference
+	filters.ProfileGender = &userDiscoverProfile.Gender
+	filters.ProfileAge = &userDiscoverProfile.Age
+
+	return filters, nil
+}
+
+func (m *MatchingController) GetQuestionsLikedByMatchedCandidates(candidateDiscoverProfiles []*requests.DiscoverProfile, userLikedQuestions []string) ([]*records.TrackedQuestion, error) {
+	candidateUUIDs := make([]string, len(candidateDiscoverProfiles))
+	for i, dp := range candidateDiscoverProfiles {
+		candidateUUIDs[i] = dp.UserUUID
 	}
 
+	// now get all the questions that the user has liked that have been liked by anyone that is also a matching candidate
+	return m.Repo.GetQuestionsLikedByMatchedCandidateUUIDs(userLikedQuestions, candidateUUIDs)
+}
+
+func (m *MatchingController) GetCandidateProfiles(userProfile *requests.DiscoverProfile) ([]*requests.DiscoverProfile, error) {
+	filters, err := m.CreateMatchingFilters(userProfile)
+	if err != nil {
+		return nil, err
+	}
 	// get all the candidates that match the user dating preferences and are not excluded
-	candidatesMatchingDatingPrefs, err := m.Repo.GetCandidatesByMatchingPreferences(userMatchPrefsAsRecord, filters)
+	recordsCandidatesDiscoverProfiles, err := m.Repo.GetCandidateDiscoverProfile(filters)
+
+	candidateDiscoverProfiles := make([]*requests.DiscoverProfile, len(recordsCandidatesDiscoverProfiles))
+	for i, dp := range recordsCandidatesDiscoverProfiles {
+		candidateDiscoverProfiles[i] = &requests.DiscoverProfile{
+			Gender:           dp.Gender,
+			GenderPreference: dp.GenderPreference,
+			Age:              dp.Age,
+			MinAgePref:       dp.MinAgePref,
+			MaxAgePref:       dp.MaxAgePref,
+			UserUUID:         dp.UserUUID,
+			// Name:             dp.Name,
+
+		}
+	}
+
+	return candidateDiscoverProfiles, err
+}
+
+// user has swiped on a question, check to see if there are any potential matches
+func (m *MatchingController) CheckMatchesForUser(userDiscoverProfile *requests.DiscoverProfile) (*requests.MatchesForUserResult, error) {
+
+	res := &requests.MatchesForUserResult{}
+	// get the questions the user has liked first
+	userLikedQuestions, err := m.Repo.GetLikedQuestionUUIDsByUserUUID(userDiscoverProfile.UserUUID)
 	if err != nil {
 		return nil, err
 	}
 
+	// if the user hasn't liked enough questions, just abort here.
+	// TODO, create a no-op error or some kind of struct that explains why no matches
+	if len(userLikedQuestions) < 50 {
+		res.AbortCode = enums.ABORT_CODE_NEED_MORE_LIKED_QUESTIONS.String()
+		return res, nil
+	}
+
+	// get all the candidates that match the user dating preferences and are not excluded
+	candidateProfiles, err := m.GetCandidateProfiles(userDiscoverProfile)
+	if err != nil {
+		return nil, err
+	}
 	// no matches, abort
-	if len(candidatesMatchingDatingPrefs) == 0 {
+	if len(candidateProfiles) == 0 {
+		res.AbortCode = enums.ABORT_CODE_NO_MATCHES.String()
 		return nil, nil
 	}
 
-	// now get all the questions that the user has liked that have been liked by anyone that is also a matching candidate
-	candidateLikedQuestions, err := m.Repo.GetQuestionsLikedByMatchedCandidateUUIDs(userLikedQuestions, candidatesMatchingDatingPrefs)
+	candidateLikedQuestions, err := m.GetQuestionsLikedByMatchedCandidates(candidateProfiles, userLikedQuestions)
 	if err != nil {
 		return nil, err
 	}
 
 	// no overlapping liked questions, abort
 	if len(candidateLikedQuestions) == 0 {
+		res.AbortCode = enums.ABORT_CODE_NO_OVERLAPPING_QUESTIONS.String()
 		return nil, nil
 	}
 
+	res.CandidatesMatchingPrefs = rankAndOrderProfiles(candidateLikedQuestions, candidateProfiles)
+	// last step should be to get the profiles of the candidates
+	return res, nil
+	// TODO - keep track of the users' "feed" of people who they should be shown and store it in redis
+	// when you are seeing what questions to choose for them, draw from the redis feed as well
+}
+
+func rankAndOrderProfiles(candidateLikedQuestions []*records.TrackedQuestion, candidateDiscoverProfiles []*requests.DiscoverProfile) []*requests.DiscoverProfile {
 	// map question uuid -> list of candidate uuids who have liked this q
 	likedQuestions := map[string][]string{}
 
@@ -111,15 +173,14 @@ func (m *MatchingController) CheckMatchesForUser(userMatchingPrefs *requests.Mat
 	}
 
 	// sort the candidates matching the dating preferences by the freq they and the user have liked the same q
-	sort.Slice(candidatesMatchingDatingPrefs, func(i int, j int) bool {
-		iUUID := candidatesMatchingDatingPrefs[i]
-		jUUID := candidatesMatchingDatingPrefs[j]
+	sort.Slice(candidateDiscoverProfiles, func(i int, j int) bool {
+		iUUID := candidateDiscoverProfiles[i].UserUUID
+		jUUID := candidateDiscoverProfiles[j].UserUUID
 
 		return len(likedQuestions[iUUID]) > len(likedQuestions[jUUID])
 	})
-	return candidatesMatchingDatingPrefs, nil
-	// TODO - keep track of the users' "feed" of people who they should be shown and store it in redis
-	// when you are seeing what questions to choose for them, draw from the redis feed as well
+
+	return candidateDiscoverProfiles
 }
 
 // is this candidate a match or not

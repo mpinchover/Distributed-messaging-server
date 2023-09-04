@@ -16,6 +16,7 @@ type ProfileFilter struct {
 	MaxDistanceMeters         *int64
 	ProfileLat                *float64
 	ProfileLng                *float64
+	Offset                    int
 }
 
 type MatchingPreferences struct {
@@ -52,7 +53,6 @@ type Profile struct {
 }
 
 type DiscoverProfile struct {
-	Zipcode          string
 	Gender           string
 	GenderPreference string
 	Age              int64

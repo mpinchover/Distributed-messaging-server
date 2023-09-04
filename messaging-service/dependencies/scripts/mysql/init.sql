@@ -113,6 +113,6 @@ CREATE TABLE discover_profiles (
     min_age_pref int,
     max_age_pref int, 
     user_uuid VARCHAR(50) UNIQUE NOT NULL,
-    current_lng DECIMAL,
-    current_lat DECIMAL
+    current_lng FLOAT,
+    current_lat FLOAT
 ) ENGINE=INNODB;

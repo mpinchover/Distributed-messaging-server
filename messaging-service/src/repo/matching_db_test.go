@@ -27,7 +27,7 @@ func (r *RepoSuite) SetupSuite() {
 	dsn := fmt.Sprintf("root:root@tcp(%s:%s)/messaging?charset=utf8mb4&parseTime=True&loc=Local", "localhost", "3308")
 	// make connection here
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Error),
+		Logger: logger.Default.LogMode(logger.Info),
 		// FullSaveAssociations: true,
 	})
 	r.NoError(err)
@@ -124,6 +124,7 @@ func (r *RepoSuite) TestCreateMatchingPreferences() {
 	r.Nil(res)
 }
 
+// issue is the data type, change decimal to double or something
 func (r *RepoSuite) TestGetCandidateDiscoverProfile() {
 	defer r.repo.DB.Rollback()
 
@@ -136,6 +137,7 @@ func (r *RepoSuite) TestGetCandidateDiscoverProfile() {
 		CurrentLat:       40.687995,
 		CurrentLng:       -73.9820318,
 	}
+
 	err := r.repo.CreateDiscoverProfile(candidate1)
 	r.NoError(err)
 
@@ -145,17 +147,17 @@ func (r *RepoSuite) TestGetCandidateDiscoverProfile() {
 		Gender:           "FEMALE",
 		GenderPreference: "MALE",
 		UserUUID:         candidateTwoUUID,
-		CurrentLat:       39.7642224,
-		CurrentLng:       -105.0199203,
+		CurrentLat:       39.742043,
+		CurrentLng:       -104.991531,
 	}
 	err = r.repo.CreateDiscoverProfile(candidate1)
 	r.NoError(err)
 
 	// 06117
 	candidateThreeUUID := uuid.New().String()
-	profileLat := 41.8054284
-	profileLng := -72.7391128
-	maxDistanceMeters := int64(162000)
+	profileLat := 41.762085
+	profileLng := -72.742012
+	maxDistanceMeters := int64(159000)
 	filters := &requests.ProfileFilter{
 		UserUUID:                &candidateThreeUUID,
 		ProfileGender:           utils.ToStrPtr("MALE"),
@@ -170,31 +172,20 @@ func (r *RepoSuite) TestGetCandidateDiscoverProfile() {
 	r.Len(profiles, 1)
 	r.Equal(profiles[0].UserUUID, candidateOneUUID)
 
+	maxDistanceMeters = 2720490
+	filters.MaxDistanceMeters = &maxDistanceMeters
+	profiles, err = r.repo.GetCandidateDiscoverProfile(filters)
+	r.NoError(err)
+	r.Len(profiles, 2)
+
+	filters.ExcludeUUIDs = append(filters.ExcludeUUIDs, candidateTwoUUID)
+	profiles, err = r.repo.GetCandidateDiscoverProfile(filters)
+	r.NoError(err)
+	r.Len(profiles, 1)
+
+	filters.ExcludeUUIDs = append(filters.ExcludeUUIDs, candidateOneUUID)
+	profiles, err = r.repo.GetCandidateDiscoverProfile(filters)
+	r.NoError(err)
+	r.Len(profiles, 0)
 }
 
-// func (r *RepoSuite) TestGetCandidatesByMatchingPreferences() {
-
-// 	userMP := &records.MatchingPreferences{
-// 		Zipcode:          "06117",
-// 		Gender:           "MALE",
-// 		GenderPreference: "FEMALE",
-// 		Age:              30,
-// 		MinAgePref:       25,
-// 		MaxAgePref:       35,
-// 		UserUUID:         "user-uuid-0",
-// 	}
-// 	err := r.repo.CreateMatchingPreferences(userMP)
-// 	r.NoError(err)
-
-// 	candidates := []*records.MatchingPreferences{
-// 		{
-// 			Zipcode:          "06112",
-// 			Gender:           "FEMALE",
-// 			GenderPreference: "FEMALE",
-// 			Age:              30,
-// 			MinAgePref:       25,
-// 			MaxAgePref:       35,
-// 			UserUUID:         "user-uuid-0",
-// 		}
-// 	}
-// }

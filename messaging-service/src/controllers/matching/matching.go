@@ -69,15 +69,17 @@ func (m *MatchingController) CreateMatchingFilters(userDiscoverProfile *requests
 	}
 
 	// add these uuids to exclude them from matching
-	filters.ExcludeUUIDs = append(filters.ExcludeUUIDs, recentlyMatchedUUIDs...)
 	filters.ExcludeUUIDs = append(filters.ExcludeUUIDs, blockedUUIDs...)
+	filters.ExcludeUUIDs = append(filters.ExcludeUUIDs, recentlyMatchedUUIDs...)
 	filters.ExcludeUUIDs = append(filters.ExcludeUUIDs, recentlyMadeDecisionOn...)
 
 	filters.ProfileMaxAgePreference = &userDiscoverProfile.MaxAgePref
 	filters.ProfileMinAgePreference = &userDiscoverProfile.MinAgePref
-	filters.CandidateGender = &userDiscoverProfile.GenderPreference
 	filters.ProfileGender = &userDiscoverProfile.Gender
+	filters.ProfileGenderPreference = &userDiscoverProfile.GenderPreference
 	filters.ProfileAge = &userDiscoverProfile.Age
+	filters.ProfileLng = &userDiscoverProfile.CurrentLng
+	filters.ProfileLat = &userDiscoverProfile.CurrentLat
 
 	return filters, nil
 }
@@ -99,7 +101,9 @@ func (m *MatchingController) GetCandidateProfiles(userProfile *requests.Discover
 	}
 	// get all the candidates that match the user dating preferences and are not excluded
 	recordsCandidatesDiscoverProfiles, err := m.Repo.GetCandidateDiscoverProfile(filters)
-
+	if err != nil {
+		return nil, err
+	}
 	candidateDiscoverProfiles := make([]*requests.DiscoverProfile, len(recordsCandidatesDiscoverProfiles))
 	for i, dp := range recordsCandidatesDiscoverProfiles {
 		candidateDiscoverProfiles[i] = &requests.DiscoverProfile{
@@ -109,8 +113,6 @@ func (m *MatchingController) GetCandidateProfiles(userProfile *requests.Discover
 			MinAgePref:       dp.MinAgePref,
 			MaxAgePref:       dp.MaxAgePref,
 			UserUUID:         dp.UserUUID,
-			// Name:             dp.Name,
-
 		}
 	}
 
@@ -142,7 +144,7 @@ func (m *MatchingController) CheckMatchesForUser(userDiscoverProfile *requests.D
 	// no matches, abort
 	if len(candidateProfiles) == 0 {
 		res.AbortCode = enums.ABORT_CODE_NO_MATCHES.String()
-		return nil, nil
+		return res, nil
 	}
 
 	candidateLikedQuestions, err := m.GetQuestionsLikedByMatchedCandidates(candidateProfiles, userLikedQuestions)
@@ -153,7 +155,7 @@ func (m *MatchingController) CheckMatchesForUser(userDiscoverProfile *requests.D
 	// no overlapping liked questions, abort
 	if len(candidateLikedQuestions) == 0 {
 		res.AbortCode = enums.ABORT_CODE_NO_OVERLAPPING_QUESTIONS.String()
-		return nil, nil
+		return res, nil
 	}
 
 	res.CandidatesMatchingPrefs = rankAndOrderProfiles(candidateLikedQuestions, candidateProfiles)

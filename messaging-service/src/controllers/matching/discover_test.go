@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	mockStorage "messaging-service/mocks/src/gateways/storage"
+	mockRepo "messaging-service/mocks/src/repo"
 	"messaging-service/src/types/requests"
 
 	"github.com/stretchr/testify/mock"
@@ -18,6 +19,7 @@ type MatchingControllerSuite struct {
 
 	matchingController *MatchingController
 	mockStorage        *mockStorage.StorageInterface
+	mockRepo           *mockRepo.RepoInterface
 }
 
 // this function executes before the test suite begins execution
@@ -27,8 +29,10 @@ func (s *MatchingControllerSuite) SetupSuite() {
 
 func (s *MatchingControllerSuite) SetupTest() {
 	s.mockStorage = mockStorage.NewStorageInterface(s.T())
+	s.mockRepo = mockRepo.NewRepoInterface(s.T())
 	s.matchingController = &MatchingController{
 		Storage: s.mockStorage,
+		Repo:    s.mockRepo,
 	}
 }
 

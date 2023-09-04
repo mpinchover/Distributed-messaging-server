@@ -43,12 +43,10 @@ func (r *Repo) UpdateTrackedQuestion(trackedQuestions *records.TrackedQuestion) 
 	return err
 }
 
-// distance reeturned in meters
-// TODO - put a limit on this and then if no candidates return, make another query
-// profile = user
+// get candidate discover profiles for matching within distance
 func (r *Repo) GetCandidateDiscoverProfile(filters *requests.ProfileFilter) ([]*records.DiscoverProfile, error) {
 	res := []*records.DiscoverProfile{}
-	query := r.DB.Model(&records.DiscoverProfile{})
+	query := r.DB
 
 	if filters.ProfileGenderPreference != nil {
 		query = query.Where("gender = ?", *filters.ProfileGenderPreference)
@@ -67,7 +65,7 @@ func (r *Repo) GetCandidateDiscoverProfile(filters *requests.ProfileFilter) ([]*
 	}
 
 	if filters.ProfileAge != nil {
-		query = query.Where("min_age_pref <= ", *filters.ProfileAge)
+		query = query.Where("min_age_pref <= ?", *filters.ProfileAge)
 	}
 
 	if len(filters.ExcludeUUIDs) > 0 {
@@ -75,10 +73,12 @@ func (r *Repo) GetCandidateDiscoverProfile(filters *requests.ProfileFilter) ([]*
 	}
 
 	if filters.ProfileLat != nil && filters.ProfileLng != nil && filters.MaxDistanceMeters != nil {
-		query = query.Where("ST_Distance_Sphere(point(?,?), point(current_lng, current_lat)) < ?", *filters.ProfileLng, *filters.ProfileLat, *filters.MaxDistanceMeters)
+		query = query.Where("ST_Distance_Sphere(point(?, ?),point(current_lng, current_lat)) < ?",
+			*filters.ProfileLng, *filters.ProfileLat, *filters.MaxDistanceMeters)
+
 	}
 
-	err := query.Find(&res).Error
+	err := query.Find(&res).Offset(filters.Offset).Limit(10).Error
 	return res, err
 }
 

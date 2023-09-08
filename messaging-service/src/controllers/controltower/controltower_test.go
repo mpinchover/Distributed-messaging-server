@@ -5,7 +5,6 @@ import (
 	"errors"
 	"testing"
 
-	mockConnections "messaging-service/mocks/src/controllers/connectionscontroller"
 	mockRedis "messaging-service/mocks/src/redis"
 	mockRepo "messaging-service/mocks/src/repo"
 	"messaging-service/src/types/records"
@@ -19,10 +18,10 @@ import (
 type ControlTowerSuite struct {
 	suite.Suite
 
-	mockRepoClient       *mockRepo.RepoInterface
-	mockRedisClient      *mockRedis.RedisInterface
-	mockConnectionsCtrlr *mockConnections.ConnectionsControllerInterface
-	controlTower         *ControlTowerCtrlr
+	mockRepoClient  *mockRepo.RepoInterface
+	mockRedisClient *mockRedis.RedisInterface
+	// mockConnectionsCtrlr *mockConnections.ConnectionsControllerInterface
+	controlTower *ControlTowerCtrlr
 }
 
 // this function executes before the test suite begins execution
@@ -30,11 +29,11 @@ func (s *ControlTowerSuite) SetupSuite() {
 
 	s.mockRepoClient = mockRepo.NewRepoInterface(s.T())
 	s.mockRedisClient = mockRedis.NewRedisInterface(s.T())
-	s.mockConnectionsCtrlr = mockConnections.NewConnectionsControllerInterface(s.T())
+	// s.mockConnectionsCtrlr = mockConnections.NewConnectionsControllerInterface(s.T())
 	s.controlTower = &ControlTowerCtrlr{
 		Repo:        s.mockRepoClient,
 		RedisClient: s.mockRedisClient,
-		ConnCtrlr:   s.mockConnectionsCtrlr,
+		// ConnCtrlr:   s.mockConnectionsCtrlr,
 	}
 
 }
@@ -240,9 +239,9 @@ func (s *ControlTowerSuite) TestsSetupClientConnectionV2() {
 				UserUUID: "uuid",
 			},
 			mocks: func() {
-				s.mockConnectionsCtrlr.On("GetConnection", mock.Anything).Return(nil).Once()
-				s.mockConnectionsCtrlr.On("AddConnection", mock.Anything).Return().Once()
-				s.mockConnectionsCtrlr.On("AddClient", mock.Anything, mock.Anything, mock.Anything).Return().Once()
+				// s.mockConnectionsCtrlr.On("GetConnection", mock.Anything).Return(nil).Once()
+				// s.mockConnectionsCtrlr.On("AddConnection", mock.Anything).Return().Once()
+				// s.mockConnectionsCtrlr.On("AddClient", mock.Anything, mock.Anything, mock.Anything).Return().Once()
 			},
 		},
 		{
@@ -251,10 +250,10 @@ func (s *ControlTowerSuite) TestsSetupClientConnectionV2() {
 				UserUUID: "uuid",
 			},
 			mocks: func() {
-				s.mockConnectionsCtrlr.On("GetConnection", mock.Anything).Return(&requests.Connection{
-					Connections: map[string]*websocket.Conn{},
-				}).Once()
-				s.mockConnectionsCtrlr.On("AddClient", mock.Anything, mock.Anything, mock.Anything).Return().Once()
+				// s.mockConnectionsCtrlr.On("GetConnection", mock.Anything).Return(&requests.Connection{
+				// 	Connections: map[string]*websocket.Conn{},
+				// }).Once()
+				// s.mockConnectionsCtrlr.On("AddClient", mock.Anything, mock.Anything, mock.Anything).Return().Once()
 			},
 		},
 	}

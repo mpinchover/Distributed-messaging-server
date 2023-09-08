@@ -2,17 +2,16 @@ package handlers
 
 import (
 	"errors"
+	"sync"
 )
 
 // broadcast to all channel members excluding the client device
-func (h *Handler) BroadcastEventToChannelSubscribersClientExclusive(channelUUID string, fromClientUUID string, msg interface{}) error {
+func (h *Handler) BroadcastEventToChannelSubscribersDeviceExclusive(channelUUID string, fromDeviceUUID string, msg interface{}) error {
 
 	// get the room from the server
-	channel := h.ControlTowerCtrlr.ChannelsCtrlr.GetChannel(channelUUID)
-
-	// room not on server
-	if channel == nil {
-		return errors.New("room not found")
+	_, ok := h.ControlTowerCtrlr.Channels[channelUUID]
+	if !ok {
+		return errors.New("room not found on server")
 	}
 
 	// if the user connection is on this server, blast it out.
@@ -21,16 +20,22 @@ func (h *Handler) BroadcastEventToChannelSubscribersClientExclusive(channelUUID 
 		return err
 	}
 
+	var mu sync.Mutex
+	mu.Lock()
+	defer mu.Unlock()
+
 	for _, m := range members {
-		connection := h.ControlTowerCtrlr.ConnCtrlr.GetConnection(m.UserUUID)
-		if connection == nil {
+		userConn, ok := h.ControlTowerCtrlr.UserConnections[m.UserUUID]
+		if !ok {
 			continue
 		}
-		for clientUUID, conn := range connection.Connections {
-			if clientUUID == fromClientUUID {
+		for deviceUUID, device := range userConn.Devices {
+			if deviceUUID == fromDeviceUUID {
 				continue
 			}
-			conn.WriteJSON(msg)
+
+			device.WS.WriteJSON(msg)
+
 		}
 	}
 	return nil
@@ -40,11 +45,11 @@ func (h *Handler) BroadcastEventToChannelSubscribersClientExclusive(channelUUID 
 func (h *Handler) BroadcastEventToChannelSubscribersUserExclusive(channelUUID string, userUUID string, msg interface{}) error {
 
 	// get the room from the server
-	channel := h.ControlTowerCtrlr.ChannelsCtrlr.GetChannel(channelUUID)
+	_, ok := h.ControlTowerCtrlr.Channels[channelUUID]
 
 	// room not on server
-	if channel == nil {
-		return errors.New("room not found")
+	if !ok {
+		return errors.New("room not found on server")
 	}
 
 	// if the user connection is on this server, blast it out.
@@ -53,16 +58,23 @@ func (h *Handler) BroadcastEventToChannelSubscribersUserExclusive(channelUUID st
 		return err
 	}
 
+	var mu sync.Mutex
+	mu.Lock()
+	defer mu.Unlock()
+
 	for _, m := range members {
-		connection := h.ControlTowerCtrlr.ConnCtrlr.GetConnection(m.UserUUID)
+		userConn, ok := h.ControlTowerCtrlr.UserConnections[m.UserUUID]
+		if !ok {
+			continue
+		}
 
 		// don't broadcast to any devices belonging to this user
 		if m.UserUUID == userUUID {
 			continue
 		}
 
-		for _, conn := range connection.Connections {
-			conn.WriteJSON(msg)
+		for _, device := range userConn.Devices {
+			device.WS.WriteJSON(msg)
 		}
 	}
 	return nil
@@ -72,11 +84,10 @@ func (h *Handler) BroadcastEventToChannelSubscribersUserExclusive(channelUUID st
 func (h *Handler) BroadcastEventToChannelSubscribers(channelUUID string, msg interface{}) error {
 
 	// get the room from the server
-	channel := h.ControlTowerCtrlr.ChannelsCtrlr.GetChannel(channelUUID)
-
+	_, ok := h.ControlTowerCtrlr.UserConnections[channelUUID]
 	// room not on server
-	if channel == nil {
-		return errors.New("room not found")
+	if !ok {
+		return errors.New("room not found on server")
 	}
 
 	// if the user connection is on this server, blast it out.
@@ -85,11 +96,18 @@ func (h *Handler) BroadcastEventToChannelSubscribers(channelUUID string, msg int
 		return err
 	}
 
-	for _, m := range members {
-		connection := h.ControlTowerCtrlr.ConnCtrlr.GetConnection(m.UserUUID)
+	var mu sync.Mutex
+	mu.Lock()
+	defer mu.Unlock()
 
-		for _, conn := range connection.Connections {
-			conn.WriteJSON(msg)
+	for _, m := range members {
+		userConn, ok := h.ControlTowerCtrlr.UserConnections[m.UserUUID]
+		if !ok {
+			continue
+		}
+
+		for _, device := range userConn.Devices {
+			device.WS.WriteJSON(msg)
 		}
 	}
 	return nil

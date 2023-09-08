@@ -4,8 +4,7 @@ import (
 	"context"
 	"log"
 	"messaging-service/src/controllers/authcontroller"
-	"messaging-service/src/controllers/channelscontroller"
-	"messaging-service/src/controllers/connectionscontroller"
+
 	"messaging-service/src/controllers/controltower"
 	"messaging-service/src/handlers"
 	"messaging-service/src/middleware"
@@ -27,9 +26,7 @@ func main() {
 		fx.Provide(middleware.NewMessagingJWT),
 		fx.Provide(middleware.NewAPIKeyAuthMiddleware),
 		// controllers
-		fx.Provide(channelscontroller.New),
 		fx.Provide(authcontroller.New),
-		fx.Provide(connectionscontroller.New),
 		fx.Provide(NewMuxRouter),
 		fx.Provide(handlers.New),
 		fx.Provide(redisClient.New),

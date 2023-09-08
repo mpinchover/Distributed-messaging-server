@@ -44,7 +44,7 @@ func (h *Handler) SetupWebsocketConnection(w http.ResponseWriter, r *http.Reques
 	err = h.handleIncomingSocketEvents(ws)
 	if err != nil && websocket.IsCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 		if ws.UserUUID != nil && ws.ConnectionUUID != nil {
-			h.ControlTowerCtrlr.RemoveClientFromServer(*ws.UserUUID, *ws.ConnectionUUID)
+			h.ControlTowerCtrlr.RemoveClientDeviceFromServer(*ws.UserUUID, *ws.ConnectionUUID)
 		}
 	} else if err != nil {
 		log.Println(err)

@@ -3,9 +3,7 @@ package repo
 import (
 	"fmt"
 	"messaging-service/src/types/records"
-	"messaging-service/src/types/requests"
 	"os"
-	"time"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -37,18 +35,18 @@ type RepoInterface interface {
 	SaveRoom(room *records.Room) error
 
 	// matching
-	GetTrackedQuestionsByUserUUID(userUUID string) ([]*records.TrackedQuestion, error)
-	GetRecentTrackedLikedTargetsByUserUUID(userUUID string, t time.Time) ([]string, error)
-	// GetLikedTrackedQuestionsByQuestionUUIDs(questionUUIDs []string) ([]*records.TrackedQuestion, error)
-	GetCandidateDiscoverProfile(filters *requests.ProfileFilter) ([]*records.DiscoverProfile, error)
-	// GetLikedTrackedQuestionsByUserUUID(userUUID string) ([]*records.TrackedQuestion, error)
-	UpdateTrackedQuestion(trackedQuestions *records.TrackedQuestion) error
-	// GetLikedQuestionsByUserUUID(userUUID string) ([]*records.TrackedQuestion, error)
-	GetRecentlyMatchedUUIDs(uuid string) ([]string, error)
-	GetLikedQuestionUUIDsByUserUUID(userUUID string) ([]string, error)
-	GetBlockedCandidatesByUser(userUUID string) ([]string, error)
-	GetQuestionsLikedByMatchedCandidateUUIDs(questionUUIDs []string, candidateUUIDs []string) ([]*records.TrackedQuestion, error)
-	GetLikedTrackedQuestionByUserUUIDAndCandidates(userUUID string, candidateUUIDs []string) ([]*records.TrackedQuestion, error)
+	// GetTrackedQuestionsByUserUUID(userUUID string) ([]*records.TrackedQuestion, error)
+	// GetRecentTrackedLikedTargetsByUserUUID(userUUID string, t time.Time) ([]string, error)
+	// // GetLikedTrackedQuestionsByQuestionUUIDs(questionUUIDs []string) ([]*records.TrackedQuestion, error)
+	// GetCandidateDiscoverProfile(filters *requests.ProfileFilter) ([]*records.DiscoverProfile, error)
+	// // GetLikedTrackedQuestionsByUserUUID(userUUID string) ([]*records.TrackedQuestion, error)
+	// UpdateTrackedQuestion(trackedQuestions *records.TrackedQuestion) error
+	// // GetLikedQuestionsByUserUUID(userUUID string) ([]*records.TrackedQuestion, error)
+	// GetRecentlyMatchedUUIDs(uuid string) ([]string, error)
+	// GetLikedQuestionUUIDsByUserUUID(userUUID string) ([]string, error)
+	// GetBlockedCandidatesByUser(userUUID string) ([]string, error)
+	// GetQuestionsLikedByMatchedCandidateUUIDs(questionUUIDs []string, candidateUUIDs []string) ([]*records.TrackedQuestion, error)
+	// GetLikedTrackedQuestionByUserUUIDAndCandidates(userUUID string, candidateUUIDs []string) ([]*records.TrackedQuestion, error)
 }
 
 type Repo struct {

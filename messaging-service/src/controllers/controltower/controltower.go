@@ -9,11 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"messaging-service/src/controllers/channelscontroller"
-	"messaging-service/src/controllers/connectionscontroller"
 	redisClient "messaging-service/src/redis"
 	"messaging-service/src/repo"
 	"messaging-service/src/serrors"
+	"messaging-service/src/types/connections"
 	"messaging-service/src/types/enums"
 	"messaging-service/src/types/records"
 	"messaging-service/src/types/requests"
@@ -22,29 +21,47 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+/*
+// TODO - possibly make this a map
+type ChatConnections map[string][]*Device
+
+	type Device struct {
+		UUID string
+		WS   *websocket.Conn
+	}
+
+// room uuid -> participants in the room
+type Channels map[string][]string
+*/
 type ControlTowerCtrlr struct {
 	RedisClient redisClient.RedisInterface
 	Repo        repo.RepoInterface
 
-	ConnCtrlr     connectionscontroller.ConnectionsControllerInterface
-	ChannelsCtrlr *channelscontroller.ChannelsController
+	UserConnections map[string]*connections.UserConnection // user uuid to list of devices
+	Channels        map[string]map[string]bool             // room uuid to the list of users in the room
+
+	// ConnCtrlr     connectionscontroller.ConnectionsControllerInterface
+	// ChannelsCtrlr *channelscontroller.ChannelsController
 	// track active rooms/channels on this server
-	ServerChannels map[string]*requests.ServerChannel
+	// ServerChannels map[string]*requests.ServerChannel
 }
 
 func New(
 	redisClient *redisClient.RedisClient,
 	repo *repo.Repo,
-	connCtrlr *connectionscontroller.ConnectionsController,
-	channelsCtrlr *channelscontroller.ChannelsController,
+	// connCtrlr *connectionscontroller.ConnectionsController,
+	// channelsCtrlr *channelscontroller.ChannelsController,
 ) *ControlTowerCtrlr {
 
 	controlTower := &ControlTowerCtrlr{
-		RedisClient:   redisClient,
-		ConnCtrlr:     connCtrlr,
-		ChannelsCtrlr: channelsCtrlr,
+		RedisClient: redisClient,
+		// ConnCtrlr:     connCtrlr,
+		// ChannelsCtrlr: channelsCtrlr,
 
-		Repo: repo,
+		Repo:     repo,
+		Channels: map[string]map[string]bool{},
+		// make this user connections and have channels as well
+		UserConnections: map[string]*connections.UserConnection{},
 	}
 
 	return controlTower
@@ -217,19 +234,49 @@ func (c *ControlTowerCtrlr) SetupClientConnectionV2(
 	conn *websocket.Conn,
 	msg *requests.SetClientConnectionEvent) (*requests.SetClientConnectionEvent, error) {
 
-	connectionUUID := uuid.New().String()
-	msg.ConnectionUUID = connectionUUID
-	userConnection := c.ConnCtrlr.GetConnection(msg.UserUUID)
+	var mu sync.Mutex
+	mu.Lock()
+	defer mu.Unlock()
 
-	if userConnection == nil {
-		userConnection = &requests.Connection{
-			UserUUID:    msg.UserUUID,
-			Connections: map[string]*websocket.Conn{},
-		}
-		c.ConnCtrlr.AddConnection(userConnection)
+	deviceUUID := uuid.New().String()
+	// connectionUUID := uuid.New().String()
+
+	// TODO - update to device uuid
+	msg.ConnectionUUID = deviceUUID
+	// userConnection, userExists := c.ChatConnections[msg.UserUUID]
+
+	if c.UserConnections == nil {
+		c.UserConnections = map[string]*connections.UserConnection{}
 	}
 
-	c.ConnCtrlr.AddClient(userConnection, connectionUUID, conn)
+	userConn, ok := c.UserConnections[msg.UserUUID]
+	if !ok {
+		userConn = &connections.UserConnection{
+			UUID:    msg.UserUUID,
+			Devices: map[string]*connections.Device{},
+		}
+		c.UserConnections[msg.UserUUID] = userConn
+	}
+	newDeviceConnection := &connections.Device{
+		WS: conn,
+	}
+	userConn.Devices[deviceUUID] = newDeviceConnection
+	c.UserConnections[msg.UserUUID] = userConn
+
+	// if !userExists {
+	// 	newDeviceConnection := &connections.Device{
+	// 		UUID: msg.UserUUID,
+	// 		WS:   conn,
+	// 	}
+	// 	c.ChatConnections[msg.UserUUID] = append(c.ChatConnections[msg.UserUUID], newDeviceConnection)
+	// 	// newDeviceConnection = &requests.Connection{
+	// 	// 	UserUUID:    msg.UserUUID,
+	// 	// 	Connections: map[string]*websocket.Conn{},
+	// 	// }
+	// 	// c.ConnCtrlr.AddConnection(userConnection)
+	// }
+
+	// c.ConnCtrlr.AddClient(userConnection, connectionUUID, conn)
 	return msg, nil
 }
 
@@ -299,29 +346,58 @@ func (c *ControlTowerCtrlr) GetRoomsByUserUUID(ctx context.Context, userUUID str
 	return requestRooms, nil
 }
 
+func (c *ControlTowerCtrlr) RemoveUserFromChannel(userUUID string, channelUUID string) error {
+	ch, ok := c.Channels[channelUUID]
+	if !ok {
+		return nil
+	}
+
+	var mu sync.Mutex
+	mu.Lock()
+	defer mu.Unlock()
+
+	delete(ch, userUUID)
+	c.Channels[channelUUID] = ch
+
+	if len(ch) == 1 {
+		delete(c.Channels, channelUUID)
+	}
+	return nil
+}
+
 // maybe store the rooms each member is part of as memebersOnServer
-func (c *ControlTowerCtrlr) RemoveClientFromServer(userUUID string, connectionUUID string) error {
+// remove device from server
+func (c *ControlTowerCtrlr) RemoveClientDeviceFromServer(userUUID string, deviceUUID string) error {
 	// remove the user from connections
 
 	var mu sync.Mutex
 	mu.Lock()
 	defer mu.Unlock()
-	// TODO - can you put these all in one lock?
-	c.ConnCtrlr.DelClient(userUUID, connectionUUID)
 
-	// TODO - optimize
-	channelsForUser := c.ChannelsCtrlr.GetChannelsByUserUUID(userUUID)
+	// delete the device
+	// remove the device from the user
+	userConnection, ok := c.UserConnections[userUUID]
+	if !ok {
+		panic("User not found in user connections")
 
-	// fmt.Println("FOUND ", len(channelsForUser), "channels for user ", userUUID)
-	// if this user is the last member of the channel on this server, delete the channel
-	for _, ch := range channelsForUser {
-		c.ChannelsCtrlr.DeleteUser(ch.UUID, userUUID)
+	}
+	_, ok = userConnection.Devices[deviceUUID]
+	if !ok {
+		panic("device not in device connections")
 	}
 
-	channelsForUser = c.ChannelsCtrlr.GetChannelsByUserUUID(userUUID)
+	delete(userConnection.Devices, deviceUUID)
 
-	// fmt.Println("AFTER DELETE")
-	// fmt.Println("FOUND ", len(channelsForUser), "channels for user ", userUUID)
-	// fmt.Println("\n\n\n")
+	// user has no more devices attached to this connection, delete it
+	if len(userConnection.Devices) == 0 {
+		delete(c.UserConnections, userUUID)
+	}
+
+	// now iterate over al channels to delete the user
+	for chUUID, members := range c.Channels {
+		if members[userUUID] && len(members) == 1 {
+			delete(c.Channels, chUUID)
+		}
+	}
 	return nil
 }

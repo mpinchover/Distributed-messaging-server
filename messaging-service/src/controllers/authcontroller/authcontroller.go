@@ -10,9 +10,7 @@ import (
 	redisClient "messaging-service/src/redis"
 	"messaging-service/src/repo"
 	"messaging-service/src/serrors"
-	"messaging-service/src/types/records"
 	"messaging-service/src/types/requests"
-	"messaging-service/src/utils"
 	"net/smtp"
 	"os"
 	"time"
@@ -58,75 +56,75 @@ func doPasswordsMatch(hashedPassword, currPassword string) bool {
 	return err == nil
 }
 
-func (a *AuthController) Login(req *requests.LoginRequest) (*requests.LoginResponse, error) {
-	authProfile, err := a.repo.GetAuthProfileByEmail(req.Email)
-	if err != nil {
-		return nil, serrors.InternalError(err)
-	}
+// func (a *AuthController) Login(req *requests.LoginRequest) (*requests.LoginResponse, error) {
+// 	authProfile, err := a.repo.GetAuthProfileByEmail(req.Email)
+// 	if err != nil {
+// 		return nil, serrors.InternalError(err)
+// 	}
 
-	if authProfile == nil {
-		return nil, serrors.AuthError(err)
-	}
+// 	if authProfile == nil {
+// 		return nil, serrors.AuthError(err)
+// 	}
 
-	if !doPasswordsMatch(authProfile.HashedPassword, req.Password) {
-		return nil, serrors.AuthErrorf("old/new passwords do not match", nil)
-	}
+// 	if !doPasswordsMatch(authProfile.HashedPassword, req.Password) {
+// 		return nil, serrors.AuthErrorf("old/new passwords do not match", nil)
+// 	}
 
-	rAuthProfile := &requests.AuthProfile{
-		Email: authProfile.Email,
-		UUID:  authProfile.UUID,
-	}
+// 	rAuthProfile := &requests.AuthProfile{
+// 		Email: authProfile.Email,
+// 		UUID:  authProfile.UUID,
+// 	}
 
-	accessToken, err := utils.GenerateJWTToken(rAuthProfile, time.Now().Add(time.Minute*10))
-	if err != nil {
-		return nil, serrors.InternalError(err)
-	}
-	refreshToken, err := utils.GenerateJWTToken(rAuthProfile, time.Now().Add(time.Hour*utils.NumberOfHoursInSixMonths))
-	if err != nil {
-		return nil, serrors.InternalError(err)
-	}
+// 	accessToken, err := utils.GenerateJWTToken(rAuthProfile, time.Now().Add(time.Minute*10))
+// 	if err != nil {
+// 		return nil, serrors.InternalError(err)
+// 	}
+// 	refreshToken, err := utils.GenerateJWTToken(rAuthProfile, time.Now().Add(time.Hour*utils.NumberOfHoursInSixMonths))
+// 	if err != nil {
+// 		return nil, serrors.InternalError(err)
+// 	}
 
-	return &requests.LoginResponse{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-	}, nil
-}
+// 	return &requests.LoginResponse{
+// 		AccessToken:  accessToken,
+// 		RefreshToken: refreshToken,
+// 	}, nil
+// }
 
-func (a *AuthController) UpdatePassword(
-	ctx context.Context,
-	req *requests.UpdatePasswordRequest,
-) error {
-	authProfile, err := utils.GetAuthProfileFromCtx(ctx)
-	if err != nil {
-		return serrors.InternalError(err)
-	}
+// func (a *AuthController) UpdatePassword(
+// 	ctx context.Context,
+// 	req *requests.UpdatePasswordRequest,
+// ) error {
+// 	authProfile, err := utils.GetAuthProfileFromCtx(ctx)
+// 	if err != nil {
+// 		return serrors.InternalError(err)
+// 	}
 
-	existingAuthProfile, err := a.repo.GetAuthProfileByEmail(authProfile.Email)
-	if err != nil {
-		return serrors.InternalError(err)
-	}
+// 	existingAuthProfile, err := a.repo.GetAuthProfileByEmail(authProfile.Email)
+// 	if err != nil {
+// 		return serrors.InternalError(err)
+// 	}
 
-	if existingAuthProfile == nil {
-		return serrors.AuthErrorf("no account matching email found", nil)
-	}
-	if !doPasswordsMatch(existingAuthProfile.HashedPassword, req.CurrentPassword) {
-		return serrors.AuthErrorf("old/new passwords do not match", nil)
-	}
+// 	if existingAuthProfile == nil {
+// 		return serrors.AuthErrorf("no account matching email found", nil)
+// 	}
+// 	if !doPasswordsMatch(existingAuthProfile.HashedPassword, req.CurrentPassword) {
+// 		return serrors.AuthErrorf("old/new passwords do not match", nil)
+// 	}
 
-	// validate the new and confirm password match
-	// update the password
-	hashedPassword, err := hashPassword(req.NewPassword)
-	if err != nil {
-		return serrors.InternalError(err)
-	}
+// 	// validate the new and confirm password match
+// 	// update the password
+// 	hashedPassword, err := hashPassword(req.NewPassword)
+// 	if err != nil {
+// 		return serrors.InternalError(err)
+// 	}
 
-	// update the authprofile with the new password
-	err = a.repo.UpdatePassword(authProfile.Email, hashedPassword)
-	if err != nil {
-		return err
-	}
-	return nil
-}
+// 	// update the authprofile with the new password
+// 	err = a.repo.UpdatePassword(authProfile.Email, hashedPassword)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }
 
 // https://www.loginradius.com/blog/engineering/sending-emails-with-golang/#:~:text=Below%20is%20the%20complete%20code,%2C%20%7D%20%2F%2F%20smtp%20server%20configuration.
 func generateRandomString(length int) (string, error) {
@@ -270,54 +268,54 @@ func (a *AuthController) VerifyAPIKeyExists(ctx context.Context, key string) (*r
 	return apiKey, nil
 }
 
-func (a *AuthController) Signup(req *requests.SignupRequest) (*requests.SignupResponse, error) {
-	authProfile, err := a.repo.GetAuthProfileByEmail(req.Email)
-	if err != nil {
-		return nil, serrors.InternalError(err)
-	}
+// func (a *AuthController) Signup(req *requests.SignupRequest) (*requests.SignupResponse, error) {
+// 	authProfile, err := a.repo.GetAuthProfileByEmail(req.Email)
+// 	if err != nil {
+// 		return nil, serrors.InternalError(err)
+// 	}
 
-	if authProfile != nil {
-		return nil, serrors.InvalidArgumentErrorf("User already exists", nil)
-	}
+// 	if authProfile != nil {
+// 		return nil, serrors.InvalidArgumentErrorf("User already exists", nil)
+// 	}
 
-	authUserUUID := uuid.New().String()
-	hashedPassword, err := hashPassword(req.Password)
-	if err != nil {
-		return nil, serrors.InternalError(err)
-	}
+// 	authUserUUID := uuid.New().String()
+// 	hashedPassword, err := hashPassword(req.Password)
+// 	if err != nil {
+// 		return nil, serrors.InternalError(err)
+// 	}
 
-	recordAuthProfile := &records.AuthProfile{
-		UUID:           authUserUUID,
-		Email:          req.Email,
-		HashedPassword: hashedPassword,
-	}
+// 	recordAuthProfile := &records.AuthProfile{
+// 		UUID:           authUserUUID,
+// 		Email:          req.Email,
+// 		HashedPassword: hashedPassword,
+// 	}
 
-	err = a.repo.SaveAuthProfile(recordAuthProfile)
-	if err != nil {
-		return nil, serrors.InternalError(err)
-	}
+// 	err = a.repo.SaveAuthProfile(recordAuthProfile)
+// 	if err != nil {
+// 		return nil, serrors.InternalError(err)
+// 	}
 
-	rAuthProfile := &requests.AuthProfile{
-		Email: recordAuthProfile.Email,
-		UUID:  recordAuthProfile.UUID,
-	}
+// 	rAuthProfile := &requests.AuthProfile{
+// 		Email: recordAuthProfile.Email,
+// 		UUID:  recordAuthProfile.UUID,
+// 	}
 
-	accessToken, err := utils.GenerateJWTToken(rAuthProfile, time.Now().Add(time.Minute*10))
-	if err != nil {
-		return nil, serrors.InternalError(err)
-	}
-	refreshToken, err := utils.GenerateJWTToken(rAuthProfile, time.Now().Add(time.Hour*utils.NumberOfHoursInSixMonths))
-	if err != nil {
-		return nil, serrors.InternalError(err)
-	}
+// 	accessToken, err := utils.GenerateJWTToken(rAuthProfile, time.Now().Add(time.Minute*10))
+// 	if err != nil {
+// 		return nil, serrors.InternalError(err)
+// 	}
+// 	refreshToken, err := utils.GenerateJWTToken(rAuthProfile, time.Now().Add(time.Hour*utils.NumberOfHoursInSixMonths))
+// 	if err != nil {
+// 		return nil, serrors.InternalError(err)
+// 	}
 
-	return &requests.SignupResponse{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-		UUID:         authUserUUID,
-		Email:        recordAuthProfile.Email,
-	}, nil
-}
+// 	return &requests.SignupResponse{
+// 		AccessToken:  accessToken,
+// 		RefreshToken: refreshToken,
+// 		UUID:         authUserUUID,
+// 		Email:        recordAuthProfile.Email,
+// 	}, nil
+// }
 
 func (a *AuthController) RemoveAPIKey(ctx context.Context, apiKey string) error {
 	return a.redisClient.Del(ctx, apiKey)

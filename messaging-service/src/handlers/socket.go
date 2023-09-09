@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"log"
 	"messaging-service/src/types/enums"
 	"messaging-service/src/types/requests"
@@ -43,8 +44,8 @@ func (h *Handler) SetupWebsocketConnection(w http.ResponseWriter, r *http.Reques
 	// update the conn to have a connectionUUID and pass this in instead
 	err = h.handleIncomingSocketEvents(ws)
 	if err != nil && websocket.IsCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-		if ws.UserUUID != nil && ws.ConnectionUUID != nil {
-			h.ControlTowerCtrlr.RemoveClientDeviceFromServer(*ws.UserUUID, *ws.ConnectionUUID)
+		if ws.UserUUID != nil && ws.DeviceUUID != nil {
+			h.ControlTowerCtrlr.RemoveClientDeviceFromServer(*ws.UserUUID, *ws.DeviceUUID)
 		}
 	} else if err != nil {
 		log.Println(err)
@@ -103,6 +104,8 @@ func (h *Handler) handleIncomingSocketEvents(ws *requests.Websocket) error {
 		} else {
 			_, authErr = utils.VerifyJWT(msgToken, false)
 		}
+		fmt.Println("ERROR IS")
+		fmt.Println(authErr)
 
 		if authErr != nil {
 			return sendClientError(ws, err)

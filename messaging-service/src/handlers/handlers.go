@@ -226,45 +226,45 @@ func (h *Handler) leaveRoom(ctx context.Context, req *requests.LeaveRoomRequest)
 	return nil, nil
 }
 
-func (h *Handler) Login(w http.ResponseWriter, r *http.Request) (interface{}, error) {
-	// validation
-	req := &requests.LoginRequest{}
-	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		return nil, err
-	}
-	ctx := r.Context()
-	return h.login(ctx, req)
-}
+// func (h *Handler) Login(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+// 	// validation
+// 	req := &requests.LoginRequest{}
+// 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+// 		return nil, err
+// 	}
+// 	ctx := r.Context()
+// 	return h.login(ctx, req)
+// }
 
-func (h *Handler) login(ctx context.Context, req *requests.LoginRequest) (*requests.LoginResponse, error) {
-	err := validation.ValidateRequest(req)
-	if err != nil {
-		return nil, err
-	}
+// func (h *Handler) login(ctx context.Context, req *requests.LoginRequest) (*requests.LoginResponse, error) {
+// 	err := validation.ValidateRequest(req)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	// login user
-	// send back token
-	return h.AuthController.Login(req)
-}
+// 	// login user
+// 	// send back token
+// 	return h.AuthController.Login(req)
+// }
 
-func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) (interface{}, error) {
-	// validation
-	req := &requests.SignupRequest{}
-	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		return nil, err
-	}
-	ctx := r.Context()
-	return h.signup(ctx, req)
-}
+// func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+// 	// validation
+// 	req := &requests.SignupRequest{}
+// 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+// 		return nil, err
+// 	}
+// 	ctx := r.Context()
+// 	return h.signup(ctx, req)
+// }
 
-func (h *Handler) signup(ctx context.Context, req *requests.SignupRequest) (*requests.SignupResponse, error) {
-	err := validation.ValidateRequest(req)
-	if err != nil {
-		return nil, err
-	}
+// func (h *Handler) signup(ctx context.Context, req *requests.SignupRequest) (*requests.SignupResponse, error) {
+// 	err := validation.ValidateRequest(req)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	return h.AuthController.Signup(req)
-}
+// 	return h.AuthController.Signup(req)
+// }
 
 func (h *Handler) GetNewAPIKey(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 	ctx := r.Context()
@@ -301,86 +301,86 @@ func (h *Handler) invalidateAPIKey(ctx context.Context, req *requests.Invalidate
 	}, nil
 }
 
-func (h *Handler) RefreshAccessToken(w http.ResponseWriter, r *http.Request) (interface{}, error) {
-	ctx := r.Context()
-	return h.refreshAccessToken(ctx)
-}
+// func (h *Handler) RefreshAccessToken(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+// 	ctx := r.Context()
+// 	return h.refreshAccessToken(ctx)
+// }
 
-func (h *Handler) refreshAccessToken(ctx context.Context) (*requests.RefreshAccessTokenResponse, error) {
-	authProfile, err := utils.GetAuthProfileFromCtx(ctx)
-	if err != nil {
-		return nil, err
-	}
-	accessToken, err := utils.GenerateJWTToken(authProfile, time.Now().Add(time.Minute*10))
-	if err != nil {
-		return nil, err
-	}
-	refreshToken, err := utils.GenerateJWTToken(authProfile, time.Now().Add(time.Hour*utils.NumberOfHoursInSixMonths))
-	if err != nil {
-		return nil, err
-	}
-	return &requests.RefreshAccessTokenResponse{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-	}, nil
-}
+// func (h *Handler) refreshAccessToken(ctx context.Context) (*requests.RefreshAccessTokenResponse, error) {
+// 	authProfile, err := utils.GetAuthProfileFromCtx(ctx)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	accessToken, err := utils.GenerateJWTToken(authProfile, time.Now().Add(time.Minute*10))
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	refreshToken, err := utils.GenerateJWTToken(authProfile, time.Now().Add(time.Hour*utils.NumberOfHoursInSixMonths))
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return &requests.RefreshAccessTokenResponse{
+// 		AccessToken:  accessToken,
+// 		RefreshToken: refreshToken,
+// 	}, nil
+// }
 
-func (h *Handler) UpdatePassword(w http.ResponseWriter, r *http.Request) (interface{}, error) {
-	ctx := r.Context()
-	req := &requests.UpdatePasswordRequest{}
-	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		return nil, err
-	}
-	return h.updatePassword(ctx, req)
-}
+// func (h *Handler) UpdatePassword(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+// 	ctx := r.Context()
+// 	req := &requests.UpdatePasswordRequest{}
+// 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+// 		return nil, err
+// 	}
+// 	return h.updatePassword(ctx, req)
+// }
 
-func (h *Handler) updatePassword(ctx context.Context, req *requests.UpdatePasswordRequest) (*requests.GenericResponse, error) {
-	err := h.AuthController.UpdatePassword(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-	return &requests.GenericResponse{
-		Success: true,
-	}, nil
-}
+// func (h *Handler) updatePassword(ctx context.Context, req *requests.UpdatePasswordRequest) (*requests.GenericResponse, error) {
+// 	err := h.AuthController.UpdatePassword(ctx, req)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return &requests.GenericResponse{
+// 		Success: true,
+// 	}, nil
+// }
 
-func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) (interface{}, error) {
-	ctx := r.Context()
-	req := &requests.ResetPasswordRequest{}
-	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		return nil, err
-	}
-	return h.resetPassword(ctx, req)
-}
+// func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+// 	ctx := r.Context()
+// 	req := &requests.ResetPasswordRequest{}
+// 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+// 		return nil, err
+// 	}
+// 	return h.resetPassword(ctx, req)
+// }
 
-func (h *Handler) resetPassword(ctx context.Context, req *requests.ResetPasswordRequest) (*requests.GenericResponse, error) {
-	err := h.AuthController.ResetPassword(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-	return &requests.GenericResponse{
-		Success: true,
-	}, nil
-}
+// func (h *Handler) resetPassword(ctx context.Context, req *requests.ResetPasswordRequest) (*requests.GenericResponse, error) {
+// 	err := h.AuthController.ResetPassword(ctx, req)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return &requests.GenericResponse{
+// 		Success: true,
+// 	}, nil
+// }
 
-func (h *Handler) GeneratePasswordResetLink(w http.ResponseWriter, r *http.Request) (interface{}, error) {
-	ctx := r.Context()
-	req := &requests.GeneratePasswordResetLinkRequest{}
-	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		return nil, err
-	}
-	return h.generatePasswordResetLink(ctx, req)
-}
+// func (h *Handler) GeneratePasswordResetLink(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+// 	ctx := r.Context()
+// 	req := &requests.GeneratePasswordResetLinkRequest{}
+// 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+// 		return nil, err
+// 	}
+// 	return h.generatePasswordResetLink(ctx, req)
+// }
 
-func (h *Handler) generatePasswordResetLink(ctx context.Context, req *requests.GeneratePasswordResetLinkRequest) (*requests.GenericResponse, error) {
-	err := h.AuthController.GeneratePasswordResetLink(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-	return &requests.GenericResponse{
-		Success: true,
-	}, nil
-}
+// func (h *Handler) generatePasswordResetLink(ctx context.Context, req *requests.GeneratePasswordResetLinkRequest) (*requests.GenericResponse, error) {
+// 	err := h.AuthController.GeneratePasswordResetLink(ctx, req)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return &requests.GenericResponse{
+// 		Success: true,
+// 	}, nil
+// }
 
 func (h *Handler) GenerateMessagingToken(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 	ctx := r.Context()
@@ -394,8 +394,8 @@ func (h *Handler) GenerateMessagingToken(w http.ResponseWriter, r *http.Request)
 // create a user for this person
 // have they exceeded quota for monthly active users?
 func (h *Handler) generateMessagingToken(ctx context.Context, req *requests.GenerateMessagingTokenRequest) (*requests.GenerateMessagingTokenResponse, error) {
-	userID := req.UserID
-	accessToken, err := utils.GenerateMessagingToken(userID, time.Now().Add(10*time.Minute))
+	userUUID := req.UserUUID
+	accessToken, err := utils.GenerateMessagingToken(userUUID, time.Now().Add(10*time.Minute))
 	if err != nil {
 		return nil, err
 	}

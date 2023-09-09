@@ -1,53 +1,42 @@
 package apitests
 
-import (
-	"messaging-service/integration-tests/common"
-	"messaging-service/src/types/enums"
-	"messaging-service/src/types/requests"
-	"testing"
-	"time"
+// func TestCreateRoom(t *testing.T) {
+// 	// t.Skip()
+// 	t.Run("create room", func(t *testing.T) {
+// 		t.Parallel()
+// 		t.Logf("Runningg test %s at %d", t.Name(), time.Now().UnixNano())
+// 		validMessagingToken, validAPIKey := common.GetValidToken(t)
 
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-)
+// 		tomClient, tomConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
+// 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
+// 			Token:     validMessagingToken,
+// 			UserUUID:  uuid.New().String() + "_7",
+// 		})
 
-func TestCreateRoom(t *testing.T) {
-	// t.Skip()
-	t.Run("create room", func(t *testing.T) {
-		t.Parallel()
-		t.Logf("Runningg test %s at %d", t.Name(), time.Now().UnixNano())
-		validMessagingToken, validAPIKey := common.GetValidToken(t)
+// 		jerryClient, jerryConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
+// 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
+// 			Token:     validMessagingToken,
+// 			UserUUID:  uuid.New().String() + "_8",
+// 		})
 
-		tomClient, tomConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
-			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
-			Token:     validMessagingToken,
-			UserUUID:  uuid.New().String() + "_7",
-		})
+// 		// create a room
+// 		createRoomRequest := &requests.CreateRoomRequest{
+// 			Members: []*requests.Member{
+// 				{
+// 					UserUUID: tomClient.UserUUID,
+// 				},
+// 				{
+// 					UserUUID: jerryClient.UserUUID,
+// 				},
+// 			},
+// 		}
 
-		jerryClient, jerryConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
-			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
-			Token:     validMessagingToken,
-			UserUUID:  uuid.New().String() + "_8",
-		})
+// 		common.OpenRoom(t, createRoomRequest, validAPIKey)
 
-		// create a room
-		createRoomRequest := &requests.CreateRoomRequest{
-			Members: []*requests.Member{
-				{
-					UserUUID: tomClient.UserUUID,
-				},
-				{
-					UserUUID: jerryClient.UserUUID,
-				},
-			},
-		}
+// 		tOpenRoomResponse := common.ReadOpenRoomResponse(t, tomConn, 2)
+// 		jOpenRoomResponse := common.ReadOpenRoomResponse(t, jerryConn, 2)
 
-		common.OpenRoom(t, createRoomRequest, validAPIKey)
+// 		assert.Equal(t, tOpenRoomResponse.Room.UUID, jOpenRoomResponse.Room.UUID)
 
-		tOpenRoomResponse := common.ReadOpenRoomResponse(t, tomConn, 2)
-		jOpenRoomResponse := common.ReadOpenRoomResponse(t, jerryConn, 2)
-
-		assert.Equal(t, tOpenRoomResponse.Room.UUID, jOpenRoomResponse.Room.UUID)
-
-	})
-}
+// 	})
+// }

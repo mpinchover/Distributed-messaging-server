@@ -35,22 +35,22 @@ func GetAPIKeyFromCtx(ctx context.Context) (*requests.APIKey, error) {
 	return apiKey, nil
 }
 
-func GetAuthProfileFromCtx(ctx context.Context) (*requests.AuthProfile, error) {
-	_authProfile := ctx.Value("AUTH_PROFILE")
-	if _authProfile == nil {
-		return nil, serrors.AuthErrorf("could not get auth profile", nil)
-	}
-	authProfile := &requests.AuthProfile{}
-	b, err := json.Marshal(_authProfile)
-	if err != nil {
-		return nil, serrors.AuthError(err)
-	}
-	err = json.Unmarshal(b, authProfile)
-	if err != nil {
-		return nil, serrors.AuthError(err)
-	}
-	return authProfile, nil
-}
+// func GetAuthProfileFromCtx(ctx context.Context) (*requests.AuthProfile, error) {
+// 	_authProfile := ctx.Value("AUTH_PROFILE")
+// 	if _authProfile == nil {
+// 		return nil, serrors.AuthErrorf("could not get auth profile", nil)
+// 	}
+// 	authProfile := &requests.AuthProfile{}
+// 	b, err := json.Marshal(_authProfile)
+// 	if err != nil {
+// 		return nil, serrors.AuthError(err)
+// 	}
+// 	err = json.Unmarshal(b, authProfile)
+// 	if err != nil {
+// 		return nil, serrors.AuthError(err)
+// 	}
+// 	return authProfile, nil
+// }
 
 func GetClaimsFromJWT(jwtToken *jwt.Token) (jwt.MapClaims, error) {
 	claims, ok := jwtToken.Claims.(jwt.MapClaims)
@@ -101,34 +101,34 @@ func GetAPIKeyFromURL(r *http.Request) *string {
 	return &apiKey
 }
 
-func SetAuthProfileToContext(jwtToken *jwt.Token, oldContext context.Context) (context.Context, error) {
-	claims, ok := jwtToken.Claims.(jwt.MapClaims)
-	if !ok {
-		return nil, serrors.InternalErrorf("could not get token claims", nil)
-	}
-	authProfile, err := GetAuthProfileFromTokenClaims(claims)
-	if err != nil {
-		return nil, serrors.InternalError(err)
-	}
+// func SetAuthProfileToContext(jwtToken *jwt.Token, oldContext context.Context) (context.Context, error) {
+// 	claims, ok := jwtToken.Claims.(jwt.MapClaims)
+// 	if !ok {
+// 		return nil, serrors.InternalErrorf("could not get token claims", nil)
+// 	}
+// 	authProfile, err := GetAuthProfileFromTokenClaims(claims)
+// 	if err != nil {
+// 		return nil, serrors.InternalError(err)
+// 	}
 
-	// fmt.Println("6")
-	ctx := context.WithValue(oldContext, "AUTH_PROFILE", authProfile)
-	return ctx, nil
-}
+// 	// fmt.Println("6")
+// 	ctx := context.WithValue(oldContext, "AUTH_PROFILE", authProfile)
+// 	return ctx, nil
+// }
 
-func GetAuthProfileFromTokenClaims(claims jwt.MapClaims) (*requests.AuthProfile, error) {
-	_authProfile, ok := claims["AUTH_PROFILE"]
-	if !ok {
-		return nil, serrors.InternalErrorf("could not get auth profile", nil)
-	}
-	bytes, err := json.Marshal(_authProfile)
-	if err != nil {
-		return nil, serrors.InternalErrorf("could not marshall auth profile", nil)
-	}
-	authProfile := &requests.AuthProfile{}
-	err = json.Unmarshal(bytes, authProfile)
-	return authProfile, err
-}
+// func GetAuthProfileFromTokenClaims(claims jwt.MapClaims) (*requests.AuthProfile, error) {
+// 	_authProfile, ok := claims["AUTH_PROFILE"]
+// 	if !ok {
+// 		return nil, serrors.InternalErrorf("could not get auth profile", nil)
+// 	}
+// 	bytes, err := json.Marshal(_authProfile)
+// 	if err != nil {
+// 		return nil, serrors.InternalErrorf("could not marshall auth profile", nil)
+// 	}
+// 	authProfile := &requests.AuthProfile{}
+// 	err = json.Unmarshal(bytes, authProfile)
+// 	return authProfile, err
+// }
 
 func SetChatProfileToContext(jwtToken *jwt.Token, oldContext context.Context) (context.Context, error) {
 	claims, ok := jwtToken.Claims.(jwt.MapClaims)
@@ -161,11 +161,11 @@ func GetChatProfileFromTokenClaims(claims jwt.MapClaims) (*requests.ChatProfile,
 	return chatProfile, err
 }
 
-func GenerateMessagingToken(userID string, exp time.Time) (string, error) {
+func GenerateMessagingToken(userUUID string, exp time.Time) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
 	claims["USER_ID"] = requests.ChatProfile{
-		UserID: userID,
+		UserUUID: userUUID,
 	}
 	claims["EXP"] = exp.Unix()
 	token.Claims = claims
@@ -177,20 +177,20 @@ func GenerateMessagingToken(userID string, exp time.Time) (string, error) {
 	return tokenString, nil
 }
 
-func GenerateJWTToken(authProfile *requests.AuthProfile, exp time.Time) (string, error) {
-	token := jwt.New(jwt.SigningMethodHS256)
-	claims := token.Claims.(jwt.MapClaims)
-	claims["AUTH_PROFILE"] = authProfile
-	claims["EXP"] = exp.Unix()
-	token.Claims = claims
+// func GenerateJWTToken(authProfile *requests.AuthProfile, exp time.Time) (string, error) {
+// 	token := jwt.New(jwt.SigningMethodHS256)
+// 	claims := token.Claims.(jwt.MapClaims)
+// 	claims["AUTH_PROFILE"] = authProfile
+// 	claims["EXP"] = exp.Unix()
+// 	token.Claims = claims
 
-	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
-	if err != nil {
-		return "", goerrors.Wrap(err, 0)
-	}
+// 	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
+// 	if err != nil {
+// 		return "", goerrors.Wrap(err, 0)
+// 	}
 
-	return tokenString, nil
-}
+// 	return tokenString, nil
+// }
 
 func VerifyJWT(tokenString string, checkExp bool) (*jwt.Token, error) {
 	token, err := jwt.Parse(tokenString, Keyfunc)

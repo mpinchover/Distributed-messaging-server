@@ -26,18 +26,18 @@ type SubscribeToRoomEvent struct {
 }
 
 type SetClientConnectionEvent struct {
-	EventType      string `json:"eventType"`
-	UserUUID       string `json:"userUuid"`
-	ConnectionUUID string `json:"connectionUuid"`
-	Token          string `json:"token"`
+	EventType  string `json:"eventType"`
+	UserUUID   string `json:"userUuid"`
+	DeviceUUID string `json:"deviceUuid"`
+	Token      string `json:"token"`
 }
 
 type TextMessageEvent struct {
-	EventType      string   `json:"eventType"`
-	FromUUID       string   `json:"fromUuid"`
-	ConnectionUUID string   `json:"connectionUuid"`
-	Message        *Message `json:"message"`
-	Token          string   `json:"token"`
+	EventType  string   `json:"eventType"`
+	FromUUID   string   `json:"fromUuid"`
+	DeviceUUID string   `json:"deviceUuid"`
+	Message    *Message `json:"message"`
+	Token      string   `json:"token"`
 }
 
 // the recpt has read the message

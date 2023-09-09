@@ -48,7 +48,7 @@ func (h *Handler) HandleRoomEvent(event string) error {
 		}
 		return h.BroadcastEventToChannelSubscribersDeviceExclusive(
 			textMessageEvent.Message.RoomUUID,
-			textMessageEvent.ConnectionUUID,
+			textMessageEvent.DeviceUUID,
 			textMessageEvent,
 		)
 	}

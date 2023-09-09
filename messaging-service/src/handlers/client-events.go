@@ -41,7 +41,7 @@ func (h *Handler) handleSetClientSocket(ws *requests.Websocket, p []byte) error 
 	if err != nil {
 		return err
 	}
-	ws.ConnectionUUID = &resp.ConnectionUUID
+	ws.DeviceUUID = &resp.DeviceUUID
 	ws.UserUUID = &resp.UserUUID
 	return ws.Conn.WriteJSON(resp)
 }

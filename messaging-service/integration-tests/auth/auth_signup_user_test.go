@@ -1,41 +1,32 @@
 package integrationtests
 
-import (
-	"messaging-service/integration-tests/common"
-	"messaging-service/src/types/requests"
-	"testing"
-	"time"
+// func TestSignupUser(t *testing.T) {
+// 	// t.Skip()
+// 	t.Run("test signup user and create auth profile", func(t *testing.T) {
+// 		t.Logf("Runningg test %s at %d", t.Name(), time.Now().UnixNano())
 
-	"github.com/stretchr/testify/assert"
-)
+// 		signupResponse := common.CreateRandomUser(t)
+// 		common.MakeTestAuthRequest(t, signupResponse.AccessToken)
+// 		// give some time for the time to change and so the token will also change
+// 		time.Sleep(1 * time.Second)
 
-func TestSignupUser(t *testing.T) {
-	// t.Skip()
-	t.Run("test signup user and create auth profile", func(t *testing.T) {
-		t.Logf("Runningg test %s at %d", t.Name(), time.Now().UnixNano())
+// 		// test refresh token
+// 		refreshTokenResp := common.MakeRefreshTokenRequest(t, signupResponse.RefreshToken)
 
-		signupResponse := common.CreateRandomUser(t)
-		common.MakeTestAuthRequest(t, signupResponse.AccessToken)
-		// give some time for the time to change and so the token will also change
-		time.Sleep(1 * time.Second)
+// 		// test new access token
+// 		common.MakeTestAuthRequest(t, refreshTokenResp.AccessToken)
 
-		// test refresh token
-		refreshTokenResp := common.MakeRefreshTokenRequest(t, signupResponse.RefreshToken)
+// 		// create fake token with correct data
+// 		jwtAuthProfile := &requests.AuthProfile{
+// 			UUID:  signupResponse.UUID,
+// 			Email: signupResponse.Email,
+// 		}
 
-		// test new access token
-		common.MakeTestAuthRequest(t, refreshTokenResp.AccessToken)
+// 		token, err := common.GenerateJWTAccessToken(*jwtAuthProfile, "SECRET!!")
+// 		assert.NoError(t, err)
 
-		// create fake token with correct data
-		jwtAuthProfile := &requests.AuthProfile{
-			UUID:  signupResponse.UUID,
-			Email: signupResponse.Email,
-		}
+// 		common.MakeTestAuthRequestFailAuth(t, token)
+// 	})
+// }
 
-		token, err := common.GenerateJWTAccessToken(*jwtAuthProfile, "SECRET!!")
-		assert.NoError(t, err)
-
-		common.MakeTestAuthRequestFailAuth(t, token)
-	})
-}
-
-// test creating a JWT with the same info
+// // test creating a JWT with the same info

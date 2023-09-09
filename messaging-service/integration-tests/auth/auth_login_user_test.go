@@ -1,80 +1,69 @@
 package integrationtests
 
-import (
-	"fmt"
-	"messaging-service/integration-tests/common"
-	"messaging-service/src/types/requests"
-	"testing"
-	"time"
+// func TestSignupUserAndCreateAuthprofile(t *testing.T) {
+// 	// t.Skip()
+// 	t.Run("test signup user and create auth profile", func(t *testing.T) {
+// 		t.Logf("Runningg test %s at %d", t.Name(), time.Now().UnixNano())
 
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-)
+// 		password := uuid.New().String()
+// 		confirmPassword := password
+// 		email := fmt.Sprintf("%s@gmail.com", uuid.New().String())
 
-func TestSignupUserAndCreateAuthprofile(t *testing.T) {
-	// t.Skip()
-	t.Run("test signup user and create auth profile", func(t *testing.T) {
-		t.Logf("Runningg test %s at %d", t.Name(), time.Now().UnixNano())
+// 		signupResponse := common.MakeSignupRequest(t, &requests.SignupRequest{
+// 			Email:           email,
+// 			Password:        password,
+// 			ConfirmPassword: confirmPassword,
+// 		})
+// 		common.MakeTestAuthRequest(t, signupResponse.AccessToken)
+// 		// give some time for the time to change and so the token will also change
+// 		time.Sleep(1 * time.Second)
 
-		password := uuid.New().String()
-		confirmPassword := password
-		email := fmt.Sprintf("%s@gmail.com", uuid.New().String())
+// 		// test refresh token
+// 		refreshTokenResp := common.MakeRefreshTokenRequest(t, signupResponse.RefreshToken)
 
-		signupResponse := common.MakeSignupRequest(t, &requests.SignupRequest{
-			Email:           email,
-			Password:        password,
-			ConfirmPassword: confirmPassword,
-		})
-		common.MakeTestAuthRequest(t, signupResponse.AccessToken)
-		// give some time for the time to change and so the token will also change
-		time.Sleep(1 * time.Second)
+// 		// test new access token
+// 		common.MakeTestAuthRequest(t, refreshTokenResp.AccessToken)
 
-		// test refresh token
-		refreshTokenResp := common.MakeRefreshTokenRequest(t, signupResponse.RefreshToken)
+// 		// create fake token with correct data
+// 		jwtAuthProfile := &requests.AuthProfile{
+// 			UUID:  signupResponse.UUID,
+// 			Email: signupResponse.Email,
+// 		}
 
-		// test new access token
-		common.MakeTestAuthRequest(t, refreshTokenResp.AccessToken)
+// 		token, err := common.GenerateJWTAccessToken(*jwtAuthProfile, "SECRET!!")
+// 		assert.NoError(t, err)
 
-		// create fake token with correct data
-		jwtAuthProfile := &requests.AuthProfile{
-			UUID:  signupResponse.UUID,
-			Email: signupResponse.Email,
-		}
+// 		common.MakeTestAuthRequestFailAuth(t, token)
 
-		token, err := common.GenerateJWTAccessToken(*jwtAuthProfile, "SECRET!!")
-		assert.NoError(t, err)
+// 		// login user
+// 		loginRequest := &requests.LoginRequest{
+// 			Email:    email,
+// 			Password: password,
+// 		}
 
-		common.MakeTestAuthRequestFailAuth(t, token)
+// 		loginResp := common.MakeLoginRequest(t, loginRequest)
 
-		// login user
-		loginRequest := &requests.LoginRequest{
-			Email:    email,
-			Password: password,
-		}
+// 		// test auth token
+// 		common.MakeTestAuthRequest(t, loginResp.AccessToken)
+// 		time.Sleep(1 * time.Second)
 
-		loginResp := common.MakeLoginRequest(t, loginRequest)
+// 		// test refresh token
+// 		common.MakeRefreshTokenRequest(t, loginResp.RefreshToken)
 
-		// test auth token
-		common.MakeTestAuthRequest(t, loginResp.AccessToken)
-		time.Sleep(1 * time.Second)
+// 		// test new access token
+// 		common.MakeTestAuthRequest(t, refreshTokenResp.AccessToken)
 
-		// test refresh token
-		common.MakeRefreshTokenRequest(t, loginResp.RefreshToken)
+// 		// should fail to login
+// 		loginRequest.Password = "something-else"
+// 		common.MakeLoginRequestFailAuth(t, loginRequest)
 
-		// test new access token
-		common.MakeTestAuthRequest(t, refreshTokenResp.AccessToken)
+// 		token, err = common.GenerateJWTAccessToken(*jwtAuthProfile, "SECRET!!")
+// 		assert.NoError(t, err)
 
-		// should fail to login
-		loginRequest.Password = "something-else"
-		common.MakeLoginRequestFailAuth(t, loginRequest)
+// 		common.MakeTestAuthRequestFailAuth(t, token)
 
-		token, err = common.GenerateJWTAccessToken(*jwtAuthProfile, "SECRET!!")
-		assert.NoError(t, err)
-
-		common.MakeTestAuthRequestFailAuth(t, token)
-
-		// should work
-		_, err = common.GenerateJWTAccessToken(*jwtAuthProfile, "SECRET")
-		assert.NoError(t, err)
-	})
-}
+// 		// should work
+// 		_, err = common.GenerateJWTAccessToken(*jwtAuthProfile, "SECRET")
+// 		assert.NoError(t, err)
+// 	})
+// }

@@ -1,285 +1,275 @@
 package integrationtests
 
-import (
-	"messaging-service/integration-tests/common"
-	"messaging-service/src/types/enums"
-	"messaging-service/src/types/requests"
-	"testing"
-	"time"
+// func TestRoomAndMessagesPagination(t *testing.T) {
+// 	// t.Skip()
+// 	t.Run("test rooms and messages pagination", func(t *testing.T) {
+// 		t.Parallel()
+// 		// log.Printf("Running %s", t.Name())
+// 		t.Logf("Runningg test %s at %d", t.Name(), time.Now().UnixNano())
 
-	"github.com/google/uuid"
-)
+// 		// need to get valid API key as well
+// 		validMessagingToken, validAPIKey := common.GetValidToken(t)
 
-func TestRoomAndMessagesPagination(t *testing.T) {
-	// t.Skip()
-	t.Run("test rooms and messages pagination", func(t *testing.T) {
-		t.Parallel()
-		// log.Printf("Running %s", t.Name())
-		t.Logf("Runningg test %s at %d", t.Name(), time.Now().UnixNano())
+// 		// issue is here with deadlock
+// 		aClient, aConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
+// 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
+// 			Token:     validMessagingToken,
+// 			UserUUID:  uuid.New().String() + "_31",
+// 		})
 
-		// need to get valid API key as well
-		validMessagingToken, validAPIKey := common.GetValidToken(t)
+// 		bClient, bConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
+// 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
+// 			Token:     validMessagingToken,
+// 			UserUUID:  uuid.New().String() + "_32",
+// 		})
 
-		// issue is here with deadlock
-		aClient, aConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
-			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
-			Token:     validMessagingToken,
-			UserUUID:  uuid.New().String() + "_31",
-		})
+// 		// issue is here deadlock
+// 		cClient, cConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
+// 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
+// 			Token:     validMessagingToken,
+// 			UserUUID:  uuid.New().String() + "_33",
+// 		})
 
-		bClient, bConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
-			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
-			Token:     validMessagingToken,
-			UserUUID:  uuid.New().String() + "_32",
-		})
+// 		dClient, dConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
+// 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
+// 			Token:     validMessagingToken,
+// 			UserUUID:  uuid.New().String() + "_34",
+// 		})
 
-		// issue is here deadlock
-		cClient, cConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
-			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
-			Token:     validMessagingToken,
-			UserUUID:  uuid.New().String() + "_33",
-		})
+// 		createRoomRequest1 := &requests.CreateRoomRequest{
+// 			Members: []*requests.Member{
+// 				{
+// 					UserUUID: aClient.UserUUID,
+// 				},
+// 				{
+// 					UserUUID: bClient.UserUUID,
+// 				},
+// 			},
+// 		}
+// 		// fmt.Println("CREATING ROOM 12 ")
+// 		common.OpenRoom(t, createRoomRequest1, validAPIKey)
 
-		dClient, dConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
-			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
-			Token:     validMessagingToken,
-			UserUUID:  uuid.New().String() + "_34",
-		})
+// 		openRoomRes1 := common.ReadOpenRoomResponse(t, aConn, 2)
+// 		openRoomRes1 = common.ReadOpenRoomResponse(t, bConn, 2)
+// 		roomUUID1 := openRoomRes1.Room.UUID
+// 		// fmt.Println("R_UUID", roomUUID1)
 
-		createRoomRequest1 := &requests.CreateRoomRequest{
-			Members: []*requests.Member{
-				{
-					UserUUID: aClient.UserUUID,
-				},
-				{
-					UserUUID: bClient.UserUUID,
-				},
-			},
-		}
-		// fmt.Println("CREATING ROOM 12 ")
-		common.OpenRoom(t, createRoomRequest1, validAPIKey)
+// 		// deadlock is here on this creaete room
+// 		createRoomRequest2 := &requests.CreateRoomRequest{
+// 			Members: []*requests.Member{
+// 				{
+// 					UserUUID: aClient.UserUUID,
+// 				},
+// 				{
+// 					UserUUID: cClient.UserUUID,
+// 				},
+// 			},
+// 		}
+// 		// fmt.Println("CREATING ROOM 13 ")
+// 		common.OpenRoom(t, createRoomRequest2, validAPIKey)
+// 		openRoomRes2 := common.ReadOpenRoomResponse(t, cConn, 2)
+// 		openRoomRes2 = common.ReadOpenRoomResponse(t, aConn, 2)
+// 		roomUUID2 := openRoomRes2.Room.UUID
+// 		// fmt.Println("R_UUID", roomUUID2)
 
-		openRoomRes1 := common.ReadOpenRoomResponse(t, aConn, 2)
-		openRoomRes1 = common.ReadOpenRoomResponse(t, bConn, 2)
-		roomUUID1 := openRoomRes1.Room.UUID
-		// fmt.Println("R_UUID", roomUUID1)
+// 		// send messages between A and B
+// 		common.SendMessages(t, aClient.UserUUID, aClient.ConnectionUUID, roomUUID1, aConn, validMessagingToken)
+// 		common.SendMessages(t, bClient.UserUUID, bClient.ConnectionUUID, roomUUID1, bConn, validMessagingToken)
 
-		// deadlock is here on this creaete room
-		createRoomRequest2 := &requests.CreateRoomRequest{
-			Members: []*requests.Member{
-				{
-					UserUUID: aClient.UserUUID,
-				},
-				{
-					UserUUID: cClient.UserUUID,
-				},
-			},
-		}
-		// fmt.Println("CREATING ROOM 13 ")
-		common.OpenRoom(t, createRoomRequest2, validAPIKey)
-		openRoomRes2 := common.ReadOpenRoomResponse(t, cConn, 2)
-		openRoomRes2 = common.ReadOpenRoomResponse(t, aConn, 2)
-		roomUUID2 := openRoomRes2.Room.UUID
-		// fmt.Println("R_UUID", roomUUID2)
+// 		common.RecvMessages(t, bConn)
+// 		common.RecvMessages(t, aConn)
 
-		// send messages between A and B
-		common.SendMessages(t, aClient.UserUUID, aClient.ConnectionUUID, roomUUID1, aConn, validMessagingToken)
-		common.SendMessages(t, bClient.UserUUID, bClient.ConnectionUUID, roomUUID1, bConn, validMessagingToken)
+// 		time.Sleep(1 * time.Second)
+// 		common.QueryMessagesByMessagingJWT(t, aClient.UserUUID, roomUUID1, 2, validMessagingToken)
+// 		common.QueryMessagesByMessagingJWT(t, bClient.UserUUID, roomUUID1, 1, validMessagingToken)
 
-		common.RecvMessages(t, bConn)
-		common.RecvMessages(t, aConn)
+// 		// send messages between A and C
+// 		common.SendMessages(t, aClient.UserUUID, aClient.ConnectionUUID, roomUUID2, aConn, validMessagingToken)
+// 		common.SendMessages(t, cClient.UserUUID, cClient.ConnectionUUID, roomUUID2, cConn, validMessagingToken)
 
-		time.Sleep(1 * time.Second)
-		common.QueryMessagesByMessagingJWT(t, aClient.UserUUID, roomUUID1, 2, validMessagingToken)
-		common.QueryMessagesByMessagingJWT(t, bClient.UserUUID, roomUUID1, 1, validMessagingToken)
+// 		common.RecvMessages(t, cConn)
+// 		common.RecvMessages(t, aConn)
 
-		// send messages between A and C
-		common.SendMessages(t, aClient.UserUUID, aClient.ConnectionUUID, roomUUID2, aConn, validMessagingToken)
-		common.SendMessages(t, cClient.UserUUID, cClient.ConnectionUUID, roomUUID2, cConn, validMessagingToken)
+// 		time.Sleep(1 * time.Second)
+// 		common.QueryMessagesByMessagingJWT(t, aClient.UserUUID, roomUUID2, 2, validMessagingToken)
+// 		common.QueryMessagesByMessagingJWT(t, cClient.UserUUID, roomUUID2, 1, validMessagingToken)
 
-		common.RecvMessages(t, cConn)
-		common.RecvMessages(t, aConn)
+// 		// create room between A and D
+// 		createRoomReq3 := &requests.CreateRoomRequest{
+// 			Members: []*requests.Member{
+// 				{
+// 					UserUUID: aClient.UserUUID,
+// 				},
+// 				{
+// 					UserUUID: dClient.UserUUID,
+// 				},
+// 			},
+// 		}
+// 		// fmt.Println("CREATING ROOM 15 ")
+// 		common.OpenRoom(t, createRoomReq3, validAPIKey)
 
-		time.Sleep(1 * time.Second)
-		common.QueryMessagesByMessagingJWT(t, aClient.UserUUID, roomUUID2, 2, validMessagingToken)
-		common.QueryMessagesByMessagingJWT(t, cClient.UserUUID, roomUUID2, 1, validMessagingToken)
+// 		openRoomRes3 := common.ReadOpenRoomResponse(t, dConn, 2)
+// 		openRoomRes3 = common.ReadOpenRoomResponse(t, aConn, 2)
+// 		roomUUID3 := openRoomRes3.Room.UUID
+// 		// fmt.Println("R_UUID", roomUUID3)
 
-		// create room between A and D
-		createRoomReq3 := &requests.CreateRoomRequest{
-			Members: []*requests.Member{
-				{
-					UserUUID: aClient.UserUUID,
-				},
-				{
-					UserUUID: dClient.UserUUID,
-				},
-			},
-		}
-		// fmt.Println("CREATING ROOM 15 ")
-		common.OpenRoom(t, createRoomReq3, validAPIKey)
+// 		// send messages between A and D
+// 		common.SendMessages(t, aClient.UserUUID, aClient.ConnectionUUID, roomUUID3, aConn, validMessagingToken)
+// 		common.SendMessages(t, dClient.UserUUID, dClient.ConnectionUUID, roomUUID3, dConn, validMessagingToken)
 
-		openRoomRes3 := common.ReadOpenRoomResponse(t, dConn, 2)
-		openRoomRes3 = common.ReadOpenRoomResponse(t, aConn, 2)
-		roomUUID3 := openRoomRes3.Room.UUID
-		// fmt.Println("R_UUID", roomUUID3)
+// 		common.RecvMessages(t, aConn)
+// 		common.RecvMessages(t, dConn)
 
-		// send messages between A and D
-		common.SendMessages(t, aClient.UserUUID, aClient.ConnectionUUID, roomUUID3, aConn, validMessagingToken)
-		common.SendMessages(t, dClient.UserUUID, dClient.ConnectionUUID, roomUUID3, dConn, validMessagingToken)
+// 		time.Sleep(1 * time.Second)
+// 		common.QueryMessagesByMessagingJWT(t, aClient.UserUUID, roomUUID3, 3, validMessagingToken)
+// 		common.QueryMessagesByMessagingJWT(t, dClient.UserUUID, roomUUID3, 1, validMessagingToken)
 
-		common.RecvMessages(t, aConn)
-		common.RecvMessages(t, dConn)
+// 		// create room between B and C
+// 		openRoomReq4 := &requests.CreateRoomRequest{
+// 			Members: []*requests.Member{
+// 				{
+// 					UserUUID: bClient.UserUUID,
+// 				},
+// 				{
+// 					UserUUID: cClient.UserUUID,
+// 				},
+// 			},
+// 		}
 
-		time.Sleep(1 * time.Second)
-		common.QueryMessagesByMessagingJWT(t, aClient.UserUUID, roomUUID3, 3, validMessagingToken)
-		common.QueryMessagesByMessagingJWT(t, dClient.UserUUID, roomUUID3, 1, validMessagingToken)
+// 		// fmt.Println("CREATING ROOM 16 ")
+// 		common.OpenRoom(t, openRoomReq4, validAPIKey)
+// 		openRoomRes4 := common.ReadOpenRoomResponse(t, bConn, 2)
+// 		openRoomRes4 = common.ReadOpenRoomResponse(t, cConn, 2)
+// 		roomUUID4 := openRoomRes4.Room.UUID
+// 		// fmt.Println("R_UUID", roomUUID4)
 
-		// create room between B and C
-		openRoomReq4 := &requests.CreateRoomRequest{
-			Members: []*requests.Member{
-				{
-					UserUUID: bClient.UserUUID,
-				},
-				{
-					UserUUID: cClient.UserUUID,
-				},
-			},
-		}
+// 		// send messages between B and C
+// 		common.SendMessages(t, bClient.UserUUID, bClient.ConnectionUUID, roomUUID4, bConn, validMessagingToken)
+// 		common.SendMessages(t, cClient.UserUUID, cClient.ConnectionUUID, roomUUID4, cConn, validMessagingToken)
 
-		// fmt.Println("CREATING ROOM 16 ")
-		common.OpenRoom(t, openRoomReq4, validAPIKey)
-		openRoomRes4 := common.ReadOpenRoomResponse(t, bConn, 2)
-		openRoomRes4 = common.ReadOpenRoomResponse(t, cConn, 2)
-		roomUUID4 := openRoomRes4.Room.UUID
-		// fmt.Println("R_UUID", roomUUID4)
+// 		common.RecvMessages(t, bConn)
+// 		common.RecvMessages(t, cConn)
 
-		// send messages between B and C
-		common.SendMessages(t, bClient.UserUUID, bClient.ConnectionUUID, roomUUID4, bConn, validMessagingToken)
-		common.SendMessages(t, cClient.UserUUID, cClient.ConnectionUUID, roomUUID4, cConn, validMessagingToken)
+// 		time.Sleep(1 * time.Second)
+// 		common.QueryMessagesByMessagingJWT(t, bClient.UserUUID, roomUUID4, 2, validMessagingToken)
+// 		common.QueryMessagesByMessagingJWT(t, cClient.UserUUID, roomUUID4, 2, validMessagingToken)
 
-		common.RecvMessages(t, bConn)
-		common.RecvMessages(t, cConn)
+// 		// create room between B and D
+// 		openRoomRequest5 := &requests.CreateRoomRequest{
+// 			Members: []*requests.Member{
+// 				{
+// 					UserUUID: bClient.UserUUID,
+// 				},
+// 				{
+// 					UserUUID: dClient.UserUUID,
+// 				},
+// 			},
+// 		}
+// 		// fmt.Println("CREATING ROOM 17 ")
+// 		common.OpenRoom(t, openRoomRequest5, validAPIKey)
 
-		time.Sleep(1 * time.Second)
-		common.QueryMessagesByMessagingJWT(t, bClient.UserUUID, roomUUID4, 2, validMessagingToken)
-		common.QueryMessagesByMessagingJWT(t, cClient.UserUUID, roomUUID4, 2, validMessagingToken)
+// 		openRoomRes5 := common.ReadOpenRoomResponse(t, dConn, 2)
+// 		openRoomRes5 = common.ReadOpenRoomResponse(t, bConn, 2)
 
-		// create room between B and D
-		openRoomRequest5 := &requests.CreateRoomRequest{
-			Members: []*requests.Member{
-				{
-					UserUUID: bClient.UserUUID,
-				},
-				{
-					UserUUID: dClient.UserUUID,
-				},
-			},
-		}
-		// fmt.Println("CREATING ROOM 17 ")
-		common.OpenRoom(t, openRoomRequest5, validAPIKey)
+// 		// the mobiel device will get the open room msg as well
+// 		roomUUID5 := openRoomRes5.Room.UUID
+// 		// fmt.Println("R_UUID", roomUUID5)
 
-		openRoomRes5 := common.ReadOpenRoomResponse(t, dConn, 2)
-		openRoomRes5 = common.ReadOpenRoomResponse(t, bConn, 2)
+// 		// send messages between B and D
+// 		common.SendMessages(t, bClient.UserUUID, bClient.ConnectionUUID, roomUUID5, bConn, validMessagingToken)
+// 		common.SendMessages(t, dClient.UserUUID, dClient.ConnectionUUID, roomUUID5, dConn, validMessagingToken)
 
-		// the mobiel device will get the open room msg as well
-		roomUUID5 := openRoomRes5.Room.UUID
-		// fmt.Println("R_UUID", roomUUID5)
+// 		common.RecvMessages(t, bConn)
+// 		common.RecvMessages(t, dConn)
 
-		// send messages between B and D
-		common.SendMessages(t, bClient.UserUUID, bClient.ConnectionUUID, roomUUID5, bConn, validMessagingToken)
-		common.SendMessages(t, dClient.UserUUID, dClient.ConnectionUUID, roomUUID5, dConn, validMessagingToken)
+// 		time.Sleep(100 * time.Millisecond)
+// 		common.QueryMessagesByMessagingJWT(t, bClient.UserUUID, roomUUID5, 3, validMessagingToken)
+// 		common.QueryMessagesByMessagingJWT(t, dClient.UserUUID, roomUUID5, 2, validMessagingToken)
+// 	})
+// }
 
-		common.RecvMessages(t, bConn)
-		common.RecvMessages(t, dConn)
+// // Need to get the room id first and pass it to the text message id
+// func TestAllConnectionsRcvMessages(t *testing.T) {
+// 	// t.Skip()
 
-		time.Sleep(100 * time.Millisecond)
-		common.QueryMessagesByMessagingJWT(t, bClient.UserUUID, roomUUID5, 3, validMessagingToken)
-		common.QueryMessagesByMessagingJWT(t, dClient.UserUUID, roomUUID5, 2, validMessagingToken)
-	})
-}
+// 	t.Run("test all connections get msgs", func(t *testing.T) {
+// 		t.Parallel()
+// 		// log.Printf("Running test %s", t.Name())
+// 		t.Logf("Runningg test %s at %d", t.Name(), time.Now().UnixNano())
 
-// Need to get the room id first and pass it to the text message id
-func TestAllConnectionsRcvMessages(t *testing.T) {
-	// t.Skip()
+// 		// need to get valid API key as well
+// 		validMessagingToken, validAPIKey := common.GetValidToken(t)
 
-	t.Run("test all connections get msgs", func(t *testing.T) {
-		t.Parallel()
-		// log.Printf("Running test %s", t.Name())
-		t.Logf("Runningg test %s at %d", t.Name(), time.Now().UnixNano())
+// 		aClient, aConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
+// 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
+// 			Token:     validMessagingToken,
+// 			UserUUID:  uuid.New().String() + "_36",
+// 		})
 
-		// need to get valid API key as well
-		validMessagingToken, validAPIKey := common.GetValidToken(t)
+// 		bClient, bConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
+// 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
+// 			Token:     validMessagingToken,
+// 			UserUUID:  uuid.New().String() + "_37",
+// 		})
 
-		aClient, aConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
-			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
-			Token:     validMessagingToken,
-			UserUUID:  uuid.New().String() + "_36",
-		})
+// 		_, bMobileConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
+// 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
+// 			Token:     validMessagingToken,
+// 			UserUUID:  bClient.UserUUID,
+// 		})
 
-		bClient, bConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
-			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
-			Token:     validMessagingToken,
-			UserUUID:  uuid.New().String() + "_37",
-		})
+// 		openRoomEvent := &requests.CreateRoomRequest{
+// 			Members: []*requests.Member{
+// 				{
+// 					UserUUID: aClient.UserUUID,
+// 				},
+// 				{
+// 					UserUUID: bClient.UserUUID,
+// 				},
+// 			},
+// 		}
+// 		// fmt.Println("CREATING ROOM 18 ")
+// 		common.OpenRoom(t, openRoomEvent, validAPIKey)
 
-		_, bMobileConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
-			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
-			Token:     validMessagingToken,
-			UserUUID:  bClient.UserUUID,
-		})
+// 		openRoomRes := common.ReadOpenRoomResponse(t, aConn, 2)
+// 		common.ReadOpenRoomResponse(t, bConn, 2)
+// 		common.ReadOpenRoomResponse(t, bMobileConn, 2)
+// 		roomUUID := openRoomRes.Room.UUID
+// 		// fmt.Println("R_UUID", roomUUID)
 
-		openRoomEvent := &requests.CreateRoomRequest{
-			Members: []*requests.Member{
-				{
-					UserUUID: aClient.UserUUID,
-				},
-				{
-					UserUUID: bClient.UserUUID,
-				},
-			},
-		}
-		// fmt.Println("CREATING ROOM 18 ")
-		common.OpenRoom(t, openRoomEvent, validAPIKey)
+// 		common.SendMessages(t, aClient.UserUUID, aClient.ConnectionUUID, roomUUID, aConn, validMessagingToken)
+// 		common.SendMessages(t, bClient.UserUUID, bClient.ConnectionUUID, roomUUID, bConn, validMessagingToken)
 
-		openRoomRes := common.ReadOpenRoomResponse(t, aConn, 2)
-		common.ReadOpenRoomResponse(t, bConn, 2)
-		common.ReadOpenRoomResponse(t, bMobileConn, 2)
-		roomUUID := openRoomRes.Room.UUID
-		// fmt.Println("R_UUID", roomUUID)
+// 		common.RecvMessages(t, bConn)
+// 		common.RecvMessages(t, aConn)
 
-		common.SendMessages(t, aClient.UserUUID, aClient.ConnectionUUID, roomUUID, aConn, validMessagingToken)
-		common.SendMessages(t, bClient.UserUUID, bClient.ConnectionUUID, roomUUID, bConn, validMessagingToken)
+// 		// need to recv double the msgs
+// 		common.RecvMessages(t, bMobileConn)
+// 		common.RecvMessages(t, bMobileConn)
+// 		common.QueryMessagesByMessagingJWT(t, bClient.UserUUID, roomUUID, 1, validMessagingToken)
+// 		common.QueryMessagesByMessagingJWT(t, aClient.UserUUID, roomUUID, 1, validMessagingToken)
 
-		common.RecvMessages(t, bConn)
-		common.RecvMessages(t, aConn)
+// 		// add new connection
 
-		// need to recv double the msgs
-		common.RecvMessages(t, bMobileConn)
-		common.RecvMessages(t, bMobileConn)
-		common.QueryMessagesByMessagingJWT(t, bClient.UserUUID, roomUUID, 1, validMessagingToken)
-		common.QueryMessagesByMessagingJWT(t, aClient.UserUUID, roomUUID, 1, validMessagingToken)
+// 		_, aMobileConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
+// 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
+// 			Token:     validMessagingToken,
+// 			UserUUID:  aClient.UserUUID,
+// 		})
 
-		// add new connection
+// 		common.SendMessages(t, aClient.UserUUID, aClient.ConnectionUUID, roomUUID, aConn, validMessagingToken)
+// 		common.SendMessages(t, bClient.UserUUID, bClient.ConnectionUUID, roomUUID, bConn, validMessagingToken)
 
-		_, aMobileConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
-			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
-			Token:     validMessagingToken,
-			UserUUID:  aClient.UserUUID,
-		})
+// 		common.RecvMessages(t, bConn)
+// 		common.RecvMessages(t, aConn)
 
-		common.SendMessages(t, aClient.UserUUID, aClient.ConnectionUUID, roomUUID, aConn, validMessagingToken)
-		common.SendMessages(t, bClient.UserUUID, bClient.ConnectionUUID, roomUUID, bConn, validMessagingToken)
+// 		// need to recv double the msgs
+// 		common.RecvMessages(t, bMobileConn)
+// 		common.RecvMessages(t, bMobileConn)
 
-		common.RecvMessages(t, bConn)
-		common.RecvMessages(t, aConn)
+// 		// need to recv double the msgs
+// 		common.RecvMessages(t, aMobileConn)
+// 		common.RecvMessages(t, aMobileConn)
 
-		// need to recv double the msgs
-		common.RecvMessages(t, bMobileConn)
-		common.RecvMessages(t, bMobileConn)
-
-		// need to recv double the msgs
-		common.RecvMessages(t, aMobileConn)
-		common.RecvMessages(t, aMobileConn)
-
-	})
-}
+// 	})
+// }

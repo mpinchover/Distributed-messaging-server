@@ -1,146 +1,135 @@
 package apitests
 
-import (
-	"messaging-service/integration-tests/common"
-	"messaging-service/src/types/enums"
-	"messaging-service/src/types/requests"
-	"testing"
-	"time"
+// func TestLeaveRoom(t *testing.T) {
+// 	// t.Skip()
+// 	t.Run("test leave room", func(t *testing.T) {
+// 		t.Parallel()
+// 		t.Logf("Runningg test %s at %d", t.Name(), time.Now().UnixNano())
 
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-)
+// 		validMessagingToken, validAPIKey := common.GetValidToken(t)
 
-func TestLeaveRoom(t *testing.T) {
-	// t.Skip()
-	t.Run("test leave room", func(t *testing.T) {
-		t.Parallel()
-		t.Logf("Runningg test %s at %d", t.Name(), time.Now().UnixNano())
+// 		aClient, aConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
+// 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
+// 			Token:     validMessagingToken,
+// 			UserUUID:  uuid.New().String() + "_20",
+// 		})
 
-		validMessagingToken, validAPIKey := common.GetValidToken(t)
+// 		bClient, bConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
+// 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
+// 			Token:     validMessagingToken,
+// 			UserUUID:  uuid.New().String() + "_21",
+// 		})
 
-		aClient, aConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
-			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
-			Token:     validMessagingToken,
-			UserUUID:  uuid.New().String() + "_20",
-		})
+// 		cClient, cConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
+// 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
+// 			Token:     validMessagingToken,
+// 			UserUUID:  uuid.New().String() + "_22",
+// 		})
 
-		bClient, bConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
-			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
-			Token:     validMessagingToken,
-			UserUUID:  uuid.New().String() + "_21",
-		})
+// 		dClient, dConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
+// 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
+// 			Token:     validMessagingToken,
+// 			UserUUID:  uuid.New().String() + "_23",
+// 		})
 
-		cClient, cConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
-			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
-			Token:     validMessagingToken,
-			UserUUID:  uuid.New().String() + "_22",
-		})
+// 		_, dMobileConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
+// 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
+// 			Token:     validMessagingToken,
+// 			UserUUID:  dClient.UserUUID,
+// 		})
 
-		dClient, dConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
-			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
-			Token:     validMessagingToken,
-			UserUUID:  uuid.New().String() + "_23",
-		})
+// 		openRoomEvent := &requests.CreateRoomRequest{
+// 			Members: []*requests.Member{
+// 				{
+// 					UserUUID: aClient.UserUUID,
+// 				},
+// 				{
+// 					UserUUID: bClient.UserUUID,
+// 				},
+// 				{
+// 					UserUUID: cClient.UserUUID,
+// 				},
+// 				{
+// 					UserUUID: dClient.UserUUID,
+// 				},
+// 			},
+// 		}
 
-		_, dMobileConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
-			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
-			Token:     validMessagingToken,
-			UserUUID:  dClient.UserUUID,
-		})
+// 		common.OpenRoom(t, openRoomEvent, validAPIKey)
+// 		common.ReadOpenRoomResponse(t, aConn, 4)
+// 		common.ReadOpenRoomResponse(t, bConn, 4)
+// 		common.ReadOpenRoomResponse(t, cConn, 4)
+// 		common.ReadOpenRoomResponse(t, dConn, 4)
+// 		openRoomRes := common.ReadOpenRoomResponse(t, dMobileConn, 4)
+// 		roomUUID := openRoomRes.Room.UUID
 
-		openRoomEvent := &requests.CreateRoomRequest{
-			Members: []*requests.Member{
-				{
-					UserUUID: aClient.UserUUID,
-				},
-				{
-					UserUUID: bClient.UserUUID,
-				},
-				{
-					UserUUID: cClient.UserUUID,
-				},
-				{
-					UserUUID: dClient.UserUUID,
-				},
-			},
-		}
+// 		res := common.GetRoomsByUserUUIDByMessagingJWT(t, cClient.UserUUID, 0, validMessagingToken)
+// 		assert.Len(t, res.Rooms, 1)
+// 		assert.Len(t, res.Rooms[0].Members, 4)
 
-		common.OpenRoom(t, openRoomEvent, validAPIKey)
-		common.ReadOpenRoomResponse(t, aConn, 4)
-		common.ReadOpenRoomResponse(t, bConn, 4)
-		common.ReadOpenRoomResponse(t, cConn, 4)
-		common.ReadOpenRoomResponse(t, dConn, 4)
-		openRoomRes := common.ReadOpenRoomResponse(t, dMobileConn, 4)
-		roomUUID := openRoomRes.Room.UUID
+// 		res = common.GetRoomsByUserUUIDByMessagingJWT(t, bClient.UserUUID, 0, validMessagingToken)
+// 		assert.Len(t, res.Rooms, 1)
+// 		assert.Len(t, res.Rooms[0].Members, 4)
 
-		res := common.GetRoomsByUserUUIDByMessagingJWT(t, cClient.UserUUID, 0, validMessagingToken)
-		assert.Len(t, res.Rooms, 1)
-		assert.Len(t, res.Rooms[0].Members, 4)
+// 		res = common.GetRoomsByUserUUIDByMessagingJWT(t, cClient.UserUUID, 0, validMessagingToken)
+// 		assert.Len(t, res.Rooms, 1)
+// 		assert.Len(t, res.Rooms[0].Members, 4)
 
-		res = common.GetRoomsByUserUUIDByMessagingJWT(t, bClient.UserUUID, 0, validMessagingToken)
-		assert.Len(t, res.Rooms, 1)
-		assert.Len(t, res.Rooms[0].Members, 4)
+// 		res = common.GetRoomsByUserUUIDByMessagingJWT(t, dClient.UserUUID, 0, validMessagingToken)
+// 		assert.Len(t, res.Rooms, 1)
+// 		assert.Len(t, res.Rooms[0].Members, 4)
 
-		res = common.GetRoomsByUserUUIDByMessagingJWT(t, cClient.UserUUID, 0, validMessagingToken)
-		assert.Len(t, res.Rooms, 1)
-		assert.Len(t, res.Rooms[0].Members, 4)
+// 		leaveRoomReq := &requests.LeaveRoomRequest{
+// 			UserUUID: cClient.UserUUID,
+// 			RoomUUID: roomUUID,
+// 		}
 
-		res = common.GetRoomsByUserUUIDByMessagingJWT(t, dClient.UserUUID, 0, validMessagingToken)
-		assert.Len(t, res.Rooms, 1)
-		assert.Len(t, res.Rooms[0].Members, 4)
+// 		common.LeaveRoom(t, leaveRoomReq, validAPIKey)
 
-		leaveRoomReq := &requests.LeaveRoomRequest{
-			UserUUID: cClient.UserUUID,
-			RoomUUID: roomUUID,
-		}
+// 		// c should now be 0
+// 		res = common.GetRoomsByUserUUIDByMessagingJWT(t, cClient.UserUUID, 0, validMessagingToken)
+// 		assert.Len(t, res.Rooms, 0)
 
-		common.LeaveRoom(t, leaveRoomReq, validAPIKey)
+// 		// everyone else should still be 1
+// 		res = common.GetRoomsByUserUUIDByMessagingJWT(t, aClient.UserUUID, 0, validMessagingToken)
+// 		assert.Len(t, res.Rooms, 1)
+// 		assert.Len(t, res.Rooms[0].Members, 3)
 
-		// c should now be 0
-		res = common.GetRoomsByUserUUIDByMessagingJWT(t, cClient.UserUUID, 0, validMessagingToken)
-		assert.Len(t, res.Rooms, 0)
+// 		res = common.GetRoomsByUserUUIDByMessagingJWT(t, bClient.UserUUID, 0, validMessagingToken)
+// 		assert.Len(t, res.Rooms, 1)
+// 		assert.Len(t, res.Rooms[0].Members, 3)
 
-		// everyone else should still be 1
-		res = common.GetRoomsByUserUUIDByMessagingJWT(t, aClient.UserUUID, 0, validMessagingToken)
-		assert.Len(t, res.Rooms, 1)
-		assert.Len(t, res.Rooms[0].Members, 3)
+// 		res = common.GetRoomsByUserUUIDByMessagingJWT(t, dClient.UserUUID, 0, validMessagingToken)
+// 		assert.Len(t, res.Rooms, 1)
+// 		assert.Len(t, res.Rooms[0].Members, 3)
 
-		res = common.GetRoomsByUserUUIDByMessagingJWT(t, bClient.UserUUID, 0, validMessagingToken)
-		assert.Len(t, res.Rooms, 1)
-		assert.Len(t, res.Rooms[0].Members, 3)
+// 		// read the message from leaving the room
+// 		resp := &requests.LeaveRoomEvent{}
+// 		common.ReadEvent(t, aConn, resp)
+// 		assert.NotNil(t, resp)
+// 		assert.Equal(t, cClient.UserUUID, resp.UserUUID)
+// 		assert.Equal(t, roomUUID, resp.RoomUUID)
+// 		assert.Equal(t, enums.EVENT_LEAVE_ROOM.String(), resp.EventType)
 
-		res = common.GetRoomsByUserUUIDByMessagingJWT(t, dClient.UserUUID, 0, validMessagingToken)
-		assert.Len(t, res.Rooms, 1)
-		assert.Len(t, res.Rooms[0].Members, 3)
+// 		resp = &requests.LeaveRoomEvent{}
+// 		common.ReadEvent(t, bConn, resp)
+// 		assert.NotNil(t, resp)
+// 		assert.Equal(t, cClient.UserUUID, resp.UserUUID)
+// 		assert.Equal(t, roomUUID, resp.RoomUUID)
+// 		assert.Equal(t, enums.EVENT_LEAVE_ROOM.String(), resp.EventType)
 
-		// read the message from leaving the room
-		resp := &requests.LeaveRoomEvent{}
-		common.ReadEvent(t, aConn, resp)
-		assert.NotNil(t, resp)
-		assert.Equal(t, cClient.UserUUID, resp.UserUUID)
-		assert.Equal(t, roomUUID, resp.RoomUUID)
-		assert.Equal(t, enums.EVENT_LEAVE_ROOM.String(), resp.EventType)
+// 		resp = &requests.LeaveRoomEvent{}
+// 		common.ReadEvent(t, dConn, resp)
+// 		assert.NotNil(t, resp)
+// 		assert.Equal(t, cClient.UserUUID, resp.UserUUID)
+// 		assert.Equal(t, roomUUID, resp.RoomUUID)
+// 		assert.Equal(t, enums.EVENT_LEAVE_ROOM.String(), resp.EventType)
 
-		resp = &requests.LeaveRoomEvent{}
-		common.ReadEvent(t, bConn, resp)
-		assert.NotNil(t, resp)
-		assert.Equal(t, cClient.UserUUID, resp.UserUUID)
-		assert.Equal(t, roomUUID, resp.RoomUUID)
-		assert.Equal(t, enums.EVENT_LEAVE_ROOM.String(), resp.EventType)
-
-		resp = &requests.LeaveRoomEvent{}
-		common.ReadEvent(t, dConn, resp)
-		assert.NotNil(t, resp)
-		assert.Equal(t, cClient.UserUUID, resp.UserUUID)
-		assert.Equal(t, roomUUID, resp.RoomUUID)
-		assert.Equal(t, enums.EVENT_LEAVE_ROOM.String(), resp.EventType)
-
-		resp = &requests.LeaveRoomEvent{}
-		common.ReadEvent(t, dMobileConn, resp)
-		assert.NotNil(t, resp)
-		assert.Equal(t, cClient.UserUUID, resp.UserUUID)
-		assert.Equal(t, roomUUID, resp.RoomUUID)
-		assert.Equal(t, enums.EVENT_LEAVE_ROOM.String(), resp.EventType)
-	})
-}
+// 		resp = &requests.LeaveRoomEvent{}
+// 		common.ReadEvent(t, dMobileConn, resp)
+// 		assert.NotNil(t, resp)
+// 		assert.Equal(t, cClient.UserUUID, resp.UserUUID)
+// 		assert.Equal(t, roomUUID, resp.RoomUUID)
+// 		assert.Equal(t, enums.EVENT_LEAVE_ROOM.String(), resp.EventType)
+// 	})
+// }

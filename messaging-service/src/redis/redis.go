@@ -39,6 +39,8 @@ func connect() (*redis.Client, error) {
 	var statusCode string
 	status := client.Ping(ctx)
 	statusCode = status.Val()
+	fmt.Println("STATUS CODE IS")
+	fmt.Println(statusCode)
 	if statusCode != "PONG" {
 		return nil, errors.New("could not connect to redis")
 	}

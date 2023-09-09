@@ -264,7 +264,7 @@ func (s *ControlTowerSuite) TestsSetupClientConnectionV2() {
 		res, err := s.controlTower.SetupClientConnectionV2(&websocket.Conn{}, t.req)
 		s.NoError(err, t.test)
 		s.NotNil(res, t.test)
-		s.NotEmpty(res.ConnectionUUID, t.test)
+		s.NotEmpty(res.DeviceUUID, t.test)
 		s.NotEmpty(res.UserUUID, t.test)
 	}
 }

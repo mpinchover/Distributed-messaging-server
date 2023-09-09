@@ -54,7 +54,7 @@ type Repo struct {
 }
 
 func connect() (*gorm.DB, error) {
-	dsn := fmt.Sprintf("root:root@tcp(%s:%s)/messaging?charset=utf8mb4&parseTime=True&loc=Local", os.Getenv("MYSQL_HOST"), os.Getenv("MYSQL_PORT"))
+	dsn := fmt.Sprintf("root:root@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", os.Getenv("MYSQL_HOST"), os.Getenv("MYSQL_PORT"), os.Getenv("MYSQL_DB_NAME"))
 	return gorm.Open(mysql.Open(dsn), &gorm.Config{
 		// Logger: logger.Default.LogMode(logger.Info),
 		// FullSaveAssociations: true,

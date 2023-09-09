@@ -46,7 +46,6 @@ func (a *MessagingJWT) execute(h HTTPHandler) HTTPHandler {
 		}
 
 		if apiKey == nil && tokenString == nil {
-			fmt.Println("COULD NOT GET AUTH KEY OR HEADER")
 			return nil, serrors.AuthErrorf("could not get auth header or api key", nil)
 		}
 
@@ -68,7 +67,6 @@ func (a *MessagingJWT) execute(h HTTPHandler) HTTPHandler {
 		} else {
 			tokenString = utils.GetAuthTokenFromHeaders(r)
 			if tokenString == nil {
-				fmt.Println("error 3")
 				return nil, serrors.AuthErrorf("could not get auth header", nil)
 			}
 

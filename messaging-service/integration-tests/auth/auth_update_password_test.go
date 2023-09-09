@@ -1,65 +1,54 @@
 package integrationtests
 
-import (
-	"fmt"
-	"messaging-service/integration-tests/common"
-	"messaging-service/src/types/requests"
-	"testing"
-	"time"
+// func TestResetPassword(t *testing.T) {
+// 	// t.Skip()
+// 	t.Run("test signup user and create auth profile", func(t *testing.T) {
+// 		t.Logf("Runningg test %s at %d", t.Name(), time.Now().UnixNano())
 
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-)
+// 		password := uuid.New().String()
+// 		confirmPassword := password
+// 		email := fmt.Sprintf("%s@gmail.com", uuid.New().String())
 
-func TestResetPassword(t *testing.T) {
-	// t.Skip()
-	t.Run("test signup user and create auth profile", func(t *testing.T) {
-		t.Logf("Runningg test %s at %d", t.Name(), time.Now().UnixNano())
+// 		// create user
+// 		signupRequest := &requests.SignupRequest{
+// 			Email:           email,
+// 			Password:        password,
+// 			ConfirmPassword: confirmPassword,
+// 		}
+// 		//
+// 		signupResp := common.MakeSignupRequest(t, signupRequest)
+// 		assert.NotEmpty(t, signupResp.AccessToken)
+// 		assert.NotEmpty(t, signupResp.RefreshToken)
 
-		password := uuid.New().String()
-		confirmPassword := password
-		email := fmt.Sprintf("%s@gmail.com", uuid.New().String())
+// 		// test auth token
+// 		authProfile := common.MakeTestAuthRequest(t, signupResp.AccessToken)
+// 		assert.NotNil(t, authProfile)
+// 		assert.Equal(t, signupRequest.Email, authProfile.Email)
+// 		assert.NotEmpty(t, authProfile.UUID)
 
-		// create user
-		signupRequest := &requests.SignupRequest{
-			Email:           email,
-			Password:        password,
-			ConfirmPassword: confirmPassword,
-		}
-		//
-		signupResp := common.MakeSignupRequest(t, signupRequest)
-		assert.NotEmpty(t, signupResp.AccessToken)
-		assert.NotEmpty(t, signupResp.RefreshToken)
+// 		// login user
+// 		loginRequest := &requests.LoginRequest{
+// 			Email:    email,
+// 			Password: password,
+// 		}
+// 		loginResp := common.MakeLoginRequest(t, loginRequest)
+// 		assert.NotEmpty(t, loginResp.AccessToken)
+// 		assert.NotEmpty(t, loginResp.RefreshToken)
 
-		// test auth token
-		authProfile := common.MakeTestAuthRequest(t, signupResp.AccessToken)
-		assert.NotNil(t, authProfile)
-		assert.Equal(t, signupRequest.Email, authProfile.Email)
-		assert.NotEmpty(t, authProfile.UUID)
+// 		updatePasswordRequest := &requests.UpdatePasswordRequest{
+// 			CurrentPassword:    password,
+// 			NewPassword:        "something-else",
+// 			ConfirmNewPassword: "something-else",
+// 		}
+// 		// reset password
+// 		common.MakeUpdatePasswordRequest(t, updatePasswordRequest, loginResp.AccessToken)
 
-		// login user
-		loginRequest := &requests.LoginRequest{
-			Email:    email,
-			Password: password,
-		}
-		loginResp := common.MakeLoginRequest(t, loginRequest)
-		assert.NotEmpty(t, loginResp.AccessToken)
-		assert.NotEmpty(t, loginResp.RefreshToken)
+// 		// // should success
+// 		loginRequest.Password = "something-else"
+// 		common.MakeLoginRequest(t, loginRequest)
 
-		updatePasswordRequest := &requests.UpdatePasswordRequest{
-			CurrentPassword:    password,
-			NewPassword:        "something-else",
-			ConfirmNewPassword: "something-else",
-		}
-		// reset password
-		common.MakeUpdatePasswordRequest(t, updatePasswordRequest, loginResp.AccessToken)
-
-		// // should success
-		loginRequest.Password = "something-else"
-		common.MakeLoginRequest(t, loginRequest)
-
-		// should fail
-		loginRequest.Password = "something-else11"
-		common.MakeLoginRequestFailAuth(t, loginRequest)
-	})
-}
+// 		// should fail
+// 		loginRequest.Password = "something-else11"
+// 		common.MakeLoginRequestFailAuth(t, loginRequest)
+// 	})
+// }

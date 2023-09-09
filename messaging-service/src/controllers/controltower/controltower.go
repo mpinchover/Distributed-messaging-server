@@ -242,7 +242,7 @@ func (c *ControlTowerCtrlr) SetupClientConnectionV2(
 	// connectionUUID := uuid.New().String()
 
 	// TODO - update to device uuid
-	msg.ConnectionUUID = deviceUUID
+	msg.DeviceUUID = deviceUUID
 	// userConnection, userExists := c.ChatConnections[msg.UserUUID]
 
 	if c.UserConnections == nil {

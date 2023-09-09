@@ -17,8 +17,8 @@ services:
       NODE_ENV: production
       REDIS_URL: chat_api_redis:6379
       MYSQL_HOST: chat_api_mysqldb
-      MYSQL_PORT: 3306
-      MYSQL_DB_NAME: messaging
+      MYSQL_PORT: 3306 # youre connecting from within the network
+      MYSQL_DB_NAME: chat_test_db
       JWT_SECRET: secret
     ports:
       - 9090:9090

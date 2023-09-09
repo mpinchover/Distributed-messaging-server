@@ -3,19 +3,19 @@ version: "3"
 networks:
   default:
     external:
-      name: external-example
+      name: chat_api_network
 
 services:
   redisCache:
-    container_name: redisCache
+    container_name: chat_api_redis
     image: "redis:latest"
     ports:
-      - 6379:6379
+      - 6380:6379
     healthcheck:
       test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
 
   mysqldb:
-    container_name: mysqldb
+    container_name: chat_api_mysqldb
     image: mysql:8.0
     restart: always
     ports:
@@ -26,8 +26,8 @@ services:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_ROOT_USER: root
       MYSQL_ROOT_HOST: "%"
-    volumes:
-      - ./scripts/mysql:/docker-entrypoint-initdb.d
+    # volumes:
+    #   - ./scripts/mysql:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       timeout: 20s

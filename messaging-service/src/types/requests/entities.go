@@ -6,9 +6,9 @@ import (
 )
 
 type Websocket struct {
-	Conn           *websocket.Conn
-	ConnectionUUID *string
-	UserUUID       *string
+	Conn       *websocket.Conn
+	DeviceUUID *string
+	UserUUID   *string
 }
 
 type Member struct {
@@ -61,14 +61,11 @@ type APIKey struct {
 }
 
 // for ext service, not chat user
-type AuthProfile struct {
-	UUID  string
-	Email string
-}
+// type AuthProfile struct {
+// 	UserID uint
+// 	Email  string
+// }
 
 type ChatProfile struct {
-	UserID string
+	UserUUID string
 }
-
-
-

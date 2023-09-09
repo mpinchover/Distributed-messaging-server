@@ -93,7 +93,7 @@ type ResetPasswordRequest struct {
 }
 
 type GenerateMessagingTokenRequest struct {
-	UserID string `json:"userId" validate:"required"`
+	UserUUID string `json:"userUuid" validate:"required"`
 }
 
 type GenerateMessagingTokenResponse struct {

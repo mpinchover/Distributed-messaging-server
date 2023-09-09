@@ -7,12 +7,12 @@ import (
 	"net/http"
 )
 
-func (h *Handler) TestAuthProfileHandler(w http.ResponseWriter, r *http.Request) (interface{}, error) {
-	// validation
+// func (h *Handler) TestAuthProfileHandler(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+// 	// validation
 
-	res, err := h.testAuthProfileHandler(r.Context())
-	return res, err
-}
+// 	res, err := h.testAuthProfileHandler(r.Context())
+// 	return res, err
+// }
 
 func (h *Handler) TestNewAPIKeyHandler(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 	// validation
@@ -21,15 +21,15 @@ func (h *Handler) TestNewAPIKeyHandler(w http.ResponseWriter, r *http.Request) (
 	return res, err
 }
 
-func (h *Handler) testAuthProfileHandler(ctx context.Context) (*requests.AuthProfile, error) {
-	// validation
+// func (h *Handler) testAuthProfileHandler(ctx context.Context) (*requests.AuthProfile, error) {
+// 	// validation
 
-	authProfile, err := utils.GetAuthProfileFromCtx(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return authProfile, nil
-}
+// 	authProfile, err := utils.GetAuthProfileFromCtx(ctx)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return authProfile, nil
+// }
 
 func (h *Handler) testNewAPIKeyHandler(ctx context.Context) (*requests.APIKey, error) {
 	// validation

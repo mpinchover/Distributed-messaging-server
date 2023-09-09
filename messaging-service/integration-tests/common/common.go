@@ -2,16 +2,19 @@ package common
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"messaging-service/src/types/enums"
 	"messaging-service/src/types/requests"
+	"messaging-service/src/utils"
 	"net/http"
 	"testing"
 	"time"
 
-	"github.com/golang-jwt/jwt"
+	redisClient "messaging-service/src/redis"
+
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
@@ -21,12 +24,12 @@ const (
 	SocketURL = "ws://localhost:9090/ws"
 )
 
-func SendSingleTextMessage(t *testing.T, fromUserUUID string, connectionUUID string, roomUUID string, conn *websocket.Conn, token string) {
+func SendSingleTextMessage(t *testing.T, fromUserUUID string, deviceUUID string, roomUUID string, conn *websocket.Conn, token string) {
 	msgText := "text"
 	msgEventOut := &requests.TextMessageEvent{
-		FromUUID:       fromUserUUID,
-		ConnectionUUID: connectionUUID,
-		EventType:      enums.EVENT_TEXT_MESSAGE.String(),
+		FromUUID:   fromUserUUID,
+		DeviceUUID: deviceUUID,
+		EventType:  enums.EVENT_TEXT_MESSAGE.String(),
 		Message: &requests.Message{
 			RoomUUID:    roomUUID,
 			MessageText: msgText,
@@ -37,13 +40,13 @@ func SendSingleTextMessage(t *testing.T, fromUserUUID string, connectionUUID str
 
 }
 
-func SendMessages(t *testing.T, fromUserUUID string, connectionUUID string, roomUUID string, conn *websocket.Conn, token string) {
+func SendMessages(t *testing.T, fromUserUUID string, deviceUUID string, roomUUID string, conn *websocket.Conn, token string) {
 	for i := 0; i < 25; i++ {
 		msgText := fmt.Sprintf("Message %d", i)
 		msgEventOut := &requests.TextMessageEvent{
-			FromUUID:       fromUserUUID,
-			ConnectionUUID: connectionUUID,
-			EventType:      enums.EVENT_TEXT_MESSAGE.String(),
+			FromUUID:   fromUserUUID,
+			DeviceUUID: deviceUUID,
+			EventType:  enums.EVENT_TEXT_MESSAGE.String(),
 			Message: &requests.Message{
 				RoomUUID:    roomUUID,
 				MessageText: msgText,
@@ -71,7 +74,7 @@ func RecvMessage(t *testing.T, conn *websocket.Conn, resp *requests.TextMessageE
 	assert.NotEmpty(t, resp.EventType, string(p))
 	assert.Equal(t, enums.EVENT_TEXT_MESSAGE.String(), resp.EventType, string(p))
 	assert.NotEmpty(t, resp.FromUUID, string(p))
-	assert.NotEmpty(t, resp.ConnectionUUID, string(p))
+	assert.NotEmpty(t, resp.DeviceUUID, string(p))
 	assert.NotEmpty(t, resp.Message.RoomUUID, string(p))
 	assert.NotEmpty(t, resp.Message.MessageText, string(p))
 }
@@ -220,7 +223,7 @@ func CreateClientConnection(t *testing.T, msg *requests.SetClientConnectionEvent
 	rsp := &requests.SetClientConnectionEvent{}
 	err = json.Unmarshal(p, &rsp)
 	assert.NoError(t, err)
-	assert.NotEmpty(t, rsp.ConnectionUUID)
+	assert.NotEmpty(t, rsp.DeviceUUID)
 	assert.NotEmpty(t, rsp.UserUUID)
 	return rsp, conn
 
@@ -501,62 +504,51 @@ func MakeGenerateMessagingTokenRequest(t *testing.T, request *requests.GenerateM
 	return response
 }
 
-func GetValidToken(t *testing.T) (string, string) {
-	newUserResponse := CreateRandomUser(t)
-	// get a messaging token for this user
-	apiKey := MakeGetAPIKeyRequest(t, newUserResponse.AccessToken)
+// create a valid messaging token
+func GetValidToken(t *testing.T, userUUID string) string {
+	token, err := utils.GenerateMessagingToken(userUUID, time.Now().Add(time.Minute))
+	assert.NoError(t, err)
 
-	generateMessagingToken := &requests.GenerateMessagingTokenRequest{
-		UserID: newUserResponse.UUID,
-	}
-	generateMessagingTokenResp := MakeGenerateMessagingTokenRequest(t, generateMessagingToken, apiKey.Key)
-	assert.NotEmpty(t, generateMessagingTokenResp.Token)
-
-	return generateMessagingTokenResp.Token, apiKey.Key
+	return token
 }
 
-func CreateRandomUser(t *testing.T) *requests.SignupResponse {
-	password := uuid.New().String()
-	confirmPassword := password
-	email := fmt.Sprintf("%s@gmail.com", uuid.New().String())
+// TODO clean redis before each test
+func GetValidAPIKey(t *testing.T) string {
+	redisClient := redisClient.New()
+	key := uuid.New().String()
 
-	signupResponse := MakeSignupRequest(t, &requests.SignupRequest{
-		Email:           email,
-		Password:        password,
-		ConfirmPassword: confirmPassword,
+	err := redisClient.Set(context.Background(), key, requests.APIKey{
+		Key: key,
 	})
-	assert.NotNil(t, signupResponse)
-	assert.NotEmpty(t, signupResponse.AccessToken)
-	assert.NotEmpty(t, signupResponse.RefreshToken)
-	assert.NotEmpty(t, signupResponse.UUID)
-	return signupResponse
+	assert.NoError(t, err)
+	return key
 }
 
-func MakeTestAuthRequest(t *testing.T, token string) *requests.AuthProfile {
-	req, err := http.NewRequest("GET", "http://localhost:9090/test-auth-profile", nil)
-	assert.NoError(t, err)
+// func MakeTestAuthRequest(t *testing.T, token string) *requests.AuthProfile {
+// 	req, err := http.NewRequest("GET", "http://localhost:9090/test-auth-profile", nil)
+// 	assert.NoError(t, err)
 
-	req.Header.Add("Authorization", token)
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	assert.NoError(t, err)
-	assert.GreaterOrEqual(t, resp.StatusCode, 200)
-	assert.Less(t, resp.StatusCode, 300)
+// 	req.Header.Add("Authorization", token)
+// 	client := &http.Client{}
+// 	resp, err := client.Do(req)
+// 	assert.NoError(t, err)
+// 	assert.GreaterOrEqual(t, resp.StatusCode, 200)
+// 	assert.Less(t, resp.StatusCode, 300)
 
-	defer resp.Body.Close()
-	b, err := io.ReadAll(resp.Body)
-	assert.NoError(t, err)
+// 	defer resp.Body.Close()
+// 	b, err := io.ReadAll(resp.Body)
+// 	assert.NoError(t, err)
 
-	response := &requests.AuthProfile{}
-	err = json.Unmarshal(b, response)
-	assert.NoError(t, err)
+// 	response := &requests.AuthProfile{}
+// 	err = json.Unmarshal(b, response)
+// 	assert.NoError(t, err)
 
-	assert.NoError(t, err)
-	assert.NotNil(t, response)
-	assert.Equal(t, response.Email, response.Email)
-	assert.NotEmpty(t, response.UUID)
-	return response
-}
+// 	assert.NoError(t, err)
+// 	assert.NotNil(t, response)
+// 	assert.Equal(t, response.Email, response.Email)
+// 	assert.NotEmpty(t, response.UUID)
+// 	return response
+// }
 
 func MakeTestAuthRequestFailAuth(t *testing.T, token string) {
 	req, err := http.NewRequest("GET", "http://localhost:9090/test-auth-profile", nil)
@@ -591,20 +583,20 @@ func MakeRefreshTokenRequest(t *testing.T, refreshToken string) *requests.Refres
 	return response
 }
 
-func GenerateJWTAccessToken(authProfile requests.AuthProfile, secret string) (string, error) {
-	token := jwt.New(jwt.SigningMethodHS256)
-	claims := token.Claims.(jwt.MapClaims)
-	claims["AUTH_PROFILE"] = authProfile
-	claims["EXP"] = time.Now().UTC().Add(20 * time.Minute).Unix()
-	token.Claims = claims
+// func GenerateJWTAccessToken(authProfile requests.AuthProfile, secret string) (string, error) {
+// 	token := jwt.New(jwt.SigningMethodHS256)
+// 	claims := token.Claims.(jwt.MapClaims)
+// 	claims["AUTH_PROFILE"] = authProfile
+// 	claims["EXP"] = time.Now().UTC().Add(20 * time.Minute).Unix()
+// 	token.Claims = claims
 
-	tokenString, err := token.SignedString([]byte(secret))
-	if err != nil {
-		return "", err
-	}
+// 	tokenString, err := token.SignedString([]byte(secret))
+// 	if err != nil {
+// 		return "", err
+// 	}
 
-	return tokenString, nil
-}
+// 	return tokenString, nil
+// }
 
 func MakeGetAPIKeyRequest(t *testing.T, token string) *requests.APIKey {
 	req, err := http.NewRequest("GET", "http://localhost:9090/get-new-api-key", nil)

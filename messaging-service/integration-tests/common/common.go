@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"messaging-service/src/types/enums"
 	"messaging-service/src/types/requests"
 	"messaging-service/src/utils"
@@ -229,16 +230,20 @@ func CreateClientConnection(t *testing.T, msg *requests.SetClientConnectionEvent
 
 }
 
-func OpenRoom(t *testing.T, openRoomEvent *requests.CreateRoomRequest, apiKey string) {
+func OpenRoom(t *testing.T, openRoomEvent *requests.CreateRoomRequest, apiKey string) *requests.CreateRoomResponse {
 	postBody, err := json.Marshal(openRoomEvent)
 	assert.NoError(t, err)
 	reqBody := bytes.NewBuffer(postBody)
 	resp, err := http.Post(fmt.Sprintf("http://localhost:9090/create-room?key=%s", apiKey), "application/json", reqBody)
-	// fmt.Println("ERR", err)
 	assert.NoError(t, err)
-	// fmt.Println("Status code", resp.StatusCode)
 	assert.GreaterOrEqual(t, resp.StatusCode, 200)
 	assert.Less(t, resp.StatusCode, 300)
+
+	b, err := ioutil.ReadAll(resp.Body)
+	assert.NoError(t, err)
+	response := &requests.CreateRoomResponse{}
+	json.Unmarshal(b, response)
+	return response
 }
 
 func DeleteRoom(t *testing.T, deleteRoomRequest *requests.DeleteRoomRequest, apiKey string) {
@@ -485,6 +490,7 @@ func MakeUpdatePasswordRequest(t *testing.T, request *requests.UpdatePasswordReq
 
 	return response, nil
 }
+
 func MakeGenerateMessagingTokenRequest(t *testing.T, request *requests.GenerateMessagingTokenRequest, apiKey string) *requests.GenerateMessagingTokenResponse {
 	postBody, err := json.Marshal(request)
 	assert.NoError(t, err)
@@ -614,6 +620,48 @@ func MakeGetAPIKeyRequest(t *testing.T, token string) *requests.APIKey {
 	assert.NoError(t, err)
 
 	response := &requests.APIKey{}
+	err = json.Unmarshal(b, response)
+	assert.NoError(t, err)
+
+	return response
+}
+
+func MakeGetUserConnectionRequest(t *testing.T, userUUID string) *requests.GetUserConnectionResponse {
+	req, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:9090/get-user-connection/%s", userUUID), nil)
+	assert.NoError(t, err)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	assert.NoError(t, err)
+	assert.GreaterOrEqual(t, resp.StatusCode, 200)
+	assert.Less(t, resp.StatusCode, 300)
+
+	defer resp.Body.Close()
+	b, err := io.ReadAll(resp.Body)
+	assert.NoError(t, err)
+
+	response := &requests.GetUserConnectionResponse{}
+	err = json.Unmarshal(b, response)
+	assert.NoError(t, err)
+
+	return response
+}
+
+func MakeGetChannelConnectionRequest(t *testing.T, channelUUID string) *requests.GetChannelResponse {
+	req, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:9090/get-channel/%s", channelUUID), nil)
+	assert.NoError(t, err)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	assert.NoError(t, err)
+	assert.GreaterOrEqual(t, resp.StatusCode, 200)
+	assert.Less(t, resp.StatusCode, 300)
+
+	defer resp.Body.Close()
+	b, err := io.ReadAll(resp.Body)
+	assert.NoError(t, err)
+
+	response := &requests.GetChannelResponse{}
 	err = json.Unmarshal(b, response)
 	assert.NoError(t, err)
 

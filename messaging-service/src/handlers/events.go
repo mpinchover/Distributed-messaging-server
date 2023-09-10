@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"messaging-service/src/types/connections"
 	"messaging-service/src/types/enums"
 	"messaging-service/src/types/requests"
 	"messaging-service/src/utils"
@@ -142,7 +143,7 @@ func (h *Handler) handleLeaveRoomEvent(event *requests.LeaveRoomEvent) error {
 	}
 
 	// notify any remaining members that the user has left
-	for userUUID := range channel {
+	for userUUID := range channel.Users {
 		userConn := h.ControlTowerCtrlr.UserConnections[userUUID]
 		for _, device := range userConn.Devices {
 			device.WS.WriteJSON(event)
@@ -162,7 +163,7 @@ func (h *Handler) handleDeleteRoomEvent(event *requests.DeleteRoomEvent) error {
 
 	delete(h.ControlTowerCtrlr.Channels, event.RoomUUID)
 
-	for userUUID := range channel {
+	for userUUID := range channel.Users {
 		userConn, ok := h.ControlTowerCtrlr.UserConnections[userUUID]
 		if !ok {
 			continue
@@ -180,7 +181,7 @@ func (h *Handler) handleDeleteRoomEvent(event *requests.DeleteRoomEvent) error {
 func (h *Handler) handleOpenRoomEvent(event *requests.OpenRoomEvent) error {
 
 	// for every member, check if they are on this server
-	// if they are, then you need to subscribe the room here
+	// if they are, then you need to subscribe the server to the channel
 	members := event.Room.Members
 	roomUUID := event.Room.UUID
 
@@ -188,31 +189,41 @@ func (h *Handler) handleOpenRoomEvent(event *requests.OpenRoomEvent) error {
 	mu.Lock()
 	defer mu.Unlock()
 
+	memberDevicesOnThisChannel := []*connections.Device{}
 	// subscribe server to the room if members on are on this server
 	for _, member := range members {
 		userConn, ok := h.ControlTowerCtrlr.UserConnections[member.UserUUID]
-		// user not on this server, so don't subscribe the room to this server
+		// user not on this server, so don't subscribe the server to this channel
 		if !ok {
 			continue
 		}
-		// check if the room has already been subscribed to this server as well
+
+		// check if server has already subscribed to this room
 		_, ok = h.ControlTowerCtrlr.Channels[roomUUID]
 		// server contains a user who doesn't have the room subscribed
 		if !ok {
+
 			// Set up the room on this server
 			subscriber := utils.SetupChannel(h.RedisClient, roomUUID)
 			go utils.SubscribeToChannel(subscriber, h.HandleRoomEvent)
-			h.ControlTowerCtrlr.Channels[roomUUID] = map[string]bool{}
+
+			h.ControlTowerCtrlr.Channels[roomUUID] = &connections.Channel{
+				Subscriber: subscriber,
+				Users:      map[string]bool{},
+			}
 		}
 
-		h.ControlTowerCtrlr.Channels[roomUUID] = map[string]bool{
-			member.UUID: true,
-		}
-
+		// add the member on this server to the channel on this server
+		// TODO - get rid of member.UUID
+		h.ControlTowerCtrlr.Channels[roomUUID].Users[member.UserUUID] = true
 		for _, device := range userConn.Devices {
-			device.WS.WriteJSON(event)
+			memberDevicesOnThisChannel = append(memberDevicesOnThisChannel, device)
 		}
 	}
 
+	// write open room event to all member devices
+	for _, d := range memberDevicesOnThisChannel {
+		d.WS.WriteJSON(event)
+	}
 	return nil
 }

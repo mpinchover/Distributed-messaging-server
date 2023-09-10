@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -38,7 +37,7 @@ type ControlTowerCtrlr struct {
 	Repo        repo.RepoInterface
 
 	UserConnections map[string]*connections.UserConnection // user uuid to list of devices
-	Channels        map[string]map[string]bool             // room uuid to the list of users in the room
+	Channels        map[string]*connections.Channel        // room uuid to the list of users in the room
 
 	// ConnCtrlr     connectionscontroller.ConnectionsControllerInterface
 	// ChannelsCtrlr *channelscontroller.ChannelsController
@@ -59,7 +58,7 @@ func New(
 		// ChannelsCtrlr: channelsCtrlr,
 
 		Repo:     repo,
-		Channels: map[string]map[string]bool{},
+		Channels: map[string]*connections.Channel{},
 		// make this user connections and have channels as well
 		UserConnections: map[string]*connections.UserConnection{},
 	}
@@ -75,7 +74,6 @@ func (c *ControlTowerCtrlr) CreateRoom(
 	ctx context.Context,
 	members []*requests.Member,
 ) (*requests.Room, error) {
-	// build the room
 	for _, member := range members {
 		member.UUID = uuid.New().String()
 	}
@@ -108,14 +106,6 @@ func (c *ControlTowerCtrlr) CreateRoom(
 		Members:       members,
 		UUID:          roomUUID,
 		CreatedAtNano: createdAtNano,
-		// Messages: []*requests.Message{
-		// 	{
-		// 		CreatedAtNano: createdAtNano,
-		// 		MessageType:   "NOTIFICATION",
-		// 		RoomUUID:      roomUUID,
-		// 		MessageText:   "Beginning of chat",
-		// 	},
-		// },
 	}
 
 	openRoomEvent := requests.OpenRoomEvent{
@@ -239,16 +229,7 @@ func (c *ControlTowerCtrlr) SetupClientConnectionV2(
 	defer mu.Unlock()
 
 	deviceUUID := uuid.New().String()
-	// connectionUUID := uuid.New().String()
-
-	// TODO - update to device uuid
 	msg.DeviceUUID = deviceUUID
-	// userConnection, userExists := c.ChatConnections[msg.UserUUID]
-
-	if c.UserConnections == nil {
-		c.UserConnections = map[string]*connections.UserConnection{}
-	}
-
 	userConn, ok := c.UserConnections[msg.UserUUID]
 	if !ok {
 		userConn = &connections.UserConnection{
@@ -263,21 +244,12 @@ func (c *ControlTowerCtrlr) SetupClientConnectionV2(
 	userConn.Devices[deviceUUID] = newDeviceConnection
 	c.UserConnections[msg.UserUUID] = userConn
 
-	// if !userExists {
-	// 	newDeviceConnection := &connections.Device{
-	// 		UUID: msg.UserUUID,
-	// 		WS:   conn,
-	// 	}
-	// 	c.ChatConnections[msg.UserUUID] = append(c.ChatConnections[msg.UserUUID], newDeviceConnection)
-	// 	// newDeviceConnection = &requests.Connection{
-	// 	// 	UserUUID:    msg.UserUUID,
-	// 	// 	Connections: map[string]*websocket.Conn{},
-	// 	// }
-	// 	// c.ConnCtrlr.AddConnection(userConnection)
-	// }
-
-	// c.ConnCtrlr.AddClient(userConnection, connectionUUID, conn)
 	return msg, nil
+}
+
+func (c *ControlTowerCtrlr) GetRoomsByUserUUIDForSubscribing(userUUID string) ([]*records.Room, error) {
+	rooms, err := c.Repo.GetRoomsByUserUUIDForSubscribing(userUUID)
+	return rooms, err
 }
 
 func (c *ControlTowerCtrlr) SaveSeenBy(msg *requests.SeenMessageEvent) error {
@@ -311,8 +283,6 @@ func (c *ControlTowerCtrlr) SaveSeenBy(msg *requests.SeenMessageEvent) error {
 func (c *ControlTowerCtrlr) GetRoomsByUserUUID(ctx context.Context, userUUID string, offset int) ([]*requests.Room, error) {
 	rooms, err := c.Repo.GetRoomsByUserUUID(userUUID, offset)
 	if err != nil {
-		fmt.Println("ERROR")
-		fmt.Println(err)
 		return nil, err
 	}
 
@@ -356,17 +326,23 @@ func (c *ControlTowerCtrlr) RemoveUserFromChannel(userUUID string, channelUUID s
 	mu.Lock()
 	defer mu.Unlock()
 
-	delete(ch, userUUID)
+	delete(ch.Users, userUUID)
 	c.Channels[channelUUID] = ch
 
-	if len(ch) == 1 {
+	if len(ch.Users) == 1 {
 		delete(c.Channels, channelUUID)
+		err := ch.Subscriber.Unsubscribe(context.Background())
+		if err != nil {
+			// TODO - remove the error
+			panic(err)
+		}
 	}
 	return nil
 }
 
 // maybe store the rooms each member is part of as memebersOnServer
 // remove device from server
+// todo, can ou just store the channel in mysql/redis?
 func (c *ControlTowerCtrlr) RemoveClientDeviceFromServer(userUUID string, deviceUUID string) error {
 	// remove the user from connections
 
@@ -379,8 +355,8 @@ func (c *ControlTowerCtrlr) RemoveClientDeviceFromServer(userUUID string, device
 	userConnection, ok := c.UserConnections[userUUID]
 	if !ok {
 		panic("User not found in user connections")
-
 	}
+
 	_, ok = userConnection.Devices[deviceUUID]
 	if !ok {
 		panic("device not in device connections")
@@ -393,11 +369,37 @@ func (c *ControlTowerCtrlr) RemoveClientDeviceFromServer(userUUID string, device
 		delete(c.UserConnections, userUUID)
 	}
 
+	// just get a lsit of all the channels they were a part of here
 	// now iterate over al channels to delete the user
-	for chUUID, members := range c.Channels {
-		if members[userUUID] && len(members) == 1 {
-			delete(c.Channels, chUUID)
+	for chUUID, ch := range c.Channels {
+		if ch.Users[userUUID] {
+			if len(ch.Users) == 1 {
+				delete(c.Channels, chUUID)
+				err := ch.Subscriber.Unsubscribe(context.Background())
+				if err != nil {
+					// TODO - remove the panic
+					panic(err)
+				}
+				// TODO - unsubscribe the channel
+				// need the pubsub subscriber to unsubscribe
+			} else {
+				delete(c.Channels[chUUID].Users, userUUID)
+			}
 		}
 	}
 	return nil
+}
+
+// for testing only, add an admin token
+func (c *ControlTowerCtrlr) GetUserConnection(userUUID string) *connections.UserConnection {
+	userConn := c.UserConnections[userUUID]
+	return userConn
+}
+
+func (c *ControlTowerCtrlr) GetChannel(chUUID string) map[string]bool {
+	_, ok := c.Channels[chUUID]
+	if !ok {
+		return map[string]bool{}
+	}
+	return c.Channels[chUUID].Users
 }

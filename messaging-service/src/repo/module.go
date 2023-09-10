@@ -33,6 +33,7 @@ type RepoInterface interface {
 	GetRoomsByUserUUID(uuid string, offset int) ([]*records.Room, error)
 	DeleteRoom(roomUUID string) error
 	SaveRoom(room *records.Room) error
+	GetRoomsByUserUUIDForSubscribing(userUUID string) ([]*records.Room, error)
 
 	// matching
 	// GetTrackedQuestionsByUserUUID(userUUID string) ([]*records.TrackedQuestion, error)

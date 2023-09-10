@@ -209,6 +209,32 @@ func (_m *RepoInterface) GetRoomsByUserUUID(uuid string, offset int) ([]*records
 	return r0, r1
 }
 
+// GetRoomsByUserUUIDForSubscribing provides a mock function with given fields: userUUID
+func (_m *RepoInterface) GetRoomsByUserUUIDForSubscribing(userUUID string) ([]*records.Room, error) {
+	ret := _m.Called(userUUID)
+
+	var r0 []*records.Room
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string) ([]*records.Room, error)); ok {
+		return rf(userUUID)
+	}
+	if rf, ok := ret.Get(0).(func(string) []*records.Room); ok {
+		r0 = rf(userUUID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*records.Room)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(userUUID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // LeaveRoom provides a mock function with given fields: userUUID, roomUUID
 func (_m *RepoInterface) LeaveRoom(userUUID string, roomUUID string) error {
 	ret := _m.Called(userUUID, roomUUID)

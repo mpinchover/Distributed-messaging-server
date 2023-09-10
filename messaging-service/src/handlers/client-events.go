@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"encoding/json"
+	"messaging-service/src/types/connections"
 	"messaging-service/src/types/requests"
+	"messaging-service/src/utils"
 
 	"github.com/gorilla/websocket"
 )
@@ -31,7 +33,7 @@ func (h *Handler) handleClientEventTextMessage(conn *websocket.Conn, p []byte) e
 }
 
 func (h *Handler) handleSetClientSocket(ws *requests.Websocket, p []byte) error {
-	// TODO – have a new event that doesn't include the connectionUUID
+	// TODO – have a new event that doesn't include the deviceUUID
 	msg := &requests.SetClientConnectionEvent{}
 	err := json.Unmarshal(p, msg)
 	if err != nil {
@@ -41,6 +43,26 @@ func (h *Handler) handleSetClientSocket(ws *requests.Websocket, p []byte) error 
 	if err != nil {
 		return err
 	}
+
+	userExistingRooms, err := h.ControlTowerCtrlr.GetRoomsByUserUUIDForSubscribing(msg.UserUUID)
+	if err != nil {
+		return err
+	}
+
+	for _, room := range userExistingRooms {
+		_, ok := h.ControlTowerCtrlr.Channels[room.UUID]
+		if !ok {
+			// subscribe the room
+			subscriber := utils.SetupChannel(h.RedisClient, room.UUID)
+			go utils.SubscribeToChannel(subscriber, h.HandleRoomEvent)
+			h.ControlTowerCtrlr.Channels[room.UUID] = &connections.Channel{
+				Users:      map[string]bool{},
+				Subscriber: subscriber,
+			}
+		}
+		h.ControlTowerCtrlr.Channels[room.UUID].Users[msg.UserUUID] = true
+	}
+
 	ws.DeviceUUID = &resp.DeviceUUID
 	ws.UserUUID = &resp.UserUUID
 	return ws.Conn.WriteJSON(resp)

@@ -4,76 +4,88 @@ package integrationtests
 // 	// t.Skip()
 // 	t.Run("delete room and messages", func(t *testing.T) {
 // 		t.Parallel()
-// 		t.Logf("Runningg test %s at %d", t.Name(), time.Now().UnixNano())
 
-// 		validMessagingToken, validAPIKey := common.GetValidToken(t)
+// 		tomUUID := uuid.New().String()
+// 		jerryUUID := uuid.New().String()
+// 		aliceUUID := uuid.New().String()
+// 		deanUUID := uuid.New().String()
+
+// 		tomToken := common.GetValidToken(t, tomUUID)
+// 		aliceToken := common.GetValidToken(t, aliceUUID)
+// 		jerryToken := common.GetValidToken(t, jerryUUID)
+// 		deanToken := common.GetValidToken(t, deanUUID)
+
+// 		apiKey := common.GetValidAPIKey(t)
+
 // 		tomClient, tomConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
 // 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
-// 			Token:     validMessagingToken,
-// 			UserUUID:  uuid.New().String() + "_44",
+// 			Token:     tomToken,
+// 			UserUUID:  tomUUID,
 // 		})
 
 // 		aliceClient, aliceConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
 // 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
-// 			Token:     validMessagingToken,
-// 			UserUUID:  uuid.New().String() + "_43",
+// 			Token:     aliceToken,
+// 			UserUUID:  uuid.New().String(),
 // 		})
 
 // 		jerryClient, jerryConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
 // 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
-// 			Token:     validMessagingToken,
-// 			UserUUID:  uuid.New().String() + "_42",
+// 			Token:     jerryToken,
+// 			UserUUID:  jerryUUID,
 // 		})
 
 // 		deanClient, deanConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
 // 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
-// 			Token:     validMessagingToken,
-// 			UserUUID:  uuid.New().String() + "_41",
+// 			Token:     deanToken,
+// 			UserUUID:  deanUUID,
 // 		})
 
 // 		_, deanMobileConn := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
 // 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
-// 			Token:     validMessagingToken,
-// 			UserUUID:  deanClient.UserUUID,
+// 			Token:     deanToken,
+// 			UserUUID:  deanUUID,
 // 		})
 
 // 		// create a room
 // 		createRoomRequest := &requests.CreateRoomRequest{
 // 			Members: []*requests.Member{
 // 				{
-// 					UserUUID: tomClient.UserUUID,
+// 					UserUUID: tomUUID,
 // 				},
 // 				{
-// 					UserUUID: jerryClient.UserUUID,
+// 					UserUUID: jerryUUID,
 // 				},
 // 				{
-// 					UserUUID: aliceClient.UserUUID,
+// 					UserUUID: aliceUUID,
 // 				},
 // 				{
-// 					UserUUID: deanClient.UserUUID,
+// 					UserUUID: deanUUID,
 // 				},
 // 			},
 // 		}
-// 		common.OpenRoom(t, createRoomRequest, validAPIKey)
 
+// 		common.OpenRoom(t, createRoomRequest, apiKey)
 // 		openRoomResponse := common.ReadOpenRoomResponse(t, tomConn, 4)
-
 // 		common.ReadOpenRoomResponse(t, jerryConn, 4)
 // 		common.ReadOpenRoomResponse(t, aliceConn, 4)
 // 		common.ReadOpenRoomResponse(t, deanConn, 4)
 // 		common.ReadOpenRoomResponse(t, deanMobileConn, 4)
+// 		roomUUID := openRoomResponse.Room.UUID
+
+// 		// check mappings
 
 // 		// send out a message tom -> room
-// 		roomUUID := openRoomResponse.Room.UUID
+
 // 		msgEventOut := &requests.TextMessageEvent{
-// 			FromUUID:       tomClient.UserUUID,
-// 			ConnectionUUID: tomClient.ConnectionUUID,
-// 			EventType:      enums.EVENT_TEXT_MESSAGE.String(),
+// 			FromUUID:   tomClient.UserUUID,
+// 			DeviceUUID: tomClient.DeviceUUID,
+// 			EventType:  enums.EVENT_TEXT_MESSAGE.String(),
 // 			Message: &requests.Message{
 // 				MessageText: "TEXT",
 // 				RoomUUID:    roomUUID,
 // 			},
-// 			Token: validMessagingToken,
+// 			Token: tomToken,
 // 		}
 // 		common.SendTextMessage(t, tomConn, msgEventOut)
 // 		time.Sleep(time.Second)
@@ -96,7 +108,7 @@ package integrationtests
 // 			MessageUUID: resp.Message.UUID,
 // 			UserUUID:    jerryClient.UserUUID,
 // 			RoomUUID:    roomUUID,
-// 			Token:       validMessagingToken,
+// 			Token:       jerryToken,
 // 		}
 
 // 		err := jerryConn.WriteJSON(seenEvent)
@@ -108,6 +120,7 @@ package integrationtests
 // 		common.RecvSeenMessageEvent(t, deanConn, resp.Message.UUID)
 // 		common.RecvSeenMessageEvent(t, deanMobileConn, resp.Message.UUID)
 
+// 		// should be a websocket event
 // 		res, err := common.GetMessagesByRoomUUIDByMessagingJWT(t, roomUUID, 0, validMessagingToken)
 
 // 		assert.NoError(t, err)

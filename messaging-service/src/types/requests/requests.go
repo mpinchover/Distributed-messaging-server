@@ -1,5 +1,7 @@
 package requests
 
+import "messaging-service/src/types/connections"
+
 type GetRoomsByUserUUIDRequest struct {
 	UserUUID string `schema:"userUuid" validate:"required"`
 	Offset   int    `schema:"offset"`
@@ -14,6 +16,22 @@ type GetMessagesByRoomUUIDRequest struct {
 	RoomUUID string `schema:"roomUuid" validate:"required"`
 	Offset   int    `schema:"offset"`
 	Key      string `schema:"key,-"`
+}
+
+type GetUserConnectionRequest struct {
+	UserUUID string
+}
+
+type GetUserConnectionResponse struct {
+	UserConnection *connections.UserConnection
+}
+
+type GetChannelRequest struct {
+	ChannelUUID string
+}
+
+type GetChannelResponse struct {
+	Users map[string]bool
 }
 
 type GetMessagesByRoomUUIDResponse struct {

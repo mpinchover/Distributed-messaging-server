@@ -28,8 +28,6 @@ type RedisClient struct {
 }
 
 func connect() (*redis.Client, error) {
-	redisURL := os.Getenv("REDIS_URL")
-	fmt.Println("CONNECTION STRING IS ", redisURL)
 	client := redis.NewClient(&redis.Options{
 		Addr:     os.Getenv("REDIS_URL"),
 		Password: "",
@@ -39,8 +37,7 @@ func connect() (*redis.Client, error) {
 	var statusCode string
 	status := client.Ping(ctx)
 	statusCode = status.Val()
-	fmt.Println("STATUS CODE IS")
-	fmt.Println(statusCode)
+
 	if statusCode != "PONG" {
 		return nil, errors.New("could not connect to redis")
 	}

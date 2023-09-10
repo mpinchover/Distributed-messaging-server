@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"fmt"
-	"log"
 	"messaging-service/src/types/enums"
 	"messaging-service/src/types/requests"
 	"messaging-service/src/utils"
@@ -41,14 +39,11 @@ func (h *Handler) SetupWebsocketConnection(w http.ResponseWriter, r *http.Reques
 		return nil
 	})
 
-	// update the conn to have a connectionUUID and pass this in instead
 	err = h.handleIncomingSocketEvents(ws)
-	if err != nil && websocket.IsCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+	if err != nil {
 		if ws.UserUUID != nil && ws.DeviceUUID != nil {
 			h.ControlTowerCtrlr.RemoveClientDeviceFromServer(*ws.UserUUID, *ws.DeviceUUID)
 		}
-	} else if err != nil {
-		log.Println(err)
 	}
 }
 
@@ -65,24 +60,9 @@ func (h *Handler) handleIncomingSocketEvents(ws *requests.Websocket) error {
 	for {
 		// read in a message
 		_, p, err := ws.Conn.ReadMessage()
-
-		// if err != nil && websocket.IsCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-		// 	return err
-		// }
 		if err != nil {
 			return err
 		}
-
-		// add in token authenticator
-
-		// if err != nil {
-		// 	fmt.Println("is error")
-
-		// 	if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-		// 		fmt.Println("closing ws!!")
-		// 		return err
-		// 	}
-		// }
 
 		// TODO – error message for websockets, don't just panic
 		msgType, err := utils.GetEventType(string(p))
@@ -104,8 +84,6 @@ func (h *Handler) handleIncomingSocketEvents(ws *requests.Websocket) error {
 		} else {
 			_, authErr = utils.VerifyJWT(msgToken, false)
 		}
-		fmt.Println("ERROR IS")
-		fmt.Println(authErr)
 
 		if authErr != nil {
 			return sendClientError(ws, err)

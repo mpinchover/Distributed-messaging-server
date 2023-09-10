@@ -81,6 +81,16 @@ func (r *Repo) GetMessagesByRoomUUIDs(roomUUIDs string, offset int) ([]*records.
 	return results, err
 }
 
+func (r *Repo) GetRoomsByUserUUIDForSubscribing(userUUID string) ([]*records.Room, error) {
+	rooms := []*records.Room{}
+	query := "select r.* from rooms r join members m on m.user_uuid = ? and m.room_uuid = r.uuid and r.deleted_at is null"
+	err := r.DB.Raw(query, userUUID).Scan(&rooms).Error
+	if err != nil {
+		return nil, err
+	}
+	return rooms, nil
+}
+
 // order the rooms by what the latest message is
 // TODO - possibly switch to go routines to handle the timeouts
 func (r *Repo) GetRoomsByUserUUID(uuid string, offset int) ([]*records.Room, error) {
@@ -103,6 +113,8 @@ func (r *Repo) GetRoomsByUserUUID(uuid string, offset int) ([]*records.Room, err
 
 	// TODO – use a map[string][interface] here and get the id of the last message nad use it
 	// in the next query
+
+	// hack
 	query := `
 		SELECT r.id AS room_id
 		FROM rooms r
@@ -209,6 +221,7 @@ func (r *Repo) deleteRoomByUUIDInTx(tx *gorm.DB, roomUUID string) error {
 		Delete(&records.Room{}).Error
 }
 
+// try querying everything, setting deleted at to now and then update
 func (r *Repo) DeleteRoom(roomUUID string) error {
 	return r.DB.Transaction(func(tx *gorm.DB) error {
 		if err := r.deleteMembersByRoomUUIDInTx(tx, roomUUID); err != nil {

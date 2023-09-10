@@ -122,6 +122,12 @@ func SetupRoutes(p SetupRoutesParams) {
 	getMessagesByRoomUUIDHandler := middleware.New(p.Handler.GetMessagesByRoomUUID, messagingAuthMW)
 	p.Router.Handle("/get-messages-by-room-uuid", getMessagesByRoomUUIDHandler).Methods("GET")
 
+	getUserConnection := middleware.New(p.Handler.GetUserConnection, nil)
+	p.Router.Handle("/get-user-connection/{userUuid}", getUserConnection).Methods("GET")
+
+	getChannel := middleware.New(p.Handler.GetChannel, nil)
+	p.Router.Handle("/get-channel/{channelUuid}", getChannel).Methods("GET")
+
 	p.Handler.SetupChannels()
 }
 

@@ -8,12 +8,15 @@ import (
 	"messaging-service/src/types/requests"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestAPIPing(t *testing.T) {
+	t.Parallel()
+
 	requestURL := "http://localhost:9090/ping"
 	res, err := http.Get(requestURL)
 	assert.NoError(t, err)
@@ -34,11 +37,11 @@ func TestOpenSocket(t *testing.T) {
 	// t.Skip()
 	t.Run("test set sign up user and setup client", func(t *testing.T) {
 		t.Parallel()
-		// t.cLogf("Runningg test %s at %d", t.Name(), time.Now().UnixNano())
 
 		// get token
 		newUser := uuid.New().String()
 		token := common.GetValidToken(t, newUser)
+		assert.NotEmpty(t, token)
 
 		// set up the client
 		setupClientConnEvent := &requests.SetClientConnectionEvent{
@@ -60,78 +63,169 @@ func TestOpenSocket(t *testing.T) {
 		_, p, err := conn.ReadMessage()
 		assert.NoError(t, err, t.Name())
 		assert.Equal(t, "PONG", string(p), t.Name())
+
 	})
 }
 
-// func TestCloseSocketConnection(t *testing.T) {
+func TestSocketConnection(t *testing.T) {
+	t.Run("test set sign up user and setup client", func(t *testing.T) {
+		t.Parallel()
 
-// 	t.Run("test set sign up user and setup client", func(t *testing.T) {
-// 		// log.Printf("Running %s", t.Name())
-// 		t.Parallel()
-// 		t.Logf("Runningg test %s at %d", t.Name(), time.Now().UnixNano())
+		tomUUID := uuid.New().String()
+		tomToken := common.GetValidToken(t, tomUUID)
+		assert.NotEmpty(t, tomToken)
 
-// 		// create a user
-// 		newUserResponse := common.CreateRandomUser(t)
+		jerryUUID := uuid.New().String()
+		jerryToken := common.GetValidToken(t, jerryUUID)
+		assert.NotEmpty(t, jerryToken)
 
-// 		apiKey := common.MakeGetAPIKeyRequest(t, newUserResponse.AccessToken)
+		apiKey := common.GetValidAPIKey(t)
 
-// 		generateMessagingTokenRequest := &requests.GenerateMessagingTokenRequest{
-// 			UserID: newUserResponse.UUID,
-// 		}
-// 		generateMessagingTokenResp := common.MakeGenerateMessagingTokenRequest(t, generateMessagingTokenRequest, apiKey.Key)
-// 		assert.NotEmpty(t, generateMessagingTokenResp.Token)
+		clientTom, tom := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
+			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
+			UserUUID:  tomUUID,
+			Token:     tomToken,
+		})
 
-// 		clientTom, tom := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
-// 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
-// 			UserUUID:  uuid.New().String() + "_51",
-// 			Token:     generateMessagingTokenResp.Token,
-// 		})
-// 		clientJerry, jerry := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
-// 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
-// 			UserUUID:  uuid.New().String() + "_52",
-// 			Token:     generateMessagingTokenResp.Token,
-// 		})
+		clientJerry, jerry := common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
+			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
+			UserUUID:  jerryUUID,
+			Token:     jerryToken,
+		})
 
-// 		openRoomEvent := &requests.CreateRoomRequest{
-// 			Members: []*requests.Member{
-// 				{
-// 					UserUUID: clientTom.UserUUID,
-// 				},
-// 				{
-// 					UserUUID: clientJerry.UserUUID,
-// 				},
-// 			},
-// 		}
-// 		// fmt.Println("CREATING ROOM 20")
-// 		common.OpenRoom(t, openRoomEvent, apiKey.Key)
-// 		time.Sleep(2 * time.Second)
-// 		tom.Close()
-// 		jerry.Close()
+		openRoomEvent := &requests.CreateRoomRequest{
+			Members: []*requests.Member{
+				{
+					UserUUID: clientTom.UserUUID,
+				},
+				{
+					UserUUID: clientJerry.UserUUID,
+				},
+			},
+		}
 
-// 		common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
-// 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
-// 			UserUUID:  clientTom.UserUUID,
-// 			Token:     generateMessagingTokenResp.Token,
-// 		})
+		room := common.OpenRoom(t, openRoomEvent, apiKey)
+		assert.NotNil(t, room)
+		assert.NotNil(t, room.Room)
+		assert.NotEmpty(t, room.Room.UUID)
 
-// 		common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
-// 			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
-// 			UserUUID:  clientJerry.UserUUID,
-// 			Token:     generateMessagingTokenResp.Token,
-// 		})
+		roomUUID := room.Room.UUID
+		time.Sleep(2 * time.Second)
 
-// 		openRoomEvent = &requests.CreateRoomRequest{
-// 			Members: []*requests.Member{
-// 				{
-// 					UserUUID: clientTom.UserUUID,
-// 				},
-// 				{
-// 					UserUUID: clientJerry.UserUUID,
-// 				},
-// 			},
-// 		}
-// 		// fmt.Println("CREATING ROOM 21")
-// 		common.OpenRoom(t, openRoomEvent, apiKey.Key)
-// 		time.Sleep(2 * time.Second)
-// 	})
-// }
+		// test mappings
+		userConnectionTom := common.MakeGetUserConnectionRequest(t, tomUUID)
+		assert.NotNil(t, userConnectionTom.UserConnection)
+		assert.Len(t, userConnectionTom.UserConnection.Devices, 1)
+		assert.Equal(t, tomUUID, userConnectionTom.UserConnection.UUID)
+
+		userConnectionJerry := common.MakeGetUserConnectionRequest(t, jerryUUID)
+		assert.NotNil(t, userConnectionJerry.UserConnection)
+		assert.Len(t, userConnectionJerry.UserConnection.Devices, 1)
+		assert.Equal(t, jerryUUID, userConnectionJerry.UserConnection.UUID)
+
+		channel := common.MakeGetChannelConnectionRequest(t, roomUUID)
+		assert.NotNil(t, channel)
+		assert.Len(t, channel.Users, 2)
+
+		// tom leaves
+		tom.Close()
+
+		time.Sleep(2 * time.Second)
+
+		// test mappings
+		userConnectionTom = common.MakeGetUserConnectionRequest(t, tomUUID)
+		assert.Nil(t, userConnectionTom.UserConnection)
+
+		userConnectionJerry = common.MakeGetUserConnectionRequest(t, jerryUUID)
+		assert.NotNil(t, userConnectionJerry.UserConnection)
+		assert.Len(t, userConnectionJerry.UserConnection.Devices, 1)
+		assert.Equal(t, jerryUUID, userConnectionJerry.UserConnection.UUID)
+
+		channel = common.MakeGetChannelConnectionRequest(t, roomUUID)
+		assert.NotNil(t, channel)
+		assert.Len(t, channel.Users, 1)
+		assert.True(t, channel.Users[jerryUUID])
+		assert.False(t, channel.Users[tomUUID])
+
+		// tom comes back
+		clientTom, tom = common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
+			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
+			UserUUID:  tomUUID,
+			Token:     tomToken,
+		})
+
+		// time.Sleep(2 * time.Second)
+
+		// test mappings
+		userConnectionTom = common.MakeGetUserConnectionRequest(t, tomUUID)
+		assert.NotNil(t, userConnectionTom.UserConnection)
+		assert.Len(t, userConnectionTom.UserConnection.Devices, 1)
+		assert.Equal(t, tomUUID, userConnectionTom.UserConnection.UUID)
+
+		userConnectionJerry = common.MakeGetUserConnectionRequest(t, jerryUUID)
+		assert.NotNil(t, userConnectionJerry.UserConnection)
+		assert.Len(t, userConnectionJerry.UserConnection.Devices, 1)
+		assert.Equal(t, jerryUUID, userConnectionJerry.UserConnection.UUID)
+
+		channel = common.MakeGetChannelConnectionRequest(t, roomUUID)
+		assert.NotNil(t, channel)
+		assert.Len(t, channel.Users, 2)
+		assert.True(t, channel.Users[jerryUUID])
+		assert.True(t, channel.Users[tomUUID])
+
+		// tom goes away again
+		tom.Close()
+		jerry.Close()
+
+		// test mappings
+		userConnectionTom = common.MakeGetUserConnectionRequest(t, tomUUID)
+		assert.Nil(t, userConnectionTom.UserConnection)
+		userConnectionJerry = common.MakeGetUserConnectionRequest(t, jerryUUID)
+		assert.Nil(t, userConnectionJerry.UserConnection)
+
+		channel = common.MakeGetChannelConnectionRequest(t, roomUUID)
+		assert.NotNil(t, channel)
+		assert.Len(t, channel.Users, 0)
+		assert.False(t, channel.Users[jerryUUID])
+		assert.False(t, channel.Users[tomUUID])
+
+		time.Sleep(2 * time.Second)
+
+		tomUUID = uuid.New().String()
+		tomToken = common.GetValidToken(t, tomUUID)
+		assert.NotEmpty(t, tomToken)
+
+		jerryUUID = uuid.New().String()
+		jerryToken = common.GetValidToken(t, jerryUUID)
+		assert.NotEmpty(t, jerryToken)
+
+		common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
+			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
+			UserUUID:  clientTom.UserUUID,
+			Token:     tomToken,
+		})
+
+		common.CreateClientConnection(t, &requests.SetClientConnectionEvent{
+			EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
+			UserUUID:  clientJerry.UserUUID,
+			Token:     jerryToken,
+		})
+
+		openRoomEvent = &requests.CreateRoomRequest{
+			Members: []*requests.Member{
+				{
+					UserUUID: clientTom.UserUUID,
+				},
+				{
+					UserUUID: clientJerry.UserUUID,
+				},
+			},
+		}
+
+		common.OpenRoom(t, openRoomEvent, apiKey)
+		time.Sleep(2 * time.Second)
+
+		jerry.Close()
+		tom.Close()
+	})
+}

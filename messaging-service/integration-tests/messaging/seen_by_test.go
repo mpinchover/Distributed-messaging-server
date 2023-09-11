@@ -20,7 +20,7 @@ func (s *IntegrationTestSuite) TestSeenBy() {
 	deanToken := s.GetValidToken(deanUUID)
 
 	apiKey := s.GetValidAPIKey()
-	validToken := s.GetValidToken(tomUUID)
+	// validToken := s.GetValidToken(tomUUID)
 
 	tomClient, tomConn := s.CreateClientConnection(&requests.SetClientConnectionEvent{
 		EventType: enums.EVENT_SET_CLIENT_SOCKET.String(),
@@ -121,20 +121,11 @@ func (s *IntegrationTestSuite) TestSeenBy() {
 	s.RecvSeenMessageEvent(deanConn, resp.Message.UUID)
 	s.RecvSeenMessageEvent(deanMobileConn, resp.Message.UUID)
 
-	sendMessagesByRoomUUIDEvent := &requests.MessagesByRoomUUIDEvent{
-		EventType: enums.EVENT_MESSAGES_BY_ROOM_UUID.String(),
-		UserUUID:  tomUUID,
-		RoomUUID:  roomUUID,
-		Offset:    0,
-		Token:     validToken,
-	}
-	s.SendMessagesByRoomUUIDEvent(tomConn, sendMessagesByRoomUUIDEvent)
-	messagesByRoomUUIDEvent := s.RecvMessagesByRoomUUIDEvent(tomConn)
-
+	msgs := s.MakeGetMessagesByRoomUUIDRequest(roomUUID, apiKey, 0)
 	s.NoError(err)
-	s.Len(messagesByRoomUUIDEvent.Messages, 1)
-	s.Len(messagesByRoomUUIDEvent.Messages[0].SeenBy, 1)
+	s.Len(msgs.Messages, 1)
+	s.Len(msgs.Messages[0].SeenBy, 1)
 
-	s.Equal(messagesByRoomUUIDEvent.Messages[0].SeenBy[0].MessageUUID, resp.Message.UUID)
-	s.Equal(messagesByRoomUUIDEvent.Messages[0].SeenBy[0].UserUUID, jerryClient.UserUUID)
+	s.Equal(msgs.Messages[0].SeenBy[0].MessageUUID, resp.Message.UUID)
+	s.Equal(msgs.Messages[0].SeenBy[0].UserUUID, jerryClient.UserUUID)
 }

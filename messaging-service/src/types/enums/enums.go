@@ -5,15 +5,13 @@ type MessageType int64
 const (
 	EVENT_TEXT_MESSAGE MessageType = iota
 	EVENT_CHAT_TEXT_METADATA
-	EVENT_OPEN_ROOM          // open a chat room request
-	EVENT_SET_CLIENT_SOCKET  // set the client socket
-	EVENT_DELETE_ROOM        // delete a room
-	EVENT_LEAVE_ROOM         // leave a room
-	EVENT_SUBSCRIBE_TO_ROOM  // subscribe to a room
-	EVENT_SEEN_MESSAGE       // recpt saw message
-	EVENT_DELETE_MESSAGE     // message was deleted
-	EVENT_ROOMS_BY_USER_UUID // get rooms by user uuid
-	EVENT_MESSAGES_BY_ROOM_UUID
+	EVENT_OPEN_ROOM         // open a chat room request
+	EVENT_SET_CLIENT_SOCKET // set the client socket
+	EVENT_DELETE_ROOM       // delete a room
+	EVENT_LEAVE_ROOM        // leave a room
+	EVENT_SUBSCRIBE_TO_ROOM // subscribe to a room
+	EVENT_SEEN_MESSAGE      // recpt saw message
+	EVENT_DELETE_MESSAGE    // message was deleted
 )
 
 const (
@@ -24,10 +22,6 @@ const (
 
 func (m MessageType) String() string {
 	switch m {
-	case EVENT_MESSAGES_BY_ROOM_UUID:
-		return "EVENT_MESSAGES_BY_ROOM_UUID"
-	case EVENT_ROOMS_BY_USER_UUID:
-		return "EVENT_ROOMS_BY_USER_UUID"
 	case EVENT_DELETE_MESSAGE:
 		return "EVENT_DELETE_MESSAGE"
 	case EVENT_TEXT_MESSAGE:

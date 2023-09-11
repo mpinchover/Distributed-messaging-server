@@ -312,22 +312,6 @@ func (s *IntegrationTestSuite) SendMessagesByRoomUUIDEvent(conn *websocket.Conn,
 	s.NoError(err)
 }
 
-func (s *IntegrationTestSuite) RecvMessagesByRoomUUIDEvent(conn *websocket.Conn) *requests.MessagesByRoomUUIDEvent {
-	conn.SetReadDeadline(time.Now().Add(time.Second * 2))
-	_, p, err := conn.ReadMessage()
-	s.NoError(err)
-	messagesByRoomUUIDEvent := &requests.MessagesByRoomUUIDEvent{}
-	err = json.Unmarshal(p, messagesByRoomUUIDEvent)
-	s.NoError(err)
-
-	s.NotEmpty(messagesByRoomUUIDEvent.EventType)
-	s.NotEmpty(messagesByRoomUUIDEvent.UserUUID)
-	s.Equal(enums.EVENT_MESSAGES_BY_ROOM_UUID.String(), messagesByRoomUUIDEvent.EventType)
-	s.NotEmpty(messagesByRoomUUIDEvent.RoomUUID)
-	return messagesByRoomUUIDEvent
-}
-
-// create a valid messaging token
 func (s *IntegrationTestSuite) GetValidToken(userUUID string) string {
 	token, err := utils.GenerateMessagingToken(userUUID, time.Now().Add(time.Minute))
 	s.NoError(err)

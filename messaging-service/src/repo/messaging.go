@@ -221,7 +221,7 @@ func (r *Repo) deleteRoomByUUIDInTx(tx *gorm.DB, roomUUID string) error {
 		Delete(&records.Room{}).Error
 }
 
-// try querying everything, setting deleted at to now and then update
+// query for all the seen by's and get them up front.
 func (r *Repo) DeleteRoom(roomUUID string) error {
 	return r.DB.Transaction(func(tx *gorm.DB) error {
 		if err := r.deleteMembersByRoomUUIDInTx(tx, roomUUID); err != nil {

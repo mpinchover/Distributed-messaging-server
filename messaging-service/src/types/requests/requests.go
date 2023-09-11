@@ -23,7 +23,7 @@ type GetUserConnectionRequest struct {
 }
 
 type GetUserConnectionResponse struct {
-	UserConnection *connections.UserConnection
+	UserConnections map[string]*connections.UserConnection
 }
 
 type GetChannelRequest struct {
@@ -31,7 +31,7 @@ type GetChannelRequest struct {
 }
 
 type GetChannelResponse struct {
-	Users map[string]bool
+	Channel map[string]*connections.Channel
 }
 
 type GetMessagesByRoomUUIDResponse struct {

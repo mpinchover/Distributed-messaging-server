@@ -54,15 +54,15 @@ func (h *Handler) HandleRoomEvent(event string) error {
 		)
 	}
 
-	if eventType == enums.EVENT_LEAVE_ROOM.String() {
-		leaveRoomEvent := &requests.LeaveRoomEvent{}
-		err = json.Unmarshal([]byte(event), leaveRoomEvent)
-		if err != nil {
-			return err
-		}
+	// if eventType == enums.EVENT_LEAVE_ROOM.String() {
+	// 	leaveRoomEvent := &requests.LeaveRoomEvent{}
+	// 	err = json.Unmarshal([]byte(event), leaveRoomEvent)
+	// 	if err != nil {
+	// 		return err
+	// 	}
 
-		return h.handleLeaveRoomEvent(leaveRoomEvent)
-	}
+	// 	return h.handleLeaveRoomEvent(leaveRoomEvent)
+	// }
 
 	if eventType == enums.EVENT_DELETE_ROOM.String() {
 		deleteRoomEvent := &requests.DeleteRoomEvent{}
@@ -127,30 +127,30 @@ func (h *Handler) HandleRoomEvent(event string) error {
 // 	return nil
 // }
 
-func (h *Handler) handleLeaveRoomEvent(event *requests.LeaveRoomEvent) error {
-	// get the room from the server
-	channel, ok := h.ControlTowerCtrlr.Channels[event.RoomUUID]
-	// room not on server
-	if !ok {
-		return nil
-	}
+// func (h *Handler) handleLeaveRoomEvent(event *requests.LeaveRoomEvent) error {
+// 	// get the room from the server
+// 	channel, ok := h.ControlTowerCtrlr.Channels[event.RoomUUID]
+// 	// room not on server
+// 	if !ok {
+// 		return nil
+// 	}
 
-	// remove the user from this room
-	err := h.ControlTowerCtrlr.RemoveUserFromChannel(event.UserUUID, event.RoomUUID)
-	// err := h.ControlTowerCtrlr.ChannelsCtrlr.DeleteUser(event.RoomUUID, event.UserUUID)
-	if err != nil {
-		return err
-	}
+// 	// remove the user from this room
+// 	err := h.ControlTowerCtrlr.RemoveUserFromChannel(event.UserUUID, event.RoomUUID)
+// 	// err := h.ControlTowerCtrlr.ChannelsCtrlr.DeleteUser(event.RoomUUID, event.UserUUID)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	// notify any remaining members that the user has left
-	for userUUID := range channel.Users {
-		userConn := h.ControlTowerCtrlr.UserConnections[userUUID]
-		for _, device := range userConn.Devices {
-			device.WS.WriteJSON(event)
-		}
-	}
-	return nil
-}
+// 	// notify any remaining members that the user has left
+// 	for userUUID := range channel.Users {
+// 		userConn := h.ControlTowerCtrlr.UserConnections[userUUID]
+// 		for _, device := range userConn.Devices {
+// 			device.WS.WriteJSON(event)
+// 		}
+// 	}
+// 	return nil
+// }
 
 func (h *Handler) handleDeleteRoomEvent(event *requests.DeleteRoomEvent) error {
 	// get the room from the server
@@ -161,8 +161,11 @@ func (h *Handler) handleDeleteRoomEvent(event *requests.DeleteRoomEvent) error {
 		return nil
 	}
 
-	delete(h.ControlTowerCtrlr.Channels, event.RoomUUID)
+	var mu sync.Mutex
+	mu.Lock()
+	defer mu.Unlock()
 
+	delete(h.ControlTowerCtrlr.Channels, event.RoomUUID)
 	for userUUID := range channel.Users {
 		userConn, ok := h.ControlTowerCtrlr.UserConnections[userUUID]
 		if !ok {
@@ -174,7 +177,6 @@ func (h *Handler) handleDeleteRoomEvent(event *requests.DeleteRoomEvent) error {
 			device.WS.WriteJSON(event)
 		}
 	}
-
 	return nil
 }
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log"
 	"sync"
 	"time"
 
@@ -20,46 +19,23 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-/*
-// TODO - possibly make this a map
-type ChatConnections map[string][]*Device
-
-	type Device struct {
-		UUID string
-		WS   *websocket.Conn
-	}
-
-// room uuid -> participants in the room
-type Channels map[string][]string
-*/
 type ControlTowerCtrlr struct {
 	RedisClient redisClient.RedisInterface
 	Repo        repo.RepoInterface
 
 	UserConnections map[string]*connections.UserConnection // user uuid to list of devices
 	Channels        map[string]*connections.Channel        // room uuid to the list of users in the room
-
-	// ConnCtrlr     connectionscontroller.ConnectionsControllerInterface
-	// ChannelsCtrlr *channelscontroller.ChannelsController
-	// track active rooms/channels on this server
-	// ServerChannels map[string]*requests.ServerChannel
 }
 
 func New(
 	redisClient *redisClient.RedisClient,
 	repo *repo.Repo,
-	// connCtrlr *connectionscontroller.ConnectionsController,
-	// channelsCtrlr *channelscontroller.ChannelsController,
 ) *ControlTowerCtrlr {
 
 	controlTower := &ControlTowerCtrlr{
-		RedisClient: redisClient,
-		// ConnCtrlr:     connCtrlr,
-		// ChannelsCtrlr: channelsCtrlr,
-
-		Repo:     repo,
-		Channels: map[string]*connections.Channel{},
-		// make this user connections and have channels as well
+		RedisClient:     redisClient,
+		Repo:            repo,
+		Channels:        map[string]*connections.Channel{},
 		UserConnections: map[string]*connections.UserConnection{},
 	}
 
@@ -68,7 +44,9 @@ func New(
 
 func (c *ControlTowerCtrlr) GetMessagesByRoomUUID(ctx context.Context, roomUUID string, offset int) ([]*records.Message, error) {
 	return c.Repo.GetMessagesByRoomUUID(roomUUID, offset)
+
 }
+
 
 func (c *ControlTowerCtrlr) CreateRoom(
 	ctx context.Context,
@@ -96,9 +74,14 @@ func (c *ControlTowerCtrlr) CreateRoom(
 		CreatedAtNano: createdAtNano,
 	}
 
+	// go func(room *records.Room) {
+	// 	err := c.Repo.SaveRoom(repoRoom)
+	// 	if err != nil {
+	// 		log.Println("failed to save room")
+	// 	}
+	// }(repoRoom)
 	err := c.Repo.SaveRoom(repoRoom)
 	if err != nil {
-		log.Println("PROBLEM SAVING ROOM")
 		return nil, err
 	}
 
@@ -141,52 +124,52 @@ func (c *ControlTowerCtrlr) UpdateMessage(ctx context.Context, message *requests
 	return c.Repo.UpdateMessage(existingMsg)
 }
 
-func (c *ControlTowerCtrlr) LeaveRoom(ctx context.Context, userUUID string, roomUUID string) error {
-	room, err := c.Repo.GetRoomByRoomUUID(roomUUID)
-	if err != nil {
-		return err
-	}
-	if room == nil {
-		return errors.New("room does not exist")
-	}
+// func (c *ControlTowerCtrlr) LeaveRoom(ctx context.Context, userUUID string, roomUUID string) error {
+// 	room, err := c.Repo.GetRoomByRoomUUID(roomUUID)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	if room == nil {
+// 		return errors.New("room does not exist")
+// 	}
 
-	// TODO – this is something the client should verify not the server
+// 	// TODO – this is something the client should verify not the server
 
-	// TODO - put in helper function
-	// TODO – in the future add in fn to make this optional
-	if len(room.Members) == 1 {
-		err := c.Repo.DeleteRoom(roomUUID)
-		if err != nil {
-			return err
-		}
-		deleteRoomEvent := requests.DeleteRoomEvent{
-			EventType: enums.EVENT_DELETE_ROOM.String(),
-			RoomUUID:  roomUUID,
-		}
+// 	// TODO - put in helper function
+// 	// TODO – in the future add in fn to make this optional
+// 	if len(room.Members) == 1 {
+// 		err := c.Repo.DeleteRoom(roomUUID)
+// 		if err != nil {
+// 			return err
+// 		}
+// 		deleteRoomEvent := requests.DeleteRoomEvent{
+// 			EventType: enums.EVENT_DELETE_ROOM.String(),
+// 			RoomUUID:  roomUUID,
+// 		}
 
-		msgBytes, err := json.Marshal(deleteRoomEvent)
-		if err != nil {
-			return err
-		}
-		return c.RedisClient.PublishToRedisChannel(roomUUID, msgBytes)
-	}
+// 		msgBytes, err := json.Marshal(deleteRoomEvent)
+// 		if err != nil {
+// 			return err
+// 		}
+// 		return c.RedisClient.PublishToRedisChannel(roomUUID, msgBytes)
+// 	}
 
-	err = c.Repo.LeaveRoom(userUUID, roomUUID)
-	if err != nil {
-		return err
-	}
-	leaveRoomEvent := requests.LeaveRoomEvent{
-		EventType: enums.EVENT_LEAVE_ROOM.String(),
-		RoomUUID:  roomUUID,
-		UserUUID:  userUUID,
-	}
-	msgBytes, err := json.Marshal(leaveRoomEvent)
-	if err != nil {
-		return err
-	}
+// 	err = c.Repo.LeaveRoom(userUUID, roomUUID)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	leaveRoomEvent := requests.LeaveRoomEvent{
+// 		EventType: enums.EVENT_LEAVE_ROOM.String(),
+// 		RoomUUID:  roomUUID,
+// 		UserUUID:  userUUID,
+// 	}
+// 	msgBytes, err := json.Marshal(leaveRoomEvent)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	return c.RedisClient.PublishToRedisChannel(roomUUID, msgBytes)
-}
+// 	return c.RedisClient.PublishToRedisChannel(roomUUID, msgBytes)
+// }
 
 func (c *ControlTowerCtrlr) DeleteRoom(ctx context.Context, roomUUID string) error {
 	room, err := c.Repo.GetRoomByRoomUUID(roomUUID)
@@ -195,12 +178,6 @@ func (c *ControlTowerCtrlr) DeleteRoom(ctx context.Context, roomUUID string) err
 	}
 	if room == nil {
 		return serrors.InternalErrorf("room not found", nil)
-	}
-
-	// put in helper function
-	membersInRoom := make([]string, len(room.Members))
-	for i, mem := range room.Members {
-		membersInRoom[i] = mem.UserUUID
 	}
 
 	err = c.Repo.DeleteRoom(roomUUID)
@@ -253,6 +230,8 @@ func (c *ControlTowerCtrlr) GetRoomsByUserUUIDForSubscribing(userUUID string) ([
 }
 
 func (c *ControlTowerCtrlr) SaveSeenBy(msg *requests.SeenMessageEvent) error {
+
+	// todo, put in concurrent fn
 	existingMessage, err := c.Repo.GetMessageByUUID(msg.MessageUUID)
 	if err != nil {
 		return err
@@ -277,6 +256,7 @@ func (c *ControlTowerCtrlr) SaveSeenBy(msg *requests.SeenMessageEvent) error {
 	if err != nil {
 		return err
 	}
+
 	return c.RedisClient.PublishToRedisChannel(msg.RoomUUID, bytes)
 }
 
@@ -316,29 +296,31 @@ func (c *ControlTowerCtrlr) GetRoomsByUserUUID(ctx context.Context, userUUID str
 	return requestRooms, nil
 }
 
-func (c *ControlTowerCtrlr) RemoveUserFromChannel(userUUID string, channelUUID string) error {
-	ch, ok := c.Channels[channelUUID]
-	if !ok {
-		return nil
-	}
+// // refer to removing the client device
+// // don't need this, prob just use delete room
+// func (c *ControlTowerCtrlr) RemoveUserFromChannel(userUUID string, channelUUID string) error {
+// 	ch, ok := c.Channels[channelUUID]
+// 	if !ok {
+// 		return nil
+// 	}
 
-	var mu sync.Mutex
-	mu.Lock()
-	defer mu.Unlock()
+// 	var mu sync.Mutex
+// 	mu.Lock()
+// 	defer mu.Unlock()
 
-	delete(ch.Users, userUUID)
-	c.Channels[channelUUID] = ch
+// 	delete(ch.Users, userUUID)
+// 	c.Channels[channelUUID] = ch
 
-	if len(ch.Users) == 1 {
-		delete(c.Channels, channelUUID)
-		err := ch.Subscriber.Unsubscribe(context.Background())
-		if err != nil {
-			// TODO - remove the error
-			panic(err)
-		}
-	}
-	return nil
-}
+// 	if len(ch.Users) == 1 {
+// 		delete(c.Channels, channelUUID)
+// 		err := ch.Subscriber.Unsubscribe(context.Background())
+// 		if err != nil {
+// 			// TODO - remove the error
+// 			panic(err)
+// 		}
+// 	}
+// 	return nil
+// }
 
 // maybe store the rooms each member is part of as memebersOnServer
 // remove device from server
@@ -350,8 +332,6 @@ func (c *ControlTowerCtrlr) RemoveClientDeviceFromServer(userUUID string, device
 	mu.Lock()
 	defer mu.Unlock()
 
-	// delete the device
-	// remove the device from the user
 	userConnection, ok := c.UserConnections[userUUID]
 	if !ok {
 		panic("User not found in user connections")
@@ -367,39 +347,65 @@ func (c *ControlTowerCtrlr) RemoveClientDeviceFromServer(userUUID string, device
 	// user has no more devices attached to this connection, delete it
 	if len(userConnection.Devices) == 0 {
 		delete(c.UserConnections, userUUID)
+	} else {
+		// otherwise reset the user connections
+		c.UserConnections[userUUID] = userConnection
 	}
 
-	// just get a lsit of all the channels they were a part of here
-	// now iterate over al channels to delete the user
+	// get the channels for this user, possible optimization
+	// rooms, err := c.GetRoomsByUserUUIDForSubscribing(userUUID)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// for _, ch := range rooms {
+	// 	_, ok := c.Channels[]
+	// }
+
+	// iterate over every channel
 	for chUUID, ch := range c.Channels {
-		if ch.Users[userUUID] {
-			if len(ch.Users) == 1 {
-				delete(c.Channels, chUUID)
-				err := ch.Subscriber.Unsubscribe(context.Background())
-				if err != nil {
-					// TODO - remove the panic
-					panic(err)
-				}
-				// TODO - unsubscribe the channel
-				// need the pubsub subscriber to unsubscribe
-			} else {
-				delete(c.Channels[chUUID].Users, userUUID)
+		// if the user is not in this channel, continue
+		if !ch.Users[userUUID] {
+			continue
+		}
+
+		// check to see if we have removed the user
+		// if the user had no more devices connected, we removed them
+		_, userHasDevicesConnected := c.UserConnections[userUUID]
+
+		// user has been deleted; delete user from the channel on this server
+		if !userHasDevicesConnected {
+			delete(ch.Users, userUUID)
+		}
+
+		// if no one else is in channel, unsubscribe and delete channel
+		if len(ch.Users) == 0 {
+			delete(c.Channels, chUUID)
+			err := ch.Subscriber.Unsubscribe(context.Background())
+			if err != nil {
+				// TODO - remove the panic
+				panic(err)
 			}
+		} else {
+			// otherwise, update the channel
+			c.Channels[chUUID] = ch
 		}
 	}
+
 	return nil
 }
 
 // for testing only, add an admin token
-func (c *ControlTowerCtrlr) GetUserConnection(userUUID string) *connections.UserConnection {
-	userConn := c.UserConnections[userUUID]
-	return userConn
+func (c *ControlTowerCtrlr) GetUserConnections() map[string]*connections.UserConnection {
+	// userConn := c.UserConnections[userUUID]
+	return c.UserConnections
 }
 
-func (c *ControlTowerCtrlr) GetChannel(chUUID string) map[string]bool {
-	_, ok := c.Channels[chUUID]
-	if !ok {
-		return map[string]bool{}
-	}
-	return c.Channels[chUUID].Users
+func (c *ControlTowerCtrlr) GetChannel() map[string]*connections.Channel {
+	return c.Channels
+	// _, ok := c.Channels[chUUID]
+	// if !ok {
+	// 	return map[string]bool{}
+	// }
+	// return c.Channels[chUUID].Users
 }

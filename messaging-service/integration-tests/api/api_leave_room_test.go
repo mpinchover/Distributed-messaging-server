@@ -1,5 +1,6 @@
 package apitests
 
+// change to delete room
 // func TestLeaveRoom(t *testing.T) {
 // 	// t.Skip()
 // 	t.Run("test leave room", func(t *testing.T) {

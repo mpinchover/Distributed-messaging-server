@@ -204,28 +204,28 @@ func (h *Handler) createRoom(ctx context.Context, req *requests.CreateRoomReques
 	}, nil
 }
 
-func (h *Handler) LeaveRoom(w http.ResponseWriter, r *http.Request) (interface{}, error) {
-	// validation
-	req := &requests.LeaveRoomRequest{}
-	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		return nil, err
-	}
-	ctx := r.Context()
-	return h.leaveRoom(ctx, req)
-}
+// func (h *Handler) LeaveRoom(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+// 	// validation
+// 	req := &requests.LeaveRoomRequest{}
+// 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+// 		return nil, err
+// 	}
+// 	ctx := r.Context()
+// 	return h.leaveRoom(ctx, req)
+// }
 
-func (h *Handler) leaveRoom(ctx context.Context, req *requests.LeaveRoomRequest) (*requests.LeaveRoomResponse, error) {
-	err := validation.ValidateRequest(req)
-	if err != nil {
-		return nil, err
-	}
+// func (h *Handler) leaveRoom(ctx context.Context, req *requests.LeaveRoomRequest) (*requests.LeaveRoomResponse, error) {
+// 	err := validation.ValidateRequest(req)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	err = h.ControlTowerCtrlr.LeaveRoom(ctx, req.UserUUID, req.RoomUUID)
-	if err != nil {
-		return nil, err
-	}
-	return nil, nil
-}
+// 	err = h.ControlTowerCtrlr.LeaveRoom(ctx, req.UserUUID, req.RoomUUID)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return nil, nil
+// }
 
 // func (h *Handler) Login(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 // 	// validation
@@ -414,7 +414,7 @@ func (h *Handler) GetUserConnection(w http.ResponseWriter, r *http.Request) (int
 
 func (h *Handler) getUserConnection(userUUID string) (*requests.GetUserConnectionResponse, error) {
 	return &requests.GetUserConnectionResponse{
-		UserConnection: h.ControlTowerCtrlr.GetUserConnection(userUUID),
+		UserConnections: h.ControlTowerCtrlr.GetUserConnections(),
 	}, nil
 }
 
@@ -426,6 +426,6 @@ func (h *Handler) GetChannel(w http.ResponseWriter, r *http.Request) (interface{
 
 func (h *Handler) getChannel(channelUUID string) (*requests.GetChannelResponse, error) {
 	return &requests.GetChannelResponse{
-		Users: h.ControlTowerCtrlr.GetChannel(channelUUID),
+		Channel: h.ControlTowerCtrlr.GetChannel(),
 	}, nil
 }

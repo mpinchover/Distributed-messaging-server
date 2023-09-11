@@ -51,7 +51,7 @@ type SetupRoutesParams struct {
 func SetupRoutes(p SetupRoutesParams) {
 
 	// authProfileJWTMW := []middleware.Middleware{p.AuthProfileJWT}
-	messagingAuthMW := []middleware.Middleware{p.MessagingJWT}
+	// messagingAuthMW := []middleware.Middleware{p.MessagingJWT}
 	apiKeyAuthMW := []middleware.Middleware{p.APIKeyAuthMiddleware}
 
 	// testing
@@ -109,17 +109,17 @@ func SetupRoutes(p SetupRoutesParams) {
 	deleteRoomHandler := middleware.New(p.Handler.DeleteRoom, apiKeyAuthMW)
 	p.Router.Handle("/delete-room", deleteRoomHandler).Methods("POST")
 
-	leaveRoomHandler := middleware.New(p.Handler.LeaveRoom, apiKeyAuthMW)
-	p.Router.Handle("/leave-room", leaveRoomHandler).Methods("POST")
+	// leaveRoomHandler := middleware.New(p.Handler.LeaveRoom, apiKeyAuthMW)
+	// p.Router.Handle("/leave-room", leaveRoomHandler).Methods("POST")
 
 	createRoomHandler := middleware.New(p.Handler.CreateRoom, apiKeyAuthMW)
 	p.Router.Handle("/create-room", createRoomHandler).Methods("POST")
 
 	// messaging
-	getRoomsByUserUUIDHandler := middleware.New(p.Handler.GetRoomsByUserUUID, messagingAuthMW)
+	getRoomsByUserUUIDHandler := middleware.New(p.Handler.GetRoomsByUserUUID, apiKeyAuthMW)
 	p.Router.Handle("/get-rooms-by-user-uuid", getRoomsByUserUUIDHandler).Methods("GET")
 
-	getMessagesByRoomUUIDHandler := middleware.New(p.Handler.GetMessagesByRoomUUID, messagingAuthMW)
+	getMessagesByRoomUUIDHandler := middleware.New(p.Handler.GetMessagesByRoomUUID, apiKeyAuthMW)
 	p.Router.Handle("/get-messages-by-room-uuid", getMessagesByRoomUUIDHandler).Methods("GET")
 
 	getUserConnection := middleware.New(p.Handler.GetUserConnection, nil)

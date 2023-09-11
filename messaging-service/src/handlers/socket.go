@@ -89,12 +89,25 @@ func (h *Handler) handleIncomingSocketEvents(ws *requests.Websocket) error {
 			return sendClientError(ws, err)
 		}
 
+		if msgType == enums.EVENT_ROOMS_BY_USER_UUID.String() {
+			err := h.handleClientEventRoomsByUserUUID(ws, p)
+			if err != nil {
+				return sendClientError(ws, err)
+			}
+		}
+
+		if msgType == enums.EVENT_MESSAGES_BY_ROOM_UUID.String() {
+			err := h.handleClientEventMessagesByUserUUID(ws, p)
+			if err != nil {
+				return sendClientError(ws, err)
+			}
+		}
+
 		if msgType == enums.EVENT_SET_CLIENT_SOCKET.String() {
 			err := h.handleSetClientSocket(ws, p)
 			if err != nil {
 				return sendClientError(ws, err)
 			}
-
 		}
 
 		if msgType == enums.EVENT_TEXT_MESSAGE.String() {

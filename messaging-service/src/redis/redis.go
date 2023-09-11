@@ -45,7 +45,7 @@ func connect() (*redis.Client, error) {
 }
 
 func New() *RedisClient {
-	fmt.Println("CONNECTING TO REDIS...")
+	fmt.Println("Connecting to Redis...")
 	client, err := connect()
 	if err != nil {
 		panic(err)

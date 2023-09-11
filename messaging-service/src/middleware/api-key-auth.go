@@ -37,7 +37,7 @@ https://support.getstream.io/hc/en-us/articles/360060576774-Token-Creation-Best-
 // if the JWT has expired, external service should call this service to generate a new token
 // todo - move this to utils
 
-func (a *APIKeyAuthMiddleware) execute(h HTTPHandler) HTTPHandler {
+func (a *APIKeyAuthMiddleware) Execute(h HTTPHandler) HTTPHandler {
 	return func(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 		apiKey := utils.GetAPIKeyFromURL(r)
 		if apiKey == nil {

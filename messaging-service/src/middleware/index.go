@@ -1,5 +1,9 @@
 package middleware
 
+import "net/http"
+
 type Middleware interface {
-	execute(HTTPHandler) HTTPHandler
+	Execute(HTTPHandler) HTTPHandler
 }
+
+type HTTPHandler func(http.ResponseWriter, *http.Request) (interface{}, error)

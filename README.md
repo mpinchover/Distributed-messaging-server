@@ -5,7 +5,7 @@ Two more devices can enter the same or disparate servers for real time chat comm
 
 # Architecture
 
-- tom sends message to server over websocket
+- user sends message to server over websocket
 - server
   - saves message to database
   - broadcasts the event to the chat room channel
@@ -67,8 +67,14 @@ assets should be queried from root directory as the starting point.
 
 # Database
 
+Setup mysql and redis
+
+```
+make setup-dbs
+```
+
 connect to locally running dockerized mysql
 
 ```
-mysql -h 127.0.0.1 -P 3308 -u root -p
+mysql -h 127.0.0.1 -P 3310 -u root -p
 ```

@@ -56,6 +56,7 @@ func (h *Handler) handleSetClientSocket(ws *requests.Websocket, p []byte) error 
 			subscriber := utils.SetupChannel(h.RedisClient, room.UUID)
 			go utils.SubscribeToChannel(subscriber, h.HandleRoomEvent)
 			h.ControlTowerCtrlr.Channels[room.UUID] = &connections.Channel{
+				UUID:       room.UUID,
 				Users:      map[string]bool{},
 				Subscriber: subscriber,
 			}

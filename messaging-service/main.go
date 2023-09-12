@@ -83,12 +83,6 @@ func SetupRoutes(p SetupRoutesParams) {
 	getMessagesByRoomUUIDHandler := route.New(p.Handler.GetMessagesByRoomUUID, apiKeyAuthMW)
 	p.Router.Handle("/get-messages-by-room-uuid", getMessagesByRoomUUIDHandler).Methods("GET")
 
-	getUserConnection := route.New(p.Handler.GetUserConnection, nil)
-	p.Router.Handle("/get-user-connection/{userUuid}", getUserConnection).Methods("GET")
-
-	getChannel := route.New(p.Handler.GetChannel, nil)
-	p.Router.Handle("/get-channel/{channelUuid}", getChannel).Methods("GET")
-
 	p.Handler.SetupChannels()
 }
 

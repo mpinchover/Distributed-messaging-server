@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gorilla/mux"
 	"github.com/gorilla/schema"
 	"go.uber.org/fx"
 )
@@ -403,29 +402,5 @@ func (h *Handler) generateMessagingToken(ctx context.Context, req *requests.Gene
 
 	return &requests.GenerateMessagingTokenResponse{
 		Token: accessToken,
-	}, nil
-}
-
-func (h *Handler) GetUserConnection(w http.ResponseWriter, r *http.Request) (interface{}, error) {
-	userUUID := mux.Vars(r)["userUuid"]
-
-	return h.getUserConnection(userUUID)
-}
-
-func (h *Handler) getUserConnection(userUUID string) (*requests.GetUserConnectionResponse, error) {
-	return &requests.GetUserConnectionResponse{
-		UserConnections: h.ControlTowerCtrlr.GetUserConnections(),
-	}, nil
-}
-
-func (h *Handler) GetChannel(w http.ResponseWriter, r *http.Request) (interface{}, error) {
-	channelUUID := mux.Vars(r)["channelUuid"]
-
-	return h.getChannel(channelUUID)
-}
-
-func (h *Handler) getChannel(channelUUID string) (*requests.GetChannelResponse, error) {
-	return &requests.GetChannelResponse{
-		Channel: h.ControlTowerCtrlr.GetChannel(),
 	}, nil
 }

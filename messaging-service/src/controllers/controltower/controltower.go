@@ -19,6 +19,7 @@ import (
 )
 
 type ControlTowerCtrlr struct {
+	Mu          *sync.RWMutex
 	RedisClient redisClient.RedisInterface
 	Repo        repo.RepoInterface
 
@@ -31,7 +32,9 @@ func New(
 	repo *repo.Repo,
 ) *ControlTowerCtrlr {
 
+	mu := &sync.RWMutex{}
 	controlTower := &ControlTowerCtrlr{
+		Mu:              mu,
 		RedisClient:     redisClient,
 		Repo:            repo,
 		Channels:        map[string]*connections.Channel{},
@@ -122,53 +125,6 @@ func (c *ControlTowerCtrlr) UpdateMessage(ctx context.Context, message *requests
 	return c.Repo.UpdateMessage(existingMsg)
 }
 
-// func (c *ControlTowerCtrlr) LeaveRoom(ctx context.Context, userUUID string, roomUUID string) error {
-// 	room, err := c.Repo.GetRoomByRoomUUID(roomUUID)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	if room == nil {
-// 		return errors.New("room does not exist")
-// 	}
-
-// 	// TODO – this is something the client should verify not the server
-
-// 	// TODO - put in helper function
-// 	// TODO – in the future add in fn to make this optional
-// 	if len(room.Members) == 1 {
-// 		err := c.Repo.DeleteRoom(roomUUID)
-// 		if err != nil {
-// 			return err
-// 		}
-// 		deleteRoomEvent := requests.DeleteRoomEvent{
-// 			EventType: enums.EVENT_DELETE_ROOM.String(),
-// 			RoomUUID:  roomUUID,
-// 		}
-
-// 		msgBytes, err := json.Marshal(deleteRoomEvent)
-// 		if err != nil {
-// 			return err
-// 		}
-// 		return c.RedisClient.PublishToRedisChannel(roomUUID, msgBytes)
-// 	}
-
-// 	err = c.Repo.LeaveRoom(userUUID, roomUUID)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	leaveRoomEvent := requests.LeaveRoomEvent{
-// 		EventType: enums.EVENT_LEAVE_ROOM.String(),
-// 		RoomUUID:  roomUUID,
-// 		UserUUID:  userUUID,
-// 	}
-// 	msgBytes, err := json.Marshal(leaveRoomEvent)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	return c.RedisClient.PublishToRedisChannel(roomUUID, msgBytes)
-// }
-
 func (c *ControlTowerCtrlr) DeleteRoom(ctx context.Context, roomUUID string) error {
 	room, err := c.Repo.GetRoomByRoomUUID(roomUUID)
 	if err != nil {
@@ -199,33 +155,30 @@ func (c *ControlTowerCtrlr) SetupClientConnectionV2(
 	ws *requests.Websocket,
 	msg *requests.SetClientConnectionEvent) (*requests.SetClientConnectionEvent, error) {
 
-	var mu = &sync.RWMutex{}
-
 	deviceUUID := uuid.New().String()
 	msg.DeviceUUID = deviceUUID
 
-	mu.RLock()
-	userConn, ok := c.UserConnections[msg.UserUUID]
-	mu.RUnlock()
-	if !ok {
+	userConn := c.GetUserConnection(msg.UserUUID)
+	if userConn == nil {
 		userConn = &connections.UserConnection{
 			UUID:    msg.UserUUID,
 			Devices: map[string]*connections.Device{},
 		}
 
-		mu.Lock()
-		c.UserConnections[msg.UserUUID] = userConn
-		mu.Unlock()
+		err := c.SetUserConnection(userConn)
+		if err != nil {
+			return nil, err
+		}
 	}
 	newDeviceConnection := &connections.Device{
 		WS:       ws.Conn,
 		Outbound: ws.Outbound,
 	}
 
-	mu.Lock()
-	userConn.Devices[deviceUUID] = newDeviceConnection
-	c.UserConnections[msg.UserUUID] = userConn
-	mu.Unlock()
+	err := c.SetUserDevice(msg.UserUUID, deviceUUID, newDeviceConnection)
+	if err != nil {
+		return nil, err
+	}
 
 	return msg, nil
 }
@@ -302,64 +255,34 @@ func (c *ControlTowerCtrlr) GetRoomsByUserUUID(ctx context.Context, userUUID str
 	return requestRooms, nil
 }
 
-// // refer to removing the client device
-// // don't need this, prob just use delete room
-// func (c *ControlTowerCtrlr) RemoveUserFromChannel(userUUID string, channelUUID string) error {
-// 	ch, ok := c.Channels[channelUUID]
-// 	if !ok {
-// 		return nil
-// 	}
-
-// 	var mu sync.Mutex
-// 	mu.Lock()
-// 	defer mu.Unlock()
-
-// 	delete(ch.Users, userUUID)
-// 	c.Channels[channelUUID] = ch
-
-// 	if len(ch.Users) == 1 {
-// 		delete(c.Channels, channelUUID)
-// 		err := ch.Subscriber.Unsubscribe(context.Background())
-// 		if err != nil {
-// 			// TODO - remove the error
-// 			panic(err)
-// 		}
-// 	}
-// 	return nil
-// }
-
 // maybe store the rooms each member is part of as memebersOnServer
 // remove device from server
 // todo, can ou just store the channel in mysql/redis?
 func (c *ControlTowerCtrlr) RemoveClientDeviceFromServer(userUUID string, deviceUUID string) error {
 	// remove the user from connections
 
-	var mu = &sync.RWMutex{}
-
-	mu.RLock()
-	userConnection, ok := c.UserConnections[userUUID]
-	mu.RUnlock()
-	if !ok {
-		panic("User not found in user connections")
-	}
-
-	if userConnection.Devices == nil {
+	userConnection := c.GetUserConnection(userUUID)
+	if userConnection == nil {
 		return nil
 	}
 
-	mu.Lock()
-	delete(userConnection.Devices, deviceUUID)
-	mu.Unlock()
+	err := c.DeleteDeviceFromServer(userUUID, deviceUUID)
+	if err != nil {
+		return err
+	}
 
-	mu.Lock()
+	userConnection = c.GetUserConnection(userUUID)
+	if userConnection == nil {
+		return nil
+	}
+
 	// user has no more devices attached to this connection, delete it
 	if len(userConnection.Devices) == 0 {
-		delete(c.UserConnections, userUUID)
-	} else {
-		// otherwise reset the user connections
-		c.UserConnections[userUUID] = userConnection
+		err := c.DeleteUserFromServer(userUUID)
+		if err != nil {
+			return err
+		}
 	}
-	mu.Unlock()
 
 	// get the channels for this user, possible optimization
 	// rooms, err := c.GetRoomsByUserUUIDForSubscribing(userUUID)
@@ -372,60 +295,31 @@ func (c *ControlTowerCtrlr) RemoveClientDeviceFromServer(userUUID string, device
 	// }
 
 	// iterate over every channel
-	for chUUID, ch := range c.Channels {
-		mu.RLock()
-		// if the user is not in this channel, continue
-		if !ch.Users[userUUID] {
-			continue
-		}
-		mu.RUnlock()
+	// need to put this in a lock too
+	channels := c.GetAllChannelsOnServerForUser(userUUID)
+	for _, ch := range channels {
 
-		// check to see if we have removed the user
-		// if the user had no more devices connected, we removed them
-
-		mu.RLock()
-		_, userHasDevicesConnected := c.UserConnections[userUUID]
-		mu.RUnlock()
+		userIsConnected := c.GetUserConnection(userUUID)
 
 		// user has been deleted; delete user from the channel on this server
-		if !userHasDevicesConnected {
-			mu.Lock()
-			delete(ch.Users, userUUID)
-			mu.Unlock()
+		if userIsConnected == nil {
+			err := c.DeleteUserFromChannel(userUUID, ch.UUID)
+			if err != nil {
+				return err
+			}
 		}
 
+		channel := c.GetChannelFromServer(ch.UUID)
 		// if no one else is in channel, unsubscribe and delete channel
-		if len(ch.Users) == 0 {
-			mu.Lock()
-			delete(c.Channels, chUUID)
-			mu.Unlock()
+		if len(channel.Users) == 0 {
+			c.DeleteChannelFromServer(ch.UUID)
 			err := ch.Subscriber.Unsubscribe(context.Background())
 			if err != nil {
 				// TODO - remove the panic
 				panic(err)
 			}
-		} else {
-			mu.Lock()
-			// otherwise, update the channel
-			c.Channels[chUUID] = ch
-			mu.Unlock()
 		}
 	}
 
 	return nil
-}
-
-// for testing only, add an admin token
-func (c *ControlTowerCtrlr) GetUserConnections() map[string]*connections.UserConnection {
-	// userConn := c.UserConnections[userUUID]
-	return c.UserConnections
-}
-
-func (c *ControlTowerCtrlr) GetChannel() map[string]*connections.Channel {
-	return c.Channels
-	// _, ok := c.Channels[chUUID]
-	// if !ok {
-	// 	return map[string]bool{}
-	// }
-	// return c.Channels[chUUID].Users
 }

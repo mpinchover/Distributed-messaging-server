@@ -6,7 +6,6 @@ import (
 	"messaging-service/src/types/enums"
 	"messaging-service/src/types/requests"
 	"messaging-service/src/utils"
-	"sync"
 )
 
 func (h *Handler) SetupChannels() {
@@ -70,11 +69,6 @@ func (h *Handler) HandleRoomEvent(event string) error {
 		if err != nil {
 			return err
 		}
-		// return h.BroadcastEventToChannelSubscribersExclusive(
-		// 	deleteMessageEvent.RoomUUID,
-		// 	deleteMessageEvent.UserUUID,
-		// 	deleteMessageEvent,
-		// )
 		return h.handleDeleteRoomEvent(deleteRoomEvent)
 	}
 
@@ -152,25 +146,21 @@ func (h *Handler) HandleRoomEvent(event string) error {
 // 	return nil
 // }
 
+// this is an event that has been received by redis
 func (h *Handler) handleDeleteRoomEvent(event *requests.DeleteRoomEvent) error {
 	// get the room from the server
-	channel, ok := h.ControlTowerCtrlr.Channels[event.RoomUUID]
+	channel := h.ControlTowerCtrlr.GetChannelFromServer(event.RoomUUID)
 
-	// room not on server
-	if !ok {
+	// if channel not on server
+	if channel == nil {
 		return nil
 	}
 
-	var mu = &sync.RWMutex{}
+	h.ControlTowerCtrlr.DeleteChannelFromServer(event.RoomUUID)
 
-	mu.Lock()
-	delete(h.ControlTowerCtrlr.Channels, event.RoomUUID)
-	mu.Unlock()
 	for userUUID := range channel.Users {
-		mu.RLock()
-		userConn, ok := h.ControlTowerCtrlr.UserConnections[userUUID]
-		mu.RUnlock()
-		if !ok {
+		userConn := h.ControlTowerCtrlr.GetUserConnection(userUUID)
+		if userConn == nil {
 			continue
 		}
 
@@ -189,43 +179,43 @@ func (h *Handler) handleOpenRoomEvent(event *requests.OpenRoomEvent) error {
 	members := event.Room.Members
 	roomUUID := event.Room.UUID
 
-	var mu = &sync.RWMutex{}
-
 	memberDevicesOnThisChannel := []*connections.Device{}
 	// subscribe server to the room if members on are on this server
 	for _, member := range members {
-		mu.RLock()
-		userConn, ok := h.ControlTowerCtrlr.UserConnections[member.UserUUID]
-		mu.RUnlock()
-		// user not on this server, so don't subscribe the server to this channel
-		if !ok {
+		userConn := h.ControlTowerCtrlr.GetUserConnection(member.UserUUID)
+		if userConn == nil {
 			continue
 		}
 
-		mu.RLock()
-		// check if server has already subscribed to this room
-		_, ok = h.ControlTowerCtrlr.Channels[roomUUID]
-		mu.RUnlock()
+		channel := h.ControlTowerCtrlr.GetChannelFromServer(roomUUID)
+
 		// server contains a user who doesn't have the room subscribed
-		if !ok {
+		if channel == nil {
 
 			// Set up the room on this server
+			// TODO - add a recover here
+			// TODO - log out errors?
 			subscriber := utils.SetupChannel(h.RedisClient, roomUUID)
 			go utils.SubscribeToChannel(subscriber, h.HandleRoomEvent)
 
-			mu.Lock()
-			h.ControlTowerCtrlr.Channels[roomUUID] = &connections.Channel{
+			newChannel := &connections.Channel{
+				UUID:       roomUUID,
 				Subscriber: subscriber,
 				Users:      map[string]bool{},
 			}
-			mu.Unlock()
+			err := h.ControlTowerCtrlr.SetChannelOnServer(roomUUID, newChannel)
+			if err != nil {
+				return err
+			}
 		}
 
-		// add the member on this server to the channel on this server
 		// TODO - get rid of member.UUID
-		mu.Lock()
-		h.ControlTowerCtrlr.Channels[roomUUID].Users[member.UserUUID] = true
-		mu.Unlock()
+		// add the member on this server to the channel on this server
+		err := h.ControlTowerCtrlr.AddUserToChannel(member.UserUUID, roomUUID)
+		if err != nil {
+			return err
+		}
+
 		for _, device := range userConn.Devices {
 			memberDevicesOnThisChannel = append(memberDevicesOnThisChannel, device)
 		}

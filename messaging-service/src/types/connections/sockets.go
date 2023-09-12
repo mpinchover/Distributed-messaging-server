@@ -23,6 +23,7 @@ type UserConnection struct {
 // type Channels map[string][]string
 
 type Channel struct {
+	UUID       string
 	Users      map[string]bool
 	Subscriber *redis.PubSub
 }

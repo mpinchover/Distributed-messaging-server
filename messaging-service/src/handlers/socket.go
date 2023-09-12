@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"messaging-service/src/types/enums"
 	"messaging-service/src/types/requests"
 	"messaging-service/src/utils"
@@ -93,6 +94,7 @@ func (h *Handler) handleIncomingSocketEvents(ws *requests.Websocket) error {
 		// TODO – error message for websockets, don't just panic
 		msgType, err := utils.GetEventType(string(p))
 		if err != nil {
+			log.Println(err)
 			errResp := requests.ErrorResponse{
 				Message: err.Error(),
 			}
@@ -112,12 +114,14 @@ func (h *Handler) handleIncomingSocketEvents(ws *requests.Websocket) error {
 		}
 
 		if authErr != nil {
+			log.Println(err)
 			return sendClientError(ws, err)
 		}
 
 		if msgType == enums.EVENT_SET_CLIENT_SOCKET.String() {
 			err := h.handleSetClientSocket(ws, p)
 			if err != nil {
+				log.Println(err)
 				return sendClientError(ws, err)
 			}
 		}
@@ -125,6 +129,7 @@ func (h *Handler) handleIncomingSocketEvents(ws *requests.Websocket) error {
 		if msgType == enums.EVENT_TEXT_MESSAGE.String() {
 			err := h.handleClientEventTextMessage(ws.Conn, p)
 			if err != nil {
+				log.Println(err)
 				sendClientError(ws, err)
 			}
 		}
@@ -132,6 +137,7 @@ func (h *Handler) handleIncomingSocketEvents(ws *requests.Websocket) error {
 		if msgType == enums.EVENT_SEEN_MESSAGE.String() {
 			err := h.handleClientEventSeenMessage(ws.Conn, p)
 			if err != nil {
+				log.Println(err)
 				sendClientError(ws, err)
 			}
 		}

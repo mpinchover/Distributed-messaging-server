@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"messaging-service/src/types/connections"
 	"messaging-service/src/types/enums"
 	"messaging-service/src/types/requests"
@@ -16,6 +17,7 @@ func (h *Handler) SetupChannels() {
 func (h *Handler) HandleServerEvent(event string) error {
 	eventType, err := utils.GetEventType(event)
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 
@@ -23,10 +25,12 @@ func (h *Handler) HandleServerEvent(event string) error {
 		openRoomEvent := &requests.OpenRoomEvent{}
 		err = json.Unmarshal([]byte(event), openRoomEvent)
 		if err != nil {
+			log.Println(err)
 			return err
 		}
 		err = h.handleOpenRoomEvent(openRoomEvent)
 		if err != nil {
+			log.Println(err)
 			return err
 		}
 	}
@@ -37,6 +41,7 @@ func (h *Handler) HandleServerEvent(event string) error {
 func (h *Handler) HandleRoomEvent(event string) error {
 	eventType, err := utils.GetEventType(event)
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 
@@ -44,107 +49,68 @@ func (h *Handler) HandleRoomEvent(event string) error {
 		textMessageEvent := &requests.TextMessageEvent{}
 		err = json.Unmarshal([]byte(event), textMessageEvent)
 		if err != nil {
+			log.Println(err)
 			return err
 		}
-		return h.BroadcastEventToChannelSubscribersDeviceExclusive(
+
+		err = h.BroadcastEventToChannelSubscribersDeviceExclusive(
 			textMessageEvent.Message.RoomUUID,
 			textMessageEvent.DeviceUUID,
 			textMessageEvent,
 		)
+		if err != nil {
+			log.Println(err)
+		}
+		return err
 	}
-
-	// if eventType == enums.EVENT_LEAVE_ROOM.String() {
-	// 	leaveRoomEvent := &requests.LeaveRoomEvent{}
-	// 	err = json.Unmarshal([]byte(event), leaveRoomEvent)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-
-	// 	return h.handleLeaveRoomEvent(leaveRoomEvent)
-	// }
 
 	if eventType == enums.EVENT_DELETE_ROOM.String() {
 		deleteRoomEvent := &requests.DeleteRoomEvent{}
 		err = json.Unmarshal([]byte(event), deleteRoomEvent)
 		if err != nil {
+			log.Println(err)
 			return err
 		}
-		return h.handleDeleteRoomEvent(deleteRoomEvent)
+		err = h.handleDeleteRoomEvent(deleteRoomEvent)
+		if err != nil {
+			log.Println(err)
+		}
+		return err
 	}
 
 	if eventType == enums.EVENT_SEEN_MESSAGE.String() {
 		seenMsgEvent := &requests.SeenMessageEvent{}
 		err = json.Unmarshal([]byte(event), seenMsgEvent)
 		if err != nil {
+			log.Println(err)
 			return err
 		}
-		return h.BroadcastEventToChannelSubscribersUserExclusive(seenMsgEvent.RoomUUID, seenMsgEvent.UserUUID, seenMsgEvent)
+		err = h.BroadcastEventToChannelSubscribersUserExclusive(seenMsgEvent.RoomUUID, seenMsgEvent.UserUUID, seenMsgEvent)
+		if err != nil {
+			log.Println(err)
+		}
+		return err
 	}
 
 	if eventType == enums.EVENT_DELETE_MESSAGE.String() {
 		deleteMessageEvent := &requests.DeleteMessageEvent{}
 		err = json.Unmarshal([]byte(event), deleteMessageEvent)
 		if err != nil {
+			log.Println(err)
 			return err
 		}
-		return h.BroadcastEventToChannelSubscribers(
+		err = h.BroadcastEventToChannelSubscribers(
 			deleteMessageEvent.RoomUUID,
 			deleteMessageEvent,
 		)
+		if err != nil {
+			log.Println(err)
+		}
+		return err
 	}
 
 	return nil
 }
-
-// func (h *Handler) handleTextMessageEvent(event *requests.TextMessageEvent) error {
-// 	// get the room from the server
-// 	channel := h.ControlTowerCtrlr.Channels[event.Message.RoomUUID]
-// 	from := event.ConnectionUUID
-// 	// save the txt msg to db
-
-// 	// room not on server
-// 	if channel == nil {
-// 		return errors.New("room not found")
-// 	}
-
-// 	for userUUID := range channel.MembersOnServer {
-// 		connection := h.ControlTowerCtrlr.ConnCtrlr.GetConnection(userUUID)
-// 		// issue is that connection is null
-// 		for connUUID, conn := range connection.Connections {
-// 			if connUUID == from {
-// 				continue
-// 			}
-// 			conn.WriteJSON(event)
-// 		}
-// 	}
-
-// 	return nil
-// }
-
-// func (h *Handler) handleLeaveRoomEvent(event *requests.LeaveRoomEvent) error {
-// 	// get the room from the server
-// 	channel, ok := h.ControlTowerCtrlr.Channels[event.RoomUUID]
-// 	// room not on server
-// 	if !ok {
-// 		return nil
-// 	}
-
-// 	// remove the user from this room
-// 	err := h.ControlTowerCtrlr.RemoveUserFromChannel(event.UserUUID, event.RoomUUID)
-// 	// err := h.ControlTowerCtrlr.ChannelsCtrlr.DeleteUser(event.RoomUUID, event.UserUUID)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	// notify any remaining members that the user has left
-// 	for userUUID := range channel.Users {
-// 		userConn := h.ControlTowerCtrlr.UserConnections[userUUID]
-// 		for _, device := range userConn.Devices {
-// 			device.WS.WriteJSON(event)
-// 		}
-// 	}
-// 	return nil
-// }
 
 // this is an event that has been received by redis
 func (h *Handler) handleDeleteRoomEvent(event *requests.DeleteRoomEvent) error {

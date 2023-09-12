@@ -10,7 +10,8 @@ import (
 // TODO - possibly make this a map
 // type ChatConnections map[string][]*Device
 type Device struct {
-	WS *websocket.Conn
+	WS       *websocket.Conn
+	Outbound chan interface{}
 }
 
 type UserConnection struct {

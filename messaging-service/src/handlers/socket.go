@@ -24,11 +24,13 @@ func (h *Handler) SetupWebsocketConnection(w http.ResponseWriter, r *http.Reques
 	}
 
 	ws := &requests.Websocket{
-		Conn: conn,
+		Conn:     conn,
+		Outbound: make(chan interface{}),
 	}
 	// handle breaking the connection
 	defer func() {
 		conn.Close()
+		close(ws.Outbound)
 	}()
 
 	conn.SetPongHandler(func(appData string) error {
@@ -39,9 +41,11 @@ func (h *Handler) SetupWebsocketConnection(w http.ResponseWriter, r *http.Reques
 		return nil
 	})
 
+	go h.handleOutboundMessages(ws)
 	err = h.handleIncomingSocketEvents(ws)
 	if err != nil {
 		if ws.UserUUID != nil && ws.DeviceUUID != nil {
+			// add this to the defer statement?
 			h.ControlTowerCtrlr.RemoveClientDeviceFromServer(*ws.UserUUID, *ws.DeviceUUID)
 		}
 	}
@@ -51,8 +55,21 @@ func sendClientError(ws *requests.Websocket, err error) error {
 	errResp := requests.ErrorResponse{
 		Message: err.Error(),
 	}
-	ws.Conn.WriteJSON(errResp)
+	ws.Outbound <- errResp
 	return err
+}
+
+func (h *Handler) handleOutboundMessages(ws *requests.Websocket) error {
+	// defer close(outbound)
+	for msg := range ws.Outbound {
+		// TODO - set read write deadline and if they haven't recvd it, remove them from the server
+		err := ws.Conn.WriteJSON(msg)
+		if err != nil {
+			// TODO - remove the panic
+			panic(err)
+		}
+	}
+	return nil
 }
 
 func (h *Handler) handleIncomingSocketEvents(ws *requests.Websocket) error {
@@ -70,7 +87,7 @@ func (h *Handler) handleIncomingSocketEvents(ws *requests.Websocket) error {
 			errResp := requests.ErrorResponse{
 				Message: err.Error(),
 			}
-			ws.Conn.WriteJSON(errResp)
+			ws.Outbound <- errResp
 		}
 
 		msgToken, err := utils.GetEventToken(string(p))

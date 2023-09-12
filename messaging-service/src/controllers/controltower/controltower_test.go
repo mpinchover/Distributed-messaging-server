@@ -261,7 +261,9 @@ func (s *ControlTowerSuite) TestsSetupClientConnectionV2() {
 	for _, t := range tests {
 		t.mocks()
 
-		res, err := s.controlTower.SetupClientConnectionV2(&websocket.Conn{}, t.req)
+		res, err := s.controlTower.SetupClientConnectionV2(&requests.Websocket{
+			Conn: &websocket.Conn{},
+		}, t.req)
 		s.NoError(err, t.test)
 		s.NotNil(res, t.test)
 		s.NotEmpty(res.DeviceUUID, t.test)

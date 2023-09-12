@@ -161,7 +161,7 @@ func (h *Handler) handleDeleteRoomEvent(event *requests.DeleteRoomEvent) error {
 		return nil
 	}
 
-	var mu sync.Mutex
+	var mu = &sync.RWMutex{}
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -187,7 +187,7 @@ func (h *Handler) handleOpenRoomEvent(event *requests.OpenRoomEvent) error {
 	members := event.Room.Members
 	roomUUID := event.Room.UUID
 
-	var mu sync.Mutex
+	var mu = &sync.RWMutex{}
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -225,7 +225,7 @@ func (h *Handler) handleOpenRoomEvent(event *requests.OpenRoomEvent) error {
 
 	// write open room event to all member devices
 	for _, d := range memberDevicesOnThisChannel {
-		d.WS.WriteJSON(event)
+		d.Outbound <- event
 	}
 	return nil
 }

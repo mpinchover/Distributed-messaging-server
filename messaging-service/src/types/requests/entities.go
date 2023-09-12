@@ -9,6 +9,7 @@ type Websocket struct {
 	Conn       *websocket.Conn
 	DeviceUUID *string
 	UserUUID   *string
+	Outbound   chan interface{} // channel to send messages back to client socket
 }
 
 type Member struct {

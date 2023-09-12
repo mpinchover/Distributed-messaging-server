@@ -16,7 +16,6 @@ import (
 	"messaging-service/src/types/requests"
 
 	"github.com/google/uuid"
-	"github.com/gorilla/websocket"
 )
 
 type ControlTowerCtrlr struct {
@@ -46,7 +45,6 @@ func (c *ControlTowerCtrlr) GetMessagesByRoomUUID(ctx context.Context, roomUUID 
 	return c.Repo.GetMessagesByRoomUUID(roomUUID, offset)
 
 }
-
 
 func (c *ControlTowerCtrlr) CreateRoom(
 	ctx context.Context,
@@ -198,10 +196,10 @@ func (c *ControlTowerCtrlr) DeleteRoom(ctx context.Context, roomUUID string) err
 }
 
 func (c *ControlTowerCtrlr) SetupClientConnectionV2(
-	conn *websocket.Conn,
+	ws *requests.Websocket,
 	msg *requests.SetClientConnectionEvent) (*requests.SetClientConnectionEvent, error) {
 
-	var mu sync.Mutex
+	var mu = &sync.RWMutex{}
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -216,7 +214,8 @@ func (c *ControlTowerCtrlr) SetupClientConnectionV2(
 		c.UserConnections[msg.UserUUID] = userConn
 	}
 	newDeviceConnection := &connections.Device{
-		WS: conn,
+		WS:       ws.Conn,
+		Outbound: ws.Outbound,
 	}
 	userConn.Devices[deviceUUID] = newDeviceConnection
 	c.UserConnections[msg.UserUUID] = userConn
@@ -328,7 +327,7 @@ func (c *ControlTowerCtrlr) GetRoomsByUserUUID(ctx context.Context, userUUID str
 func (c *ControlTowerCtrlr) RemoveClientDeviceFromServer(userUUID string, deviceUUID string) error {
 	// remove the user from connections
 
-	var mu sync.Mutex
+	var mu = &sync.RWMutex{}
 	mu.Lock()
 	defer mu.Unlock()
 

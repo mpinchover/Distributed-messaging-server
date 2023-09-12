@@ -20,7 +20,7 @@ func (h *Handler) BroadcastEventToChannelSubscribersDeviceExclusive(channelUUID 
 		return err
 	}
 
-	var mu sync.Mutex
+	var mu = &sync.RWMutex{}
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -58,7 +58,7 @@ func (h *Handler) BroadcastEventToChannelSubscribersUserExclusive(channelUUID st
 		return err
 	}
 
-	var mu sync.Mutex
+	var mu = &sync.RWMutex{}
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -96,7 +96,7 @@ func (h *Handler) BroadcastEventToChannelSubscribers(channelUUID string, msg int
 		return err
 	}
 
-	var mu sync.Mutex
+	var mu = &sync.RWMutex{}
 	mu.Lock()
 	defer mu.Unlock()
 

@@ -21,11 +21,11 @@ func (h *Handler) BroadcastEventToChannelSubscribersDeviceExclusive(channelUUID 
 	}
 
 	var mu = &sync.RWMutex{}
-	mu.Lock()
-	defer mu.Unlock()
 
 	for _, m := range members {
+		mu.RLock()
 		userConn, ok := h.ControlTowerCtrlr.UserConnections[m.UserUUID]
+		mu.RUnlock()
 		if !ok {
 			continue
 		}
@@ -34,7 +34,8 @@ func (h *Handler) BroadcastEventToChannelSubscribersDeviceExclusive(channelUUID 
 				continue
 			}
 
-			device.WS.WriteJSON(msg)
+			// device.WS.WriteJSON(msg)
+			device.Outbound <- msg
 
 		}
 	}
@@ -59,11 +60,10 @@ func (h *Handler) BroadcastEventToChannelSubscribersUserExclusive(channelUUID st
 	}
 
 	var mu = &sync.RWMutex{}
-	mu.Lock()
-	defer mu.Unlock()
-
 	for _, m := range members {
+		mu.RLock()
 		userConn, ok := h.ControlTowerCtrlr.UserConnections[m.UserUUID]
+		mu.RUnlock()
 		if !ok {
 			continue
 		}
@@ -74,7 +74,8 @@ func (h *Handler) BroadcastEventToChannelSubscribersUserExclusive(channelUUID st
 		}
 
 		for _, device := range userConn.Devices {
-			device.WS.WriteJSON(msg)
+			device.Outbound <- msg
+			// device.WS.WriteJSON(msg)
 		}
 	}
 	return nil
@@ -83,8 +84,11 @@ func (h *Handler) BroadcastEventToChannelSubscribersUserExclusive(channelUUID st
 // broadcast to all channel members excluding any userUUID devices
 func (h *Handler) BroadcastEventToChannelSubscribers(channelUUID string, msg interface{}) error {
 
+	var mu = &sync.RWMutex{}
 	// get the room from the server
+	mu.RLock()
 	_, ok := h.ControlTowerCtrlr.UserConnections[channelUUID]
+	mu.RUnlock()
 	// room not on server
 	if !ok {
 		return errors.New("room not found on server")
@@ -96,18 +100,17 @@ func (h *Handler) BroadcastEventToChannelSubscribers(channelUUID string, msg int
 		return err
 	}
 
-	var mu = &sync.RWMutex{}
-	mu.Lock()
-	defer mu.Unlock()
-
 	for _, m := range members {
+		mu.RLock()
 		userConn, ok := h.ControlTowerCtrlr.UserConnections[m.UserUUID]
+		mu.RUnlock()
 		if !ok {
 			continue
 		}
 
 		for _, device := range userConn.Devices {
-			device.WS.WriteJSON(msg)
+			// device.WS.WriteJSON(msg)
+			device.Outbound <- msg
 		}
 	}
 	return nil

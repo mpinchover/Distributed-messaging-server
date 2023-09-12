@@ -162,19 +162,21 @@ func (h *Handler) handleDeleteRoomEvent(event *requests.DeleteRoomEvent) error {
 	}
 
 	var mu = &sync.RWMutex{}
-	mu.Lock()
-	defer mu.Unlock()
 
+	mu.Lock()
 	delete(h.ControlTowerCtrlr.Channels, event.RoomUUID)
+	mu.Unlock()
 	for userUUID := range channel.Users {
+		mu.RLock()
 		userConn, ok := h.ControlTowerCtrlr.UserConnections[userUUID]
+		mu.RUnlock()
 		if !ok {
 			continue
 		}
 
 		// notify everyone that the channel has closed
 		for _, device := range userConn.Devices {
-			device.WS.WriteJSON(event)
+			device.Outbound <- event
 		}
 	}
 	return nil
@@ -188,20 +190,22 @@ func (h *Handler) handleOpenRoomEvent(event *requests.OpenRoomEvent) error {
 	roomUUID := event.Room.UUID
 
 	var mu = &sync.RWMutex{}
-	mu.Lock()
-	defer mu.Unlock()
 
 	memberDevicesOnThisChannel := []*connections.Device{}
 	// subscribe server to the room if members on are on this server
 	for _, member := range members {
+		mu.RLock()
 		userConn, ok := h.ControlTowerCtrlr.UserConnections[member.UserUUID]
+		mu.RUnlock()
 		// user not on this server, so don't subscribe the server to this channel
 		if !ok {
 			continue
 		}
 
+		mu.RLock()
 		// check if server has already subscribed to this room
 		_, ok = h.ControlTowerCtrlr.Channels[roomUUID]
+		mu.RUnlock()
 		// server contains a user who doesn't have the room subscribed
 		if !ok {
 
@@ -209,15 +213,19 @@ func (h *Handler) handleOpenRoomEvent(event *requests.OpenRoomEvent) error {
 			subscriber := utils.SetupChannel(h.RedisClient, roomUUID)
 			go utils.SubscribeToChannel(subscriber, h.HandleRoomEvent)
 
+			mu.Lock()
 			h.ControlTowerCtrlr.Channels[roomUUID] = &connections.Channel{
 				Subscriber: subscriber,
 				Users:      map[string]bool{},
 			}
+			mu.Unlock()
 		}
 
 		// add the member on this server to the channel on this server
 		// TODO - get rid of member.UUID
+		mu.Lock()
 		h.ControlTowerCtrlr.Channels[roomUUID].Users[member.UserUUID] = true
+		mu.Unlock()
 		for _, device := range userConn.Devices {
 			memberDevicesOnThisChannel = append(memberDevicesOnThisChannel, device)
 		}

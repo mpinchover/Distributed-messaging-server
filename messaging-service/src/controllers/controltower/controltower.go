@@ -200,25 +200,32 @@ func (c *ControlTowerCtrlr) SetupClientConnectionV2(
 	msg *requests.SetClientConnectionEvent) (*requests.SetClientConnectionEvent, error) {
 
 	var mu = &sync.RWMutex{}
-	mu.Lock()
-	defer mu.Unlock()
 
 	deviceUUID := uuid.New().String()
 	msg.DeviceUUID = deviceUUID
+
+	mu.RLock()
 	userConn, ok := c.UserConnections[msg.UserUUID]
+	mu.RUnlock()
 	if !ok {
 		userConn = &connections.UserConnection{
 			UUID:    msg.UserUUID,
 			Devices: map[string]*connections.Device{},
 		}
+
+		mu.Lock()
 		c.UserConnections[msg.UserUUID] = userConn
+		mu.Unlock()
 	}
 	newDeviceConnection := &connections.Device{
 		WS:       ws.Conn,
 		Outbound: ws.Outbound,
 	}
+
+	mu.Lock()
 	userConn.Devices[deviceUUID] = newDeviceConnection
 	c.UserConnections[msg.UserUUID] = userConn
+	mu.Unlock()
 
 	return msg, nil
 }
@@ -328,21 +335,23 @@ func (c *ControlTowerCtrlr) RemoveClientDeviceFromServer(userUUID string, device
 	// remove the user from connections
 
 	var mu = &sync.RWMutex{}
-	mu.Lock()
-	defer mu.Unlock()
 
+	mu.RLock()
 	userConnection, ok := c.UserConnections[userUUID]
+	mu.RUnlock()
 	if !ok {
 		panic("User not found in user connections")
 	}
 
-	_, ok = userConnection.Devices[deviceUUID]
-	if !ok {
-		panic("device not in device connections")
+	if userConnection.Devices == nil {
+		return nil
 	}
 
+	mu.Lock()
 	delete(userConnection.Devices, deviceUUID)
+	mu.Unlock()
 
+	mu.Lock()
 	// user has no more devices attached to this connection, delete it
 	if len(userConnection.Devices) == 0 {
 		delete(c.UserConnections, userUUID)
@@ -350,6 +359,7 @@ func (c *ControlTowerCtrlr) RemoveClientDeviceFromServer(userUUID string, device
 		// otherwise reset the user connections
 		c.UserConnections[userUUID] = userConnection
 	}
+	mu.Unlock()
 
 	// get the channels for this user, possible optimization
 	// rooms, err := c.GetRoomsByUserUUIDForSubscribing(userUUID)
@@ -363,31 +373,42 @@ func (c *ControlTowerCtrlr) RemoveClientDeviceFromServer(userUUID string, device
 
 	// iterate over every channel
 	for chUUID, ch := range c.Channels {
+		mu.RLock()
 		// if the user is not in this channel, continue
 		if !ch.Users[userUUID] {
 			continue
 		}
+		mu.RUnlock()
 
 		// check to see if we have removed the user
 		// if the user had no more devices connected, we removed them
+
+		mu.RLock()
 		_, userHasDevicesConnected := c.UserConnections[userUUID]
+		mu.RUnlock()
 
 		// user has been deleted; delete user from the channel on this server
 		if !userHasDevicesConnected {
+			mu.Lock()
 			delete(ch.Users, userUUID)
+			mu.Unlock()
 		}
 
 		// if no one else is in channel, unsubscribe and delete channel
 		if len(ch.Users) == 0 {
+			mu.Lock()
 			delete(c.Channels, chUUID)
+			mu.Unlock()
 			err := ch.Subscriber.Unsubscribe(context.Background())
 			if err != nil {
 				// TODO - remove the panic
 				panic(err)
 			}
 		} else {
+			mu.Lock()
 			// otherwise, update the channel
 			c.Channels[chUUID] = ch
+			mu.Unlock()
 		}
 	}
 

@@ -33,6 +33,9 @@ func (h *Handler) SetupWebsocketConnection(w http.ResponseWriter, r *http.Reques
 	defer func() {
 		conn.Close()
 		close(ws.Outbound)
+		if ws.UserUUID != nil && ws.DeviceUUID != nil {
+			h.ControlTowerCtrlr.RemoveClientDeviceFromServer(*ws.UserUUID, *ws.DeviceUUID)
+		}
 	}()
 
 	conn.SetPongHandler(func(appData string) error {

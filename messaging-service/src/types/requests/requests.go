@@ -1,6 +1,9 @@
 package requests
 
-import "messaging-service/src/types/connections"
+import (
+	"messaging-service/src/types/connections"
+	"messaging-service/src/types/records"
+)
 
 type GetRoomsByUserUUIDRequest struct {
 	UserUUID string `schema:"userUuid" validate:"required"`
@@ -9,7 +12,7 @@ type GetRoomsByUserUUIDRequest struct {
 }
 
 type GetRoomsByUserUUIDResponse struct {
-	Rooms []*Room `json:"rooms"`
+	Rooms []*records.Room `json:"rooms"`
 }
 
 type GetMessagesByRoomUUIDRequest struct {
@@ -35,15 +38,15 @@ type GetChannelResponse struct {
 }
 
 type GetMessagesByRoomUUIDResponse struct {
-	Messages []*Message `json:"messages"`
+	Messages []*records.Message `json:"messages"`
 }
 
 type CreateRoomRequest struct {
-	Members []*Member `json:"participants"`
+	Members []*records.Member `json:"participants"`
 }
 
 type CreateRoomResponse struct {
-	Room *Room `json:"room"`
+	Room *records.Room `json:"room"`
 }
 
 type DeleteRoomRequest struct {

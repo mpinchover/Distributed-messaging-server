@@ -40,7 +40,7 @@ func GetAPIKeyFromCtx(ctx context.Context) (*requests.APIKey, error) {
 // 	if _authProfile == nil {
 // 		return nil, serrors.AuthErrorf("could not get auth profile", nil)
 // 	}
-// 	authProfile := &requests.AuthProfile{}
+// 	authProfile := &records.AuthProfile{}
 // 	b, err := json.Marshal(_authProfile)
 // 	if err != nil {
 // 		return nil, serrors.AuthError(err)
@@ -125,7 +125,7 @@ func GetAPIKeyFromURL(r *http.Request) *string {
 // 	if err != nil {
 // 		return nil, serrors.InternalErrorf("could not marshall auth profile", nil)
 // 	}
-// 	authProfile := &requests.AuthProfile{}
+// 	authProfile := &records.AuthProfile{}
 // 	err = json.Unmarshal(bytes, authProfile)
 // 	return authProfile, err
 // }

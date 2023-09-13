@@ -51,8 +51,8 @@ func (c *ControlTowerCtrlr) GetMessagesByRoomUUID(ctx context.Context, roomUUID 
 
 func (c *ControlTowerCtrlr) CreateRoom(
 	ctx context.Context,
-	members []*requests.Member,
-) (*requests.Room, error) {
+	members []*records.Member,
+) (*records.Room, error) {
 	for _, member := range members {
 		member.UUID = uuid.New().String()
 	}
@@ -86,7 +86,7 @@ func (c *ControlTowerCtrlr) CreateRoom(
 		return nil, err
 	}
 
-	newRoom := &requests.Room{
+	newRoom := &records.Room{
 		Members:       members,
 		UUID:          roomUUID,
 		CreatedAtNano: createdAtNano,
@@ -109,7 +109,7 @@ func (c *ControlTowerCtrlr) CreateRoom(
 	return newRoom, nil
 }
 
-func (c *ControlTowerCtrlr) UpdateMessage(ctx context.Context, message *requests.Message) error {
+func (c *ControlTowerCtrlr) UpdateMessage(ctx context.Context, message *records.Message) error {
 	// first get the message
 	existingMsg, err := c.Repo.GetMessageByUUID(message.UUID)
 	if err != nil {
@@ -219,40 +219,40 @@ func (c *ControlTowerCtrlr) SaveSeenBy(msg *requests.SeenMessageEvent) error {
 	return c.RedisClient.PublishToRedisChannel(msg.RoomUUID, bytes)
 }
 
-func (c *ControlTowerCtrlr) GetRoomsByUserUUID(ctx context.Context, userUUID string, offset int) ([]*requests.Room, error) {
+func (c *ControlTowerCtrlr) GetRoomsByUserUUID(ctx context.Context, userUUID string, offset int) ([]*records.Room, error) {
 	rooms, err := c.Repo.GetRoomsByUserUUID(userUUID, offset)
 	if err != nil {
 		return nil, err
 	}
 
 	// TODO - put this all in the controller
-	requestRooms := make([]*requests.Room, len(rooms))
-	for i, room := range rooms {
-		members := make([]*requests.Member, len(room.Members))
-		messages := make([]*requests.Message, len(room.Messages))
+	// requestRooms := make([]*requests.Room, len(rooms))
+	// for i, room := range rooms {
+	// 	members := make([]*records.Member, len(room.Members))
+	// 	messages := make([]*requests.Message, len(room.Messages))
 
-		for j, member := range room.Members {
-			members[j] = &requests.Member{
-				UserUUID: member.UserUUID,
-			}
-		}
+	// 	for j, member := range room.Members {
+	// 		members[j] = &records.Member{
+	// 			UserUUID: member.UserUUID,
+	// 		}
+	// 	}
 
-		for j, msg := range room.Messages {
-			messages[j] = &requests.Message{
-				UUID:        msg.UUID,
-				FromUUID:    msg.FromUUID,
-				RoomUUID:    msg.RoomUUID,
-				MessageText: msg.MessageText,
-			}
-		}
+	// 	for j, msg := range room.Messages {
+	// 		messages[j] = &records.Message{
+	// 			UUID:        msg.UUID,
+	// 			FromUUID:    msg.FromUUID,
+	// 			RoomUUID:    msg.RoomUUID,
+	// 			MessageText: msg.MessageText,
+	// 		}
+	// 	}
 
-		requestRooms[i] = &requests.Room{
-			UUID:     room.UUID,
-			Members:  members,
-			Messages: messages,
-		}
-	}
-	return requestRooms, nil
+	// 	requestRooms[i] = &records.Room{
+	// 		UUID:     room.UUID,
+	// 		Members:  members,
+	// 		Messages: messages,
+	// 	}
+	// }
+	return rooms, nil
 }
 
 // maybe store the rooms each member is part of as memebersOnServer

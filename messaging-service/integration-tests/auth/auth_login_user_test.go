@@ -9,7 +9,7 @@ package integrationtests
 // 		confirmPassword := password
 // 		email := fmt.Sprintf("%s@gmail.com", uuid.New().String())
 
-// 		signupResponse := common.MakeSignupRequest(t, &requests.SignupRequest{
+// 		signupResponse := common.MakeSignupRequest(t, &records.SignupRequest{
 // 			Email:           email,
 // 			Password:        password,
 // 			ConfirmPassword: confirmPassword,
@@ -25,7 +25,7 @@ package integrationtests
 // 		common.MakeTestAuthRequest(t, refreshTokenResp.AccessToken)
 
 // 		// create fake token with correct data
-// 		jwtAuthProfile := &requests.AuthProfile{
+// 		jwtAuthProfile := &records.AuthProfile{
 // 			UUID:  signupResponse.UUID,
 // 			Email: signupResponse.Email,
 // 		}
@@ -36,7 +36,7 @@ package integrationtests
 // 		common.MakeTestAuthRequestFailAuth(t, token)
 
 // 		// login user
-// 		loginRequest := &requests.LoginRequest{
+// 		loginRequest := &records.LoginRequest{
 // 			Email:    email,
 // 			Password: password,
 // 		}

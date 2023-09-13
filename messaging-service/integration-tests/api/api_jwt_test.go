@@ -24,7 +24,7 @@ package apitests
 // 		email := fmt.Sprintf("%s@gmail.com", uuid.New().String())
 
 // 		// create user
-// 		signupRequest := &requests.SignupRequest{
+// 		signupRequest := &records.SignupRequest{
 // 			Email:           email,
 // 			Password:        password,
 // 			ConfirmPassword: confirmPassword,
@@ -59,7 +59,7 @@ package apitests
 // 		assert.NotEmpty(t, authProfile.UUID)
 
 // 		// login user
-// 		loginRequest := &requests.LoginRequest{
+// 		loginRequest := &records.LoginRequest{
 // 			Email:    email,
 // 			Password: password,
 // 		}
@@ -99,7 +99,7 @@ package apitests
 // 		assert.Contains(t, err.Error(), "400")
 
 // 		// create fake token with correct data
-// 		jwtAuthProfile := &requests.AuthProfile{
+// 		jwtAuthProfile := &records.AuthProfile{
 // 			UUID:  authProfile.UUID,
 // 			Email: authProfile.Email,
 // 		}
@@ -162,7 +162,7 @@ package apitests
 // 		return nil, err
 // 	}
 
-// 	response := &requests.AuthProfile{}
+// 	response := &records.AuthProfile{}
 // 	err = json.Unmarshal(b, response)
 // 	if err != nil {
 // 		return nil, err
@@ -193,7 +193,7 @@ package apitests
 // 		return nil, err
 // 	}
 
-// 	response := &requests.RefreshAccessTokenResponse{}
+// 	response := &records.RefreshAccessTokenResponse{}
 // 	err = json.Unmarshal(b, response)
 // 	if err != nil {
 // 		return nil, err

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 
-	"messaging-service/src/mappers"
 	"messaging-service/src/types/enums"
 	"messaging-service/src/types/records"
 	"messaging-service/src/types/requests"
@@ -14,7 +13,7 @@ import (
 )
 
 // TODO – event should just have the message embedded within it
-func (c *ControlTowerCtrlr) ProcessTextMessage(msg *requests.TextMessageEvent) (*requests.Message, error) {
+func (c *ControlTowerCtrlr) ProcessTextMessage(msg *requests.TextMessageEvent) (*records.Message, error) {
 	// ensure room exists
 	room, err := c.Repo.GetRoomByRoomUUID(msg.Message.RoomUUID)
 	if err != nil {
@@ -44,8 +43,8 @@ func (c *ControlTowerCtrlr) ProcessTextMessage(msg *requests.TextMessageEvent) (
 		return nil, err
 	}
 
-	requestsMessage := mappers.FromRecordsMessageToRequestMessage(repoMessage)
-	msg.Message.CreatedAtNano = requestsMessage.CreatedAtNano
+	// requestsMessage := mappers.FromRecordsMessageToRequestMessage(repoMessage)
+	msg.Message.CreatedAtNano = float64(createdAtNano)
 
 	bytes, err := json.Marshal(msg)
 	if err != nil {
@@ -56,5 +55,5 @@ func (c *ControlTowerCtrlr) ProcessTextMessage(msg *requests.TextMessageEvent) (
 	if err != nil {
 		return nil, err
 	}
-	return requestsMessage, nil
+	return repoMessage, nil
 }

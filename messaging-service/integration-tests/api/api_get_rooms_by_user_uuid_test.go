@@ -14,7 +14,7 @@ package apitests
 
 // 		for i := 0; i < 25; i++ {
 // 			createRoomRequest := &requests.CreateRoomRequest{
-// 				Members: []*requests.Member{
+// 				Members: []*records.Member{
 // 					{
 // 						UserUUID: tom,
 // 					},
@@ -29,7 +29,7 @@ package apitests
 
 // 		for i := 0; i < 5; i++ {
 // 			createRoomRequest := &requests.CreateRoomRequest{
-// 				Members: []*requests.Member{
+// 				Members: []*records.Member{
 // 					{
 // 						UserUUID: jerry,
 // 					},
@@ -120,7 +120,7 @@ package apitests
 // 		})
 
 // 		createRoomRequest := &requests.CreateRoomRequest{
-// 			Members: []*requests.Member{
+// 			Members: []*records.Member{
 // 				{
 // 					UserUUID: tom,
 // 				},
@@ -137,7 +137,7 @@ package apitests
 // 		_ = roomUUID1
 
 // 		createRoomRequest = &requests.CreateRoomRequest{
-// 			Members: []*requests.Member{
+// 			Members: []*records.Member{
 // 				{
 // 					UserUUID: tom,
 // 				},
@@ -153,7 +153,7 @@ package apitests
 // 		roomUUID2 := openRoomEvent.Room.UUID
 
 // 		createRoomRequest = &requests.CreateRoomRequest{
-// 			Members: []*requests.Member{
+// 			Members: []*records.Member{
 // 				{
 // 					UserUUID: tom,
 // 				},

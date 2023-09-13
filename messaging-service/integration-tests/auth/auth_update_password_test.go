@@ -10,7 +10,7 @@ package integrationtests
 // 		email := fmt.Sprintf("%s@gmail.com", uuid.New().String())
 
 // 		// create user
-// 		signupRequest := &requests.SignupRequest{
+// 		signupRequest := &records.SignupRequest{
 // 			Email:           email,
 // 			Password:        password,
 // 			ConfirmPassword: confirmPassword,
@@ -27,7 +27,7 @@ package integrationtests
 // 		assert.NotEmpty(t, authProfile.UUID)
 
 // 		// login user
-// 		loginRequest := &requests.LoginRequest{
+// 		loginRequest := &records.LoginRequest{
 // 			Email:    email,
 // 			Password: password,
 // 		}
@@ -35,7 +35,7 @@ package integrationtests
 // 		assert.NotEmpty(t, loginResp.AccessToken)
 // 		assert.NotEmpty(t, loginResp.RefreshToken)
 
-// 		updatePasswordRequest := &requests.UpdatePasswordRequest{
+// 		updatePasswordRequest := &records.UpdatePasswordRequest{
 // 			CurrentPassword:    password,
 // 			NewPassword:        "something-else",
 // 			ConfirmNewPassword: "something-else",

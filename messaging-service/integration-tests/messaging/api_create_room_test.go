@@ -2,6 +2,7 @@ package integrationtests
 
 import (
 	"messaging-service/src/types/enums"
+	"messaging-service/src/types/records"
 	"messaging-service/src/types/requests"
 
 	"github.com/google/uuid"
@@ -30,7 +31,7 @@ func (s *IntegrationTestSuite) TestCreateRoom() {
 
 	// create a room
 	createRoomRequest := &requests.CreateRoomRequest{
-		Members: []*requests.Member{
+		Members: []*records.Member{
 			{
 				UserUUID: a,
 			},

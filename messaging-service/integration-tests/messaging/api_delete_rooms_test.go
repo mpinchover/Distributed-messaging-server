@@ -2,6 +2,7 @@ package integrationtests
 
 import (
 	"messaging-service/src/types/enums"
+	"messaging-service/src/types/records"
 	"messaging-service/src/types/requests"
 
 	"github.com/google/uuid"
@@ -37,7 +38,7 @@ func (s *IntegrationTestSuite) TestDeleteRoom() {
 		UserUUID:  c,
 	})
 	openRoomEvent := &requests.CreateRoomRequest{
-		Members: []*requests.Member{
+		Members: []*records.Member{
 			{
 				UserUUID: a,
 			},
@@ -53,7 +54,7 @@ func (s *IntegrationTestSuite) TestDeleteRoom() {
 	roomUUID1 := openRoomRes.Room.UUID
 
 	openRoomEvent = &requests.CreateRoomRequest{
-		Members: []*requests.Member{
+		Members: []*records.Member{
 			{
 				UserUUID: a,
 			},
@@ -192,7 +193,7 @@ func (s *IntegrationTestSuite) TestDeleteRoomAndMessages() {
 
 	// create a room
 	createRoomRequest := &requests.CreateRoomRequest{
-		Members: []*requests.Member{
+		Members: []*records.Member{
 			{
 				UserUUID: a,
 			},

@@ -158,7 +158,7 @@ package repo
 // 	profileLat := 41.762085
 // 	profileLng := -72.742012
 // 	maxDistanceMeters := int64(159000)
-// 	filters := &requests.ProfileFilter{
+// 	filters := &records.ProfileFilter{
 // 		UserUUID:                &candidateThreeUUID,
 // 		ProfileGender:           utils.ToStrPtr("MALE"),
 // 		ProfileGenderPreference: utils.ToStrPtr("FEMALE"),

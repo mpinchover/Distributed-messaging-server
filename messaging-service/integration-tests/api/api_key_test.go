@@ -9,7 +9,7 @@ package apitests
 // 		confirmPassword := password
 // 		email := fmt.Sprintf("%s@gmail.com", uuid.New().String())
 
-// 		signupRequest := &requests.SignupRequest{
+// 		signupRequest := &records.SignupRequest{
 // 			Email:           email,
 // 			Password:        password,
 // 			ConfirmPassword: confirmPassword,
@@ -44,7 +44,7 @@ package apitests
 // 		// assert the error here too
 
 // 		// log user in
-// 		loginRequest := &requests.LoginRequest{
+// 		loginRequest := &records.LoginRequest{
 // 			Email:    email,
 // 			Password: password,
 // 		}
@@ -98,7 +98,7 @@ package apitests
 // 		return nil, err
 // 	}
 
-// 	response := &requests.APIKey{}
+// 	response := &records.APIKey{}
 // 	err = json.Unmarshal(b, response)
 // 	if err != nil {
 // 		return nil, err
@@ -129,7 +129,7 @@ package apitests
 // 		return nil, err
 // 	}
 
-// 	response := &requests.APIKey{}
+// 	response := &records.APIKey{}
 // 	err = json.Unmarshal(b, response)
 // 	if err != nil {
 // 		return nil, err

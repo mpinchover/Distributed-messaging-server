@@ -51,7 +51,7 @@ package matching
 // 		if err != nil {
 // 			return nil, err
 // 		}
-// 		question := &requests.Question{
+// 		question := &records.Question{
 // 			UUID:     *uuid,
 // 			Text:     *text,
 // 			Category: *category,

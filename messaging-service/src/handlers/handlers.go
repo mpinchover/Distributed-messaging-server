@@ -26,8 +26,7 @@ type Handler struct {
 type Params struct {
 	fx.In
 
-	RedisClient *redisClient.RedisClient
-	// AuthMiddleware *middleware.AuthMiddleware
+	RedisClient    *redisClient.RedisClient
 	ControlTower   *controltower.ControlTowerCtrlr
 	AuthController *authcontroller.AuthController
 }
@@ -37,7 +36,6 @@ func New(p Params) *Handler {
 		ControlTowerCtrlr: p.ControlTower,
 		RedisClient:       p.RedisClient,
 		AuthController:    p.AuthController,
-		// AuthMiddleware:    p.AuthMiddleware,
 	}
 }
 
@@ -48,26 +46,11 @@ func (h *Handler) GetRoomsByUserUUID(w http.ResponseWriter, r *http.Request) (in
 	req := &requests.GetRoomsByUserUUIDRequest{}
 	err := decoder.Decode(req, r.URL.Query())
 	if err != nil {
-		return nil, err
-	}
-	ctx := r.Context()
-	return h.getRoomsByUserUUID(ctx, req)
-}
-
-func (h *Handler) APIGetRoomsByUserUUID(w http.ResponseWriter, r *http.Request) (interface{}, error) {
-	// validation
-	req := &requests.GetRoomsByUserUUIDRequest{}
-	err := decoder.Decode(req, r.URL.Query())
-	if err != nil {
 		fmt.Println(err)
 		return nil, err
 	}
 	ctx := r.Context()
-	return h.getRoomsByUserUUID(ctx, req)
-}
-
-func (h *Handler) getRoomsByUserUUID(ctx context.Context, req *requests.GetRoomsByUserUUIDRequest) (*requests.GetRoomsByUserUUIDResponse, error) {
-	err := validation.ValidateRequest(req)
+	err = validation.ValidateRequest(req)
 	if err != nil {
 		fmt.Println("ERR 1")
 		fmt.Println(err)
@@ -96,23 +79,7 @@ func (h *Handler) GetMessagesByRoomUUID(w http.ResponseWriter, r *http.Request) 
 	}
 
 	ctx := r.Context()
-	return h.getMessagesByRoomUUID(ctx, req)
-}
-
-func (h *Handler) APIGetMessagesByRoomUUID(w http.ResponseWriter, r *http.Request) (interface{}, error) {
-	// validation
-	req := &requests.GetMessagesByRoomUUIDRequest{}
-	err := decoder.Decode(req, r.URL.Query())
-	if err != nil {
-		return nil, err
-	}
-
-	ctx := r.Context()
-	return h.getMessagesByRoomUUID(ctx, req)
-}
-
-func (h *Handler) getMessagesByRoomUUID(ctx context.Context, req *requests.GetMessagesByRoomUUIDRequest) (*requests.GetMessagesByRoomUUIDResponse, error) {
-	err := validation.ValidateRequest(req)
+	err = validation.ValidateRequest(req)
 	if err != nil {
 		return nil, err
 	}
@@ -122,29 +89,29 @@ func (h *Handler) getMessagesByRoomUUID(ctx context.Context, req *requests.GetMe
 		return nil, err
 	}
 
-	requestMsgs := make([]*requests.Message, len(msgs))
-	for i, msg := range msgs {
+	// requestMsgs := make([]*requests.Message, len(msgs))
+	// for i, msg := range msgs {
 
-		seenBy := make([]*requests.SeenBy, len(msg.SeenBy))
-		for j, sb := range msg.SeenBy {
-			seenBy[j] = &requests.SeenBy{
-				MessageUUID: sb.MessageUUID,
-				UserUUID:    sb.UserUUID,
-			}
-		}
+	// 	seenBy := make([]*requests.SeenBy, len(msg.SeenBy))
+	// 	for j, sb := range msg.SeenBy {
+	// 		seenBy[j] = &records.SeenBy{
+	// 			MessageUUID: sb.MessageUUID,
+	// 			UserUUID:    sb.UserUUID,
+	// 		}
+	// 	}
 
-		requestMsgs[i] = &requests.Message{
-			UUID:          msg.UUID,
-			FromUUID:      msg.FromUUID,
-			RoomUUID:      msg.RoomUUID,
-			MessageText:   msg.MessageText,
-			CreatedAtNano: msg.CreatedAtNano,
-			SeenBy:        seenBy,
-		}
-	}
+	// 	requestMsgs[i] = &records.Message{
+	// 		UUID:          msg.UUID,
+	// 		FromUUID:      msg.FromUUID,
+	// 		RoomUUID:      msg.RoomUUID,
+	// 		MessageText:   msg.MessageText,
+	// 		CreatedAtNano: msg.CreatedAtNano,
+	// 		SeenBy:        seenBy,
+	// 	}
+	// }
 
 	resp := &requests.GetMessagesByRoomUUIDResponse{
-		Messages: requestMsgs,
+		Messages: msgs,
 	}
 	return resp, nil
 }
@@ -156,10 +123,7 @@ func (h *Handler) DeleteRoom(w http.ResponseWriter, r *http.Request) (interface{
 		return nil, err
 	}
 	ctx := r.Context()
-	return h.deleteRoom(ctx, req)
-}
 
-func (h *Handler) deleteRoom(ctx context.Context, req *requests.DeleteRoomRequest) (*requests.DeleteRoomResponse, error) {
 	err := validation.ValidateRequest(req)
 	if err != nil {
 		return nil, err
@@ -174,6 +138,21 @@ func (h *Handler) deleteRoom(ctx context.Context, req *requests.DeleteRoomReques
 	return &requests.DeleteRoomResponse{}, nil
 }
 
+// func (h *Handler) deleteRoom(ctx context.Context, req *requests.DeleteRoomRequest) (*requests.DeleteRoomResponse, error) {
+// 	err := validation.ValidateRequest(req)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	roomUUID := req.RoomUUID
+// 	// verify user has permissions
+// 	err = h.ControlTowerCtrlr.DeleteRoom(ctx, roomUUID)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return &requests.DeleteRoomResponse{}, nil
+// }
+
 func (h *Handler) CreateRoom(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 	// validation
 	// run all the middleware here
@@ -184,10 +163,7 @@ func (h *Handler) CreateRoom(w http.ResponseWriter, r *http.Request) (interface{
 	}
 
 	ctx := r.Context()
-	return h.createRoom(ctx, req)
-}
 
-func (h *Handler) createRoom(ctx context.Context, req *requests.CreateRoomRequest) (*requests.CreateRoomResponse, error) {
 	err := validation.ValidateRequest(req)
 	if err != nil {
 		return nil, err
@@ -205,7 +181,7 @@ func (h *Handler) createRoom(ctx context.Context, req *requests.CreateRoomReques
 
 // func (h *Handler) LeaveRoom(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 // 	// validation
-// 	req := &requests.LeaveRoomRequest{}
+// 	req := &records.LeaveRoomRequest{}
 // 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 // 		return nil, err
 // 	}
@@ -228,7 +204,7 @@ func (h *Handler) createRoom(ctx context.Context, req *requests.CreateRoomReques
 
 // func (h *Handler) Login(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 // 	// validation
-// 	req := &requests.LoginRequest{}
+// 	req := &records.LoginRequest{}
 // 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 // 		return nil, err
 // 	}
@@ -249,7 +225,7 @@ func (h *Handler) createRoom(ctx context.Context, req *requests.CreateRoomReques
 
 // func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 // 	// validation
-// 	req := &requests.SignupRequest{}
+// 	req := &records.SignupRequest{}
 // 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 // 		return nil, err
 // 	}
@@ -319,7 +295,7 @@ func (h *Handler) invalidateAPIKey(ctx context.Context, req *requests.Invalidate
 // 	if err != nil {
 // 		return nil, err
 // 	}
-// 	return &requests.RefreshAccessTokenResponse{
+// 	return &records.RefreshAccessTokenResponse{
 // 		AccessToken:  accessToken,
 // 		RefreshToken: refreshToken,
 // 	}, nil
@@ -327,7 +303,7 @@ func (h *Handler) invalidateAPIKey(ctx context.Context, req *requests.Invalidate
 
 // func (h *Handler) UpdatePassword(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 // 	ctx := r.Context()
-// 	req := &requests.UpdatePasswordRequest{}
+// 	req := &records.UpdatePasswordRequest{}
 // 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 // 		return nil, err
 // 	}
@@ -346,7 +322,7 @@ func (h *Handler) invalidateAPIKey(ctx context.Context, req *requests.Invalidate
 
 // func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 // 	ctx := r.Context()
-// 	req := &requests.ResetPasswordRequest{}
+// 	req := &records.ResetPasswordRequest{}
 // 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 // 		return nil, err
 // 	}
@@ -365,7 +341,7 @@ func (h *Handler) invalidateAPIKey(ctx context.Context, req *requests.Invalidate
 
 // func (h *Handler) GeneratePasswordResetLink(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 // 	ctx := r.Context()
-// 	req := &requests.GeneratePasswordResetLinkRequest{}
+// 	req := &records.GeneratePasswordResetLinkRequest{}
 // 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 // 		return nil, err
 // 	}

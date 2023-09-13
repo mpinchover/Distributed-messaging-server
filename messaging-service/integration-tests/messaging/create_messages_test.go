@@ -2,6 +2,7 @@ package integrationtests
 
 import (
 	"messaging-service/src/types/enums"
+	"messaging-service/src/types/records"
 	"messaging-service/src/types/requests"
 
 	"github.com/google/uuid"
@@ -46,7 +47,7 @@ func (s *IntegrationTestSuite) TestRoomAndMessagesPagination() {
 	})
 
 	createRoomRequest1 := &requests.CreateRoomRequest{
-		Members: []*requests.Member{
+		Members: []*records.Member{
 			{
 				UserUUID: a,
 			},
@@ -63,7 +64,7 @@ func (s *IntegrationTestSuite) TestRoomAndMessagesPagination() {
 	roomUUID1 := openRoomRes1.Room.UUID
 
 	createRoomRequest2 := &requests.CreateRoomRequest{
-		Members: []*requests.Member{
+		Members: []*records.Member{
 			{
 				UserUUID: a,
 			},
@@ -117,7 +118,7 @@ func (s *IntegrationTestSuite) TestRoomAndMessagesPagination() {
 
 	// create room between A and D
 	createRoomReq3 := &requests.CreateRoomRequest{
-		Members: []*requests.Member{
+		Members: []*records.Member{
 			{
 				UserUUID: a,
 			},
@@ -149,7 +150,7 @@ func (s *IntegrationTestSuite) TestRoomAndMessagesPagination() {
 
 	// create room between B and C
 	openRoomReq4 := &requests.CreateRoomRequest{
-		Members: []*requests.Member{
+		Members: []*records.Member{
 			{
 				UserUUID: b,
 			},
@@ -180,7 +181,7 @@ func (s *IntegrationTestSuite) TestRoomAndMessagesPagination() {
 
 	// create room between B and D
 	openRoomRequest5 := &requests.CreateRoomRequest{
-		Members: []*requests.Member{
+		Members: []*records.Member{
 			{
 				UserUUID: bClient.UserUUID,
 			},
@@ -237,7 +238,7 @@ func (s *IntegrationTestSuite) TestAllConnectionsRcvMessages() {
 	})
 
 	openRoomEvent := &requests.CreateRoomRequest{
-		Members: []*requests.Member{
+		Members: []*records.Member{
 			{
 				UserUUID: a,
 			},

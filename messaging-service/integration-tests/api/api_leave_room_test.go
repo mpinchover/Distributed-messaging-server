@@ -40,7 +40,7 @@ package apitests
 // 		})
 
 // 		openRoomEvent := &requests.CreateRoomRequest{
-// 			Members: []*requests.Member{
+// 			Members: []*records.Member{
 // 				{
 // 					UserUUID: aClient.UserUUID,
 // 				},
@@ -80,7 +80,7 @@ package apitests
 // 		assert.Len(t, res.Rooms, 1)
 // 		assert.Len(t, res.Rooms[0].Members, 4)
 
-// 		leaveRoomReq := &requests.LeaveRoomRequest{
+// 		leaveRoomReq := &records.LeaveRoomRequest{
 // 			UserUUID: cClient.UserUUID,
 // 			RoomUUID: roomUUID,
 // 		}
@@ -105,28 +105,28 @@ package apitests
 // 		assert.Len(t, res.Rooms[0].Members, 3)
 
 // 		// read the message from leaving the room
-// 		resp := &requests.LeaveRoomEvent{}
+// 		resp := &records.LeaveRoomEvent{}
 // 		common.ReadEvent(t, aConn, resp)
 // 		assert.NotNil(t, resp)
 // 		assert.Equal(t, cClient.UserUUID, resp.UserUUID)
 // 		assert.Equal(t, roomUUID, resp.RoomUUID)
 // 		assert.Equal(t, enums.EVENT_LEAVE_ROOM.String(), resp.EventType)
 
-// 		resp = &requests.LeaveRoomEvent{}
+// 		resp = &records.LeaveRoomEvent{}
 // 		common.ReadEvent(t, bConn, resp)
 // 		assert.NotNil(t, resp)
 // 		assert.Equal(t, cClient.UserUUID, resp.UserUUID)
 // 		assert.Equal(t, roomUUID, resp.RoomUUID)
 // 		assert.Equal(t, enums.EVENT_LEAVE_ROOM.String(), resp.EventType)
 
-// 		resp = &requests.LeaveRoomEvent{}
+// 		resp = &records.LeaveRoomEvent{}
 // 		common.ReadEvent(t, dConn, resp)
 // 		assert.NotNil(t, resp)
 // 		assert.Equal(t, cClient.UserUUID, resp.UserUUID)
 // 		assert.Equal(t, roomUUID, resp.RoomUUID)
 // 		assert.Equal(t, enums.EVENT_LEAVE_ROOM.String(), resp.EventType)
 
-// 		resp = &requests.LeaveRoomEvent{}
+// 		resp = &records.LeaveRoomEvent{}
 // 		common.ReadEvent(t, dMobileConn, resp)
 // 		assert.NotNil(t, resp)
 // 		assert.Equal(t, cClient.UserUUID, resp.UserUUID)

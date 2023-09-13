@@ -48,7 +48,7 @@ package matching
 // }
 
 // func (m *MatchingController) CreateMatchingFilters(userDiscoverProfile *requests.DiscoverProfile) (*requests.ProfileFilter, error) {
-// 	filters := &requests.ProfileFilter{}
+// 	filters := &records.ProfileFilter{}
 // 	// get everyone this user has blocked
 // 	blockedUUIDs, err := m.Repo.GetBlockedCandidatesByUser(userDiscoverProfile.UserUUID)
 // 	if err != nil {
@@ -106,7 +106,7 @@ package matching
 // 	}
 // 	candidateDiscoverProfiles := make([]*requests.DiscoverProfile, len(recordsCandidatesDiscoverProfiles))
 // 	for i, dp := range recordsCandidatesDiscoverProfiles {
-// 		candidateDiscoverProfiles[i] = &requests.DiscoverProfile{
+// 		candidateDiscoverProfiles[i] = &records.DiscoverProfile{
 // 			Gender:           dp.Gender,
 // 			GenderPreference: dp.GenderPreference,
 // 			Age:              dp.Age,
@@ -122,7 +122,7 @@ package matching
 // // user has swiped on a question, check to see if there are any potential matches
 // func (m *MatchingController) CheckMatchesForUser(userDiscoverProfile *requests.DiscoverProfile) (*requests.MatchesForUserResult, error) {
 
-// 	res := &requests.MatchesForUserResult{}
+// 	res := &records.MatchesForUserResult{}
 // 	// get the questions the user has liked first
 // 	userLikedQuestions, err := m.Repo.GetLikedQuestionUUIDsByUserUUID(userDiscoverProfile.UserUUID)
 // 	if err != nil {
@@ -223,15 +223,15 @@ package matching
 // // 		return nil, err
 // // 	}
 
-// // 	membersAsRequest := make([]*requests.Member, len(room.Members))
+// // 	membersAsRequest := make([]*records.Member, len(room.Members))
 // // 	for i, m := range room.Members {
-// // 		membersAsRequest[i] = &requests.Member{
+// // 		membersAsRequest[i] = &records.Member{
 // // 			UUID:     m.UUID,
 // // 			UserUUID: m.UserUUID,
 // // 		}
 // // 	}
 
-// // 	roomAsRequest := &requests.Room{
+// // 	roomAsRequest := &records.Room{
 // // 		UUID:          room.UUID,
 // // 		CreatedAtNano: room.CreatedAtNano,
 // // 		Members:       membersAsRequest,

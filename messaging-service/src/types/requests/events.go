@@ -16,8 +16,8 @@ type LeaveRoomEvent struct {
 
 // sennd to clients room has been opened
 type OpenRoomEvent struct {
-	EventType string `json:"eventType"`
-	Room      *Room  `json:"room"`
+	EventType string        `json:"eventType"`
+	Room      *records.Room `json:"room"`
 }
 
 // subscrve the sever to a room
@@ -35,20 +35,20 @@ type SetClientConnectionEvent struct {
 }
 
 type TextMessageEvent struct {
-	EventType  string   `json:"eventType"`
-	FromUUID   string   `json:"fromUuid"`
-	DeviceUUID string   `json:"deviceUuid"`
-	Message    *Message `json:"message"`
-	Token      string   `json:"token"`
+	EventType  string           `json:"eventType"`
+	FromUUID   string           `json:"fromUuid"`
+	DeviceUUID string           `json:"deviceUuid"`
+	Message    *records.Message `json:"message"`
+	Token      string           `json:"token"`
 }
 
 type RoomsByUserUUIDEvent struct {
-	EventType string  `json:"eventType"`
-	UserUUID  string  `schema:"userUuid" validate:"required"`
-	Offset    int     `schema:"offset"`
-	Key       string  `schema:"key,-"`
-	Rooms     []*Room `json:"rooms"`
-	Token     string  `json:"token"`
+	EventType string          `json:"eventType"`
+	UserUUID  string          `schema:"userUuid" validate:"required"`
+	Offset    int             `schema:"offset"`
+	Key       string          `schema:"key,-"`
+	Rooms     []*records.Room `json:"rooms"`
+	Token     string          `json:"token"`
 }
 
 type MessagesByRoomUUIDEvent struct {

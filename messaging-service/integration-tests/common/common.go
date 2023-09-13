@@ -33,7 +33,7 @@ package common
 // 		FromUUID:   fromUserUUID,
 // 		DeviceUUID: deviceUUID,
 // 		EventType:  enums.EVENT_TEXT_MESSAGE.String(),
-// 		Message: &requests.Message{
+// 		Message: &records.Message{
 // 			RoomUUID:    roomUUID,
 // 			MessageText: msgText,
 // 		},
@@ -50,7 +50,7 @@ package common
 // 			FromUUID:   fromUserUUID,
 // 			DeviceUUID: deviceUUID,
 // 			EventType:  enums.EVENT_TEXT_MESSAGE.String(),
-// 			Message: &requests.Message{
+// 			Message: &records.Message{
 // 				RoomUUID:    roomUUID,
 // 				MessageText: msgText,
 // 			},
@@ -404,7 +404,7 @@ package common
 // 	conn.SetReadDeadline(time.Now().Add(time.Second * 2))
 // 	_, p, err := conn.ReadMessage()
 // 	assert.NoError(t, err)
-// 	messagesByRoomUUIDEvent := &requests.MessagesByRoomUUIDEvent{}
+// 	messagesByRoomUUIDEvent := &records.MessagesByRoomUUIDEvent{}
 // 	err = json.Unmarshal(p, messagesByRoomUUIDEvent)
 // 	assert.NoError(t, err)
 
@@ -432,7 +432,7 @@ package common
 // // 	b, err := io.ReadAll(resp.Body)
 // // 	assert.NoError(t, err)
 
-// // 	response := &requests.SignupResponse{}
+// // 	response := &records.SignupResponse{}
 // // 	err = json.Unmarshal(b, response)
 // // 	assert.NoError(t, err)
 // // 	assert.NotEmpty(t, response.AccessToken)
@@ -455,7 +455,7 @@ package common
 // // 	b, err := io.ReadAll(resp.Body)
 // // 	assert.NoError(t, err)
 
-// // 	response := &requests.LoginResponse{}
+// // 	response := &records.LoginResponse{}
 // // 	err = json.Unmarshal(b, response)
 // // 	assert.NoError(t, err)
 // // 	assert.NotEmpty(t, response.AccessToken)
@@ -515,7 +515,7 @@ package common
 // // 	b, err := io.ReadAll(resp.Body)
 // // 	assert.NoError(t, err)
 
-// // 	response := &requests.GenerateMessagingTokenResponse{}
+// // 	response := &records.GenerateMessagingTokenResponse{}
 // // 	err = json.Unmarshal(b, response)
 // // 	assert.NoError(t, err)
 // // 	return response
@@ -558,7 +558,7 @@ package common
 // // 	b, err := io.ReadAll(resp.Body)
 // // 	assert.NoError(t, err)
 
-// // 	response := &requests.AuthProfile{}
+// // 	response := &records.AuthProfile{}
 // // 	err = json.Unmarshal(b, response)
 // // 	assert.NoError(t, err)
 
@@ -595,7 +595,7 @@ package common
 // // 	b, err := io.ReadAll(resp.Body)
 // // 	assert.NoError(t, err)
 
-// // 	response := &requests.RefreshAccessTokenResponse{}
+// // 	response := &records.RefreshAccessTokenResponse{}
 // // 	err = json.Unmarshal(b, response)
 // // 	assert.NoError(t, err)
 
@@ -632,7 +632,7 @@ package common
 // // 	b, err := io.ReadAll(resp.Body)
 // // 	assert.NoError(t, err)
 
-// // 	response := &requests.APIKey{}
+// // 	response := &records.APIKey{}
 // // 	err = json.Unmarshal(b, response)
 // // 	assert.NoError(t, err)
 

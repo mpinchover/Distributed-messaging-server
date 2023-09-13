@@ -26,7 +26,7 @@ package apitests
 // 		})
 
 // 		createRoomRequest := &requests.CreateRoomRequest{
-// 			Members: []*requests.Member{
+// 			Members: []*records.Member{
 // 				{
 // 					UserUUID: tom,
 // 				},

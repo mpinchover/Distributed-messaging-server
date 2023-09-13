@@ -23,6 +23,7 @@ func SubscribeToChannel(subscriber *redis.PubSub, fn func(event string) error) {
 	}
 }
 
+
 // pass in the identifier of the channel so Redis can perform pub/sub
 // TODO – use handler context
 func SetupChannel(c *redisClient.RedisClient, channelName string) *redis.PubSub {

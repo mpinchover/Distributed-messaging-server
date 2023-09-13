@@ -2,6 +2,7 @@ package integrationtests
 
 import (
 	"messaging-service/src/types/enums"
+	"messaging-service/src/types/records"
 	"messaging-service/src/types/requests"
 
 	"github.com/google/uuid"
@@ -54,7 +55,7 @@ func (s *IntegrationTestSuite) TestSeenBy() {
 
 	// create a room
 	createRoomRequest := &requests.CreateRoomRequest{
-		Members: []*requests.Member{
+		Members: []*records.Member{
 			{
 				UserUUID: tomUUID,
 			},
@@ -84,7 +85,7 @@ func (s *IntegrationTestSuite) TestSeenBy() {
 		FromUUID:   tomClient.UserUUID,
 		DeviceUUID: tomClient.DeviceUUID,
 		EventType:  enums.EVENT_TEXT_MESSAGE.String(),
-		Message: &requests.Message{
+		Message: &records.Message{
 			MessageText: "TEXT",
 			RoomUUID:    roomUUID,
 		},

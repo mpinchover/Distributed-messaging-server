@@ -17,7 +17,7 @@ package integrationtests
 // 		common.MakeTestAuthRequest(t, refreshTokenResp.AccessToken)
 
 // 		// create fake token with correct data
-// 		jwtAuthProfile := &requests.AuthProfile{
+// 		jwtAuthProfile := &records.AuthProfile{
 // 			UUID:  signupResponse.UUID,
 // 			Email: signupResponse.Email,
 // 		}

@@ -19,7 +19,7 @@ package matching
 // 		expectedRes *requests.MatchesForUserResult
 // 	}{
 // 		{
-// 			user: &requests.DiscoverProfile{
+// 			user: &records.DiscoverProfile{
 // 				UserUUID: "user-uuid",
 // 			},
 // 			mocks: func() {
@@ -29,7 +29,7 @@ package matching
 // 		},
 // 		{
 // 			test: "not enough liked questions",
-// 			user: &requests.DiscoverProfile{
+// 			user: &records.DiscoverProfile{
 // 				UserUUID: "user-uuid",
 // 			},
 // 			mocks: func() {
@@ -39,13 +39,13 @@ package matching
 // 				}
 // 				s.mockRepo.On("GetLikedQuestionUUIDsByUserUUID", mock.Anything).Return(likedQuestionUUIDs, nil).Once()
 // 			},
-// 			expectedRes: &requests.MatchesForUserResult{
+// 			expectedRes: &records.MatchesForUserResult{
 // 				AbortCode: enums.ABORT_CODE_NEED_MORE_LIKED_QUESTIONS.String(),
 // 			},
 // 		},
 // 		{
 // 			test: "No matches returned",
-// 			user: &requests.DiscoverProfile{
+// 			user: &records.DiscoverProfile{
 // 				UserUUID: "user-uuid",
 // 			},
 // 			mocks: func() {
@@ -59,13 +59,13 @@ package matching
 // 				s.mockRepo.On("GetRecentTrackedLikedTargetsByUserUUID", mock.Anything, mock.Anything).Return([]string{"user-5", "user-6"}, nil).Once()
 // 				s.mockRepo.On("GetCandidateDiscoverProfile", mock.Anything).Return([]*records.DiscoverProfile{}, nil).Once()
 // 			},
-// 			expectedRes: &requests.MatchesForUserResult{
+// 			expectedRes: &records.MatchesForUserResult{
 // 				AbortCode: enums.ABORT_CODE_NO_MATCHES.String(),
 // 			},
 // 		},
 // 		{
 // 			test: "No overlapping questions returned",
-// 			user: &requests.DiscoverProfile{
+// 			user: &records.DiscoverProfile{
 // 				UserUUID: "user-uuid",
 // 			},
 // 			mocks: func() {
@@ -86,13 +86,13 @@ package matching
 // 				s.mockRepo.On("GetCandidateDiscoverProfile", mock.Anything).Return(candidates, nil).Once()
 // 				s.mockRepo.On("GetQuestionsLikedByMatchedCandidateUUIDs", mock.Anything, mock.Anything).Return([]*records.TrackedQuestion{}, nil).Once()
 // 			},
-// 			expectedRes: &requests.MatchesForUserResult{
+// 			expectedRes: &records.MatchesForUserResult{
 // 				AbortCode: enums.ABORT_CODE_NO_OVERLAPPING_QUESTIONS.String(),
 // 			},
 // 		},
 // 		{
 // 			test: "success",
-// 			user: &requests.DiscoverProfile{
+// 			user: &records.DiscoverProfile{
 // 				UserUUID: "user-uuid",
 // 			},
 // 			mocks: func() {
@@ -115,7 +115,7 @@ package matching
 // 				s.mockRepo.On("GetCandidateDiscoverProfile", mock.Anything).Return(candidates, nil).Once()
 // 				s.mockRepo.On("GetQuestionsLikedByMatchedCandidateUUIDs", mock.Anything, mock.Anything).Return([]*records.TrackedQuestion{}, nil).Once()
 // 			},
-// 			expectedRes: &requests.MatchesForUserResult{
+// 			expectedRes: &records.MatchesForUserResult{
 // 				AbortCode: enums.ABORT_CODE_NO_OVERLAPPING_QUESTIONS.String(),
 // 			},
 // 		},
@@ -144,7 +144,7 @@ package matching
 // 		expectedFilters *requests.ProfileFilter
 // 	}{
 // 		{
-// 			user: &requests.DiscoverProfile{},
+// 			user: &records.DiscoverProfile{},
 // 			test: "GetBlockedCandidatesByUser fails",
 // 			mocks: func() {
 // 				s.mockRepo.On("GetBlockedCandidatesByUser", mock.Anything).Return(nil, errors.New("GetBlockedCandidatesByUser failed")).Once()
@@ -152,7 +152,7 @@ package matching
 // 			expectedErr: "GetBlockedCandidatesByUser failed",
 // 		},
 // 		{
-// 			user: &requests.DiscoverProfile{},
+// 			user: &records.DiscoverProfile{},
 // 			test: "GetBlockedCandidatesByUser fails",
 // 			mocks: func() {
 // 				s.mockRepo.On("GetBlockedCandidatesByUser", mock.Anything).Return([]string{"user-1", "user-2"}, nil).Once()
@@ -161,7 +161,7 @@ package matching
 // 			expectedErr: "GetRecentlyMatchedUUIDs failed",
 // 		},
 // 		{
-// 			user: &requests.DiscoverProfile{},
+// 			user: &records.DiscoverProfile{},
 // 			test: "GetBlockedCandidatesByUser fails",
 // 			mocks: func() {
 // 				s.mockRepo.On("GetBlockedCandidatesByUser", mock.Anything).Return([]string{"user-1", "user-2"}, nil).Once()
@@ -171,7 +171,7 @@ package matching
 // 			expectedErr: "GetRecentTrackedLikedTargetsByUserUUID failed",
 // 		},
 // 		{
-// 			user: &requests.DiscoverProfile{
+// 			user: &records.DiscoverProfile{
 // 				UserUUID:         "user-uuid-1",
 // 				Gender:           "MALE",
 // 				GenderPreference: "FEMALE",
@@ -187,7 +187,7 @@ package matching
 // 				s.mockRepo.On("GetRecentlyMatchedUUIDs", mock.Anything).Return([]string{"user-3", "user-4"}, nil).Once()
 // 				s.mockRepo.On("GetRecentTrackedLikedTargetsByUserUUID", mock.Anything, mock.Anything).Return([]string{"user-5", "user-6"}, nil).Once()
 // 			},
-// 			expectedFilters: &requests.ProfileFilter{
+// 			expectedFilters: &records.ProfileFilter{
 // 				ProfileGender:           utils.ToStrPtr("MALE"),
 // 				ProfileGenderPreference: utils.ToStrPtr("FEMALE"),
 // 				ExcludeUUIDs:            []string{"user-1", "user-2", "user-3", "user-4", "user-5", "user-6"},

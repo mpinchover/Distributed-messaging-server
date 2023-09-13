@@ -45,7 +45,7 @@ func TestControlTowerSuite(t *testing.T) {
 func (s *ControlTowerSuite) TestCreateRoom() {
 	tests := []struct {
 		test        string
-		members     []*requests.Member
+		members     []*records.Member
 		expectedErr string
 		mocks       func()
 	}{
@@ -59,7 +59,7 @@ func (s *ControlTowerSuite) TestCreateRoom() {
 		{
 			test:        "PublishToRedisChannel failed",
 			expectedErr: "redis error",
-			members: []*requests.Member{
+			members: []*records.Member{
 				{
 					UUID:     "room-uuid",
 					UserUUID: "user-uuid-1",
@@ -76,7 +76,7 @@ func (s *ControlTowerSuite) TestCreateRoom() {
 		},
 		{
 			test: "success",
-			members: []*requests.Member{
+			members: []*records.Member{
 				{
 					UUID:     "room-uuid",
 					UserUUID: "user-uuid-1",
@@ -250,7 +250,7 @@ func (s *ControlTowerSuite) TestsSetupClientConnectionV2() {
 				UserUUID: "uuid",
 			},
 			mocks: func() {
-				// s.mockConnectionsCtrlr.On("GetConnection", mock.Anything).Return(&requests.Connection{
+				// s.mockConnectionsCtrlr.On("GetConnection", mock.Anything).Return(&records.Connection{
 				// 	Connections: map[string]*websocket.Conn{},
 				// }).Once()
 				// s.mockConnectionsCtrlr.On("AddClient", mock.Anything, mock.Anything, mock.Anything).Return().Once()

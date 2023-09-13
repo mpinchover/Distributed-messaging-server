@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 	"messaging-service/src/types/enums"
+	"messaging-service/src/types/records"
 	"messaging-service/src/types/requests"
 	"messaging-service/src/utils"
 	"net/http"
@@ -34,7 +35,7 @@ func (s *IntegrationTestSuite) SendSingleTextMessage(fromUserUUID string, device
 		FromUUID:   fromUserUUID,
 		DeviceUUID: deviceUUID,
 		EventType:  enums.EVENT_TEXT_MESSAGE.String(),
-		Message: &requests.Message{
+		Message: &records.Message{
 			RoomUUID:    roomUUID,
 			MessageText: msgText,
 		},
@@ -51,7 +52,7 @@ func (s *IntegrationTestSuite) SendMessages(fromUserUUID string, deviceUUID stri
 			FromUUID:   fromUserUUID,
 			DeviceUUID: deviceUUID,
 			EventType:  enums.EVENT_TEXT_MESSAGE.String(),
-			Message: &requests.Message{
+			Message: &records.Message{
 				RoomUUID:    roomUUID,
 				MessageText: msgText,
 			},
@@ -83,7 +84,7 @@ func (s *IntegrationTestSuite) RecvMessage(conn *websocket.Conn, resp *requests.
 	s.NotEmpty(resp.Message.MessageText, string(p))
 }
 
-func ContainsRoomUUID(s []*requests.Room, str string) bool {
+func ContainsRoomUUID(s []*records.Room, str string) bool {
 	for _, v := range s {
 		if v.UUID == str {
 			return true

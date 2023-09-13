@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"messaging-service/src/types/enums"
+	"messaging-service/src/types/records"
 	"messaging-service/src/types/requests"
 	"net/http"
 
@@ -80,7 +81,7 @@ func (s *IntegrationTestSuite) TestSocketConnection() {
 	})
 
 	openRoomEvent := &requests.CreateRoomRequest{
-		Members: []*requests.Member{
+		Members: []*records.Member{
 			{
 				UserUUID: clientTom.UserUUID,
 			},
@@ -129,7 +130,7 @@ func (s *IntegrationTestSuite) TestSocketConnection() {
 	})
 
 	openRoomEvent = &requests.CreateRoomRequest{
-		Members: []*requests.Member{
+		Members: []*records.Member{
 			{
 				UserUUID: clientTom.UserUUID,
 			},

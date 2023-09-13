@@ -61,7 +61,7 @@ func New(
 // 		return nil, serrors.AuthErrorf("old/new passwords do not match", nil)
 // 	}
 
-// 	rAuthProfile := &requests.AuthProfile{
+// 	rAuthProfile := &records.AuthProfile{
 // 		Email: authProfile.Email,
 // 		UUID:  authProfile.UUID,
 // 	}
@@ -75,7 +75,7 @@ func New(
 // 		return nil, serrors.InternalError(err)
 // 	}
 
-// 	return &requests.LoginResponse{
+// 	return &records.LoginResponse{
 // 		AccessToken:  accessToken,
 // 		RefreshToken: refreshToken,
 // 	}, nil
@@ -286,7 +286,7 @@ func (a *AuthController) VerifyAPIKeyExists(ctx context.Context, key string) (*r
 // 		return nil, serrors.InternalError(err)
 // 	}
 
-// 	rAuthProfile := &requests.AuthProfile{
+// 	rAuthProfile := &records.AuthProfile{
 // 		Email: recordAuthProfile.Email,
 // 		UUID:  recordAuthProfile.UUID,
 // 	}
@@ -300,7 +300,7 @@ func (a *AuthController) VerifyAPIKeyExists(ctx context.Context, key string) (*r
 // 		return nil, serrors.InternalError(err)
 // 	}
 
-// 	return &requests.SignupResponse{
+// 	return &records.SignupResponse{
 // 		AccessToken:  accessToken,
 // 		RefreshToken: refreshToken,
 // 		UUID:         authUserUUID,

@@ -54,7 +54,7 @@ package authcontroller
 // 	}{
 // 		{
 // 			test: "database throws an error",
-// 			request: &requests.LoginRequest{
+// 			request: &records.LoginRequest{
 // 				Email:    "email@gmail.com",
 // 				Password: "some-password",
 // 			},
@@ -65,7 +65,7 @@ package authcontroller
 // 		},
 // 		{
 // 			test: "database throws an error",
-// 			request: &requests.LoginRequest{
+// 			request: &records.LoginRequest{
 // 				Email:    "email@gmail.com",
 // 				Password: "some-password",
 // 			},
@@ -76,7 +76,7 @@ package authcontroller
 // 		},
 // 		{
 // 			test: "email/password doesn't match",
-// 			request: &requests.LoginRequest{
+// 			request: &records.LoginRequest{
 // 				Email:    "email@gmail.com",
 // 				Password: "some-password",
 // 			},
@@ -92,7 +92,7 @@ package authcontroller
 // 		},
 // 		{
 // 			test: "success",
-// 			request: &requests.LoginRequest{
+// 			request: &records.LoginRequest{
 // 				Email:    "email@gmail.com",
 // 				Password: "password",
 // 			},
@@ -136,7 +136,7 @@ package authcontroller
 // 	}{
 // 		{
 // 			test: "could not extract auth profile from token",
-// 			request: &requests.UpdatePasswordRequest{
+// 			request: &records.UpdatePasswordRequest{
 // 				CurrentPassword:    "email@gmail.com",
 // 				NewPassword:        "some-password",
 // 				ConfirmNewPassword: "some-password",
@@ -151,7 +151,7 @@ package authcontroller
 // 		},
 // 		{
 // 			test: "getAuthProfileByEmail throws error",
-// 			request: &requests.UpdatePasswordRequest{
+// 			request: &records.UpdatePasswordRequest{
 // 				CurrentPassword:    "password",
 // 				NewPassword:        "some-password",
 // 				ConfirmNewPassword: "some-password",
@@ -161,7 +161,7 @@ package authcontroller
 // 				s.mockRepoClient.On("GetAuthProfileByEmail", mock.Anything).Return(nil, errors.New("database error")).Once()
 // 			},
 // 			ctx: func() context.Context {
-// 				authProfile := &requests.AuthProfile{
+// 				authProfile := &records.AuthProfile{
 // 					Email: "somewhere@gmail.com",
 // 					UUID:  "some-uuid",
 // 				}
@@ -174,7 +174,7 @@ package authcontroller
 // 		},
 // 		{
 // 			test: "getAuthProfileByEmail cannot find account with email address",
-// 			request: &requests.UpdatePasswordRequest{
+// 			request: &records.UpdatePasswordRequest{
 // 				CurrentPassword:    "password",
 // 				NewPassword:        "some-password",
 // 				ConfirmNewPassword: "some-password",
@@ -184,7 +184,7 @@ package authcontroller
 // 				s.mockRepoClient.On("GetAuthProfileByEmail", mock.Anything).Return(nil, nil).Once()
 // 			},
 // 			ctx: func() context.Context {
-// 				authProfile := &requests.AuthProfile{
+// 				authProfile := &records.AuthProfile{
 // 					Email: "somewhere@gmail.com",
 // 					UUID:  "some-uuid",
 // 				}
@@ -197,7 +197,7 @@ package authcontroller
 // 		},
 // 		{
 // 			test: "old passwords dont match",
-// 			request: &requests.UpdatePasswordRequest{
+// 			request: &records.UpdatePasswordRequest{
 // 				CurrentPassword:    "password",
 // 				NewPassword:        "some-password",
 // 				ConfirmNewPassword: "some-password",
@@ -215,7 +215,7 @@ package authcontroller
 // 				}, nil).Once()
 // 			},
 // 			ctx: func() context.Context {
-// 				authProfile := &requests.AuthProfile{
+// 				authProfile := &records.AuthProfile{
 // 					Email: "somewhere@gmail.com",
 // 					UUID:  "some-uuid",
 // 				}
@@ -228,7 +228,7 @@ package authcontroller
 // 		},
 // 		{
 // 			test: "update password fails",
-// 			request: &requests.UpdatePasswordRequest{
+// 			request: &records.UpdatePasswordRequest{
 // 				CurrentPassword:    "password",
 // 				NewPassword:        "some-password",
 // 				ConfirmNewPassword: "some-password",
@@ -248,7 +248,7 @@ package authcontroller
 // 				s.mockRepoClient.On("UpdatePassword", mock.Anything, mock.Anything).Return(errors.New("error on update password")).Once()
 // 			},
 // 			ctx: func() context.Context {
-// 				authProfile := &requests.AuthProfile{
+// 				authProfile := &records.AuthProfile{
 // 					Email: "somewhere@gmail.com",
 // 					UUID:  "some-uuid",
 // 				}
@@ -261,7 +261,7 @@ package authcontroller
 // 		},
 // 		{
 // 			test: "update password succeeds",
-// 			request: &requests.UpdatePasswordRequest{
+// 			request: &records.UpdatePasswordRequest{
 // 				CurrentPassword:    "password",
 // 				NewPassword:        "some-password",
 // 				ConfirmNewPassword: "some-password",
@@ -280,7 +280,7 @@ package authcontroller
 // 				s.mockRepoClient.On("UpdatePassword", mock.Anything, mock.Anything).Return(nil).Once()
 // 			},
 // 			ctx: func() context.Context {
-// 				authProfile := &requests.AuthProfile{
+// 				authProfile := &records.AuthProfile{
 // 					Email: "somewhere@gmail.com",
 // 					UUID:  "some-uuid",
 // 				}
@@ -317,7 +317,7 @@ package authcontroller
 // // 		{
 // // 			test: "GetEmailByPasswordResetToken failure",
 // // 			expecteErr:"int error"
-// // 			req: &requests.ResetPasswordRequest{
+// // 			req: &records.ResetPasswordRequest{
 // // 				Token: "some-token",
 // // 			},
 // // 			mocks: func() {
@@ -355,7 +355,7 @@ package authcontroller
 // 		{
 // 			test: "api key found, success",
 // 			mocks: func() {
-// 				s.mockRedisClient.On("GetAPIKey", mock.Anything, mock.Anything).Return(&requests.APIKey{Key: "some-key"}, nil).Once()
+// 				s.mockRedisClient.On("GetAPIKey", mock.Anything, mock.Anything).Return(&records.APIKey{Key: "some-key"}, nil).Once()
 // 			},
 // 		},
 // 	}

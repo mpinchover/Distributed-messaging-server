@@ -6,10 +6,10 @@ import (
 
 type Message struct {
 	gorm.Model
-	FromUUID      string
-	RoomUUID      string
+	UserUUID      string `validate:"required"`
+	RoomUUID      string `validate:"required"`
 	RoomID        int
-	MessageText   string
+	MessageText   string `validate:"required"`
 	UUID          string
 	MessageStatus string
 	CreatedAtNano float64 `json:"createdAtNano"`
@@ -37,57 +37,56 @@ type Room struct {
 	gorm.Model
 	UUID          string
 	CreatedAtNano float64    `json:"createdAtNano"`
-	Members       []*Member  `gorm:"foreignKey:RoomID;"`
-	Messages      []*Message `gorm:"foreignKey:RoomID;"`
+	Members       []*Member  `gorm:"foreignKey:RoomID;" validate:"required"`
+	Messages      []*Message `gorm:"foreignKey:RoomID;" validate:"required"`
 }
 
 type Member struct {
 	gorm.Model
-	UUID     string
 	RoomUUID string
 	RoomID   int
-	UserUUID string
+	UserUUID string `validate:"required"`
 }
 
-/* AUTH   */
-// for ext service, not chat user
-type AuthProfile struct {
-	gorm.Model
-	UUID           string
-	Email          string
-	HashedPassword string
-	Mobile         string
-}
+// /* AUTH   */
+// // for ext service, not chat user
+// type AuthProfile struct {
+// 	gorm.Model
+// 	UUID           string
+// 	Email          string
+// 	HashedPassword string
+// 	Mobile         string
+// }
 
-/* MATCHING   */
+// /* MATCHING   */
 
-// after user has answered
-type TrackedQuestion struct {
-	gorm.Model
-	UUID         string
-	QuestionText string
-	Category     string
-	UserUUID     string
-	QuestionUUID string
-	Liked        bool
-}
+// // after user has answered
+// type TrackedQuestion struct {
+// 	gorm.Model
+// 	UUID         string
+// 	QuestionText string
+// 	Category     string
+// 	UserUUID     string
+// 	QuestionUUID string
+// 	Liked        bool
+// }
 
-type DiscoverProfile struct {
-	gorm.Model
-	Gender           string
-	GenderPreference string
-	Age              int64
-	MinAgePref       int64
-	MaxAgePref       int64
-	UserUUID         string
-	CurrentLat       float64
-	CurrentLng       float64
-}
+// type DiscoverProfile struct {
+// 	gorm.Model
+// 	Gender           string
+// 	GenderPreference string
+// 	Age              int64
+// 	MinAgePref       int64
+// 	MaxAgePref       int64
+// 	UserUUID         string
+// 	CurrentLat       float64
+// 	CurrentLng       float64
+// }
 
-type TrackedLike struct {
-	gorm.Model
-	UUID       string
-	UserUUID   string
-	TargetUUID string
-	Liked      bool
-}
+// type TrackedLike struct {
+// 	gorm.Model
+// 	UUID       string
+// 	UserUUID   string
+// 	TargetUUID string
+// 	Liked      bool
+// }

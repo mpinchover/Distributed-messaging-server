@@ -81,7 +81,6 @@ func GetAuthTokenFromHeaders(r *http.Request) *string {
 		return nil
 	}
 
-	// fmt.Println("1")
 	if len(r.Header["Authorization"]) == 0 {
 		return nil
 	}
@@ -101,35 +100,6 @@ func GetAPIKeyFromURL(r *http.Request) *string {
 	return &apiKey
 }
 
-// func SetAuthProfileToContext(jwtToken *jwt.Token, oldContext context.Context) (context.Context, error) {
-// 	claims, ok := jwtToken.Claims.(jwt.MapClaims)
-// 	if !ok {
-// 		return nil, serrors.InternalErrorf("could not get token claims", nil)
-// 	}
-// 	authProfile, err := GetAuthProfileFromTokenClaims(claims)
-// 	if err != nil {
-// 		return nil, serrors.InternalError(err)
-// 	}
-
-// 	// fmt.Println("6")
-// 	ctx := context.WithValue(oldContext, "AUTH_PROFILE", authProfile)
-// 	return ctx, nil
-// }
-
-// func GetAuthProfileFromTokenClaims(claims jwt.MapClaims) (*requests.AuthProfile, error) {
-// 	_authProfile, ok := claims["AUTH_PROFILE"]
-// 	if !ok {
-// 		return nil, serrors.InternalErrorf("could not get auth profile", nil)
-// 	}
-// 	bytes, err := json.Marshal(_authProfile)
-// 	if err != nil {
-// 		return nil, serrors.InternalErrorf("could not marshall auth profile", nil)
-// 	}
-// 	authProfile := &records.AuthProfile{}
-// 	err = json.Unmarshal(bytes, authProfile)
-// 	return authProfile, err
-// }
-
 func SetChatProfileToContext(jwtToken *jwt.Token, oldContext context.Context) (context.Context, error) {
 	claims, ok := jwtToken.Claims.(jwt.MapClaims)
 	if !ok {
@@ -141,7 +111,6 @@ func SetChatProfileToContext(jwtToken *jwt.Token, oldContext context.Context) (c
 		return nil, serrors.InternalError(err)
 	}
 
-	// fmt.Println("6")
 	ctx := context.WithValue(oldContext, "USER_ID", chatProfile)
 	return ctx, nil
 }
@@ -176,21 +145,6 @@ func GenerateMessagingToken(userUUID string, exp time.Time) (string, error) {
 
 	return tokenString, nil
 }
-
-// func GenerateJWTToken(authProfile *requests.AuthProfile, exp time.Time) (string, error) {
-// 	token := jwt.New(jwt.SigningMethodHS256)
-// 	claims := token.Claims.(jwt.MapClaims)
-// 	claims["AUTH_PROFILE"] = authProfile
-// 	claims["EXP"] = exp.Unix()
-// 	token.Claims = claims
-
-// 	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
-// 	if err != nil {
-// 		return "", goerrors.Wrap(err, 0)
-// 	}
-
-// 	return tokenString, nil
-// }
 
 func VerifyJWT(tokenString string, checkExp bool) (*jwt.Token, error) {
 	token, err := jwt.Parse(tokenString, Keyfunc)

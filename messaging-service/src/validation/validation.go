@@ -8,7 +8,7 @@ import (
 	"github.com/go-playground/validator"
 )
 
-func ValidateGetRoomsUserUUID(req *requests.RoomsByUserUUIDEvent) error {
+func ValidateGetRoomsUserUUID(req *requests.GetRoomsByUserUUIDRequest) error {
 	validate := validator.New()
 	err := validate.Struct(req)
 	errMsg := ""

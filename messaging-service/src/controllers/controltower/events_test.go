@@ -22,7 +22,7 @@ func (s *ControlTowerSuite) TestProcessTextMessage() {
 				s.mockRepoClient.On("GetRoomByRoomUUID", mock.Anything).Return(nil, errors.New("database failure")).Once()
 			},
 			event: &requests.TextMessageEvent{
-				Message: &records.Message{
+				Message: &requests.Message{
 					RoomUUID: "room-uuid",
 				},
 			},
@@ -34,7 +34,7 @@ func (s *ControlTowerSuite) TestProcessTextMessage() {
 				s.mockRepoClient.On("GetRoomByRoomUUID", mock.Anything).Return(nil, nil).Once()
 			},
 			event: &requests.TextMessageEvent{
-				Message: &records.Message{
+				Message: &requests.Message{
 					RoomUUID: "room-uuid",
 				},
 			},
@@ -47,7 +47,7 @@ func (s *ControlTowerSuite) TestProcessTextMessage() {
 				s.mockRepoClient.On("SaveMessage", mock.Anything).Return(errors.New("saveMessage failed")).Once()
 			},
 			event: &requests.TextMessageEvent{
-				Message: &records.Message{
+				Message: &requests.Message{
 					RoomUUID: "room-uuid",
 				},
 			},
@@ -61,7 +61,7 @@ func (s *ControlTowerSuite) TestProcessTextMessage() {
 				s.mockRedisClient.On("PublishToRedisChannel", mock.Anything, mock.Anything).Return(errors.New("publish failed")).Once()
 			},
 			event: &requests.TextMessageEvent{
-				Message: &records.Message{
+				Message: &requests.Message{
 					RoomUUID: "room-uuid",
 				},
 			},
@@ -74,7 +74,7 @@ func (s *ControlTowerSuite) TestProcessTextMessage() {
 				s.mockRedisClient.On("PublishToRedisChannel", mock.Anything, mock.Anything).Return(nil).Once()
 			},
 			event: &requests.TextMessageEvent{
-				Message: &records.Message{
+				Message: &requests.Message{
 					RoomUUID: "room-uuid",
 				},
 			},

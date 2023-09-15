@@ -13,8 +13,8 @@ type Middleware struct {
 	mock.Mock
 }
 
-// execute provides a mock function with given fields: _a0
-func (_m *Middleware) execute(_a0 middleware.HTTPHandler) middleware.HTTPHandler {
+// Execute provides a mock function with given fields: _a0
+func (_m *Middleware) Execute(_a0 middleware.HTTPHandler) middleware.HTTPHandler {
 	ret := _m.Called(_a0)
 
 	var r0 middleware.HTTPHandler

@@ -17,7 +17,7 @@ CREATE TABLE messages (
     
     uuid VARCHAR(50) UNIQUE NOT NULL,
     message_text TEXT NOT NULL,
-    from_uuid VARCHAR(50) NOT NULL,
+    user_uuid VARCHAR(50) NOT NULL,
     room_uuid VARCHAR(50) NOT NULL,
     room_id INT,
     message_status TINYTEXT NOT NULL,
@@ -49,7 +49,6 @@ CREATE TABLE members (
     updated_at timestamp,
     deleted_at timestamp,
 
-    uuid VARCHAR(50) UNIQUE NOT NULL,
     room_uuid VARCHAR(50) NOT NULL,
     room_id INT,
     user_uuid VARCHAR(50) NOT NULL,

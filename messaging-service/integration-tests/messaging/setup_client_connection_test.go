@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"messaging-service/src/types/enums"
-	"messaging-service/src/types/records"
 	"messaging-service/src/types/requests"
 	"net/http"
 
@@ -13,6 +12,7 @@ import (
 )
 
 func (s *IntegrationTestSuite) TestAPIPing() {
+
 	requestURL := fmt.Sprintf("http://%s:9090/ping", ServerHost)
 	res, err := http.Get(requestURL)
 	s.NoError(err)
@@ -30,6 +30,7 @@ func (s *IntegrationTestSuite) TestAPIPing() {
 }
 
 func (s *IntegrationTestSuite) TestOpenSocket() {
+
 	// get token
 	newUser := uuid.New().String()
 	token := s.GetValidToken(newUser)
@@ -58,6 +59,7 @@ func (s *IntegrationTestSuite) TestOpenSocket() {
 }
 
 func (s *IntegrationTestSuite) TestSocketConnection() {
+
 	tomUUID := uuid.New().String()
 	tomToken := s.GetValidToken(tomUUID)
 	s.NotEmpty(tomToken)
@@ -81,7 +83,7 @@ func (s *IntegrationTestSuite) TestSocketConnection() {
 	})
 
 	openRoomEvent := &requests.CreateRoomRequest{
-		Members: []*records.Member{
+		Members: []*requests.Member{
 			{
 				UserUUID: clientTom.UserUUID,
 			},
@@ -130,7 +132,7 @@ func (s *IntegrationTestSuite) TestSocketConnection() {
 	})
 
 	openRoomEvent = &requests.CreateRoomRequest{
-		Members: []*records.Member{
+		Members: []*requests.Member{
 			{
 				UserUUID: clientTom.UserUUID,
 			},

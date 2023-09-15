@@ -27,32 +27,6 @@ func (_m *RepoInterface) DeleteRoom(roomUUID string) error {
 	return r0
 }
 
-// GetAuthProfileByEmail provides a mock function with given fields: email
-func (_m *RepoInterface) GetAuthProfileByEmail(email string) (*records.AuthProfile, error) {
-	ret := _m.Called(email)
-
-	var r0 *records.AuthProfile
-	var r1 error
-	if rf, ok := ret.Get(0).(func(string) (*records.AuthProfile, error)); ok {
-		return rf(email)
-	}
-	if rf, ok := ret.Get(0).(func(string) *records.AuthProfile); ok {
-		r0 = rf(email)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*records.AuthProfile)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(email)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // GetMembersByRoomUUID provides a mock function with given fields: roomUUID
 func (_m *RepoInterface) GetMembersByRoomUUID(roomUUID string) ([]*records.Member, error) {
 	ret := _m.Called(roomUUID)
@@ -249,20 +223,6 @@ func (_m *RepoInterface) LeaveRoom(userUUID string, roomUUID string) error {
 	return r0
 }
 
-// SaveAuthProfile provides a mock function with given fields: authProfile
-func (_m *RepoInterface) SaveAuthProfile(authProfile *records.AuthProfile) error {
-	ret := _m.Called(authProfile)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(*records.AuthProfile) error); ok {
-		r0 = rf(authProfile)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
 // SaveMessage provides a mock function with given fields: msg
 func (_m *RepoInterface) SaveMessage(msg *records.Message) error {
 	ret := _m.Called(msg)
@@ -312,20 +272,6 @@ func (_m *RepoInterface) UpdateMessage(message *records.Message) error {
 	var r0 error
 	if rf, ok := ret.Get(0).(func(*records.Message) error); ok {
 		r0 = rf(message)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// UpdatePassword provides a mock function with given fields: email, hashedPassword
-func (_m *RepoInterface) UpdatePassword(email string, hashedPassword string) error {
-	ret := _m.Called(email, hashedPassword)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string) error); ok {
-		r0 = rf(email, hashedPassword)
 	} else {
 		r0 = ret.Error(0)
 	}

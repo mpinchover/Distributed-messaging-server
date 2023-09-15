@@ -45,7 +45,7 @@ func TestControlTowerSuite(t *testing.T) {
 func (s *ControlTowerSuite) TestCreateRoom() {
 	tests := []struct {
 		test        string
-		members     []*records.Member
+		members     []*requests.Member
 		expectedErr string
 		mocks       func()
 	}{
@@ -59,13 +59,11 @@ func (s *ControlTowerSuite) TestCreateRoom() {
 		{
 			test:        "PublishToRedisChannel failed",
 			expectedErr: "redis error",
-			members: []*records.Member{
+			members: []*requests.Member{
 				{
-					UUID:     "room-uuid",
 					UserUUID: "user-uuid-1",
 				},
 				{
-					UUID:     "room-uuid",
 					UserUUID: "user-uuid-2",
 				},
 			},
@@ -76,13 +74,11 @@ func (s *ControlTowerSuite) TestCreateRoom() {
 		},
 		{
 			test: "success",
-			members: []*records.Member{
+			members: []*requests.Member{
 				{
-					UUID:     "room-uuid",
 					UserUUID: "user-uuid-1",
 				},
 				{
-					UUID:     "room-uuid",
 					UserUUID: "user-uuid-2",
 				},
 			},
@@ -106,7 +102,6 @@ func (s *ControlTowerSuite) TestCreateRoom() {
 			s.NotNil(res)
 			s.Len(res.Members, 2, t.test)
 			for _, m := range res.Members {
-				s.NotEmpty(m.UUID, t.test)
 				s.NotEmpty(m.UserUUID, t.test)
 			}
 		}
@@ -147,13 +142,11 @@ func (s *ControlTowerSuite) TestDeleteRoom() {
 					UUID: "uuid",
 					Members: []*records.Member{
 						{
-							UUID:     "uuid",
 							RoomUUID: "room-uuid",
 							RoomID:   10,
 							UserUUID: "user-uuid",
 						},
 						{
-							UUID:     "uuid-2",
 							RoomUUID: "room-uuid",
 							RoomID:   10,
 							UserUUID: "user-uuid-2",
@@ -171,13 +164,11 @@ func (s *ControlTowerSuite) TestDeleteRoom() {
 					UUID: "uuid",
 					Members: []*records.Member{
 						{
-							UUID:     "uuid",
 							RoomUUID: "room-uuid",
 							RoomID:   10,
 							UserUUID: "user-uuid",
 						},
 						{
-							UUID:     "uuid-2",
 							RoomUUID: "room-uuid",
 							RoomID:   10,
 							UserUUID: "user-uuid-2",
@@ -195,13 +186,11 @@ func (s *ControlTowerSuite) TestDeleteRoom() {
 					UUID: "uuid",
 					Members: []*records.Member{
 						{
-							UUID:     "uuid",
 							RoomUUID: "room-uuid",
 							RoomID:   10,
 							UserUUID: "user-uuid",
 						},
 						{
-							UUID:     "uuid-2",
 							RoomUUID: "room-uuid",
 							RoomID:   10,
 							UserUUID: "user-uuid-2",
@@ -239,9 +228,6 @@ func (s *ControlTowerSuite) TestsSetupClientConnectionV2() {
 				UserUUID: "uuid",
 			},
 			mocks: func() {
-				// s.mockConnectionsCtrlr.On("GetConnection", mock.Anything).Return(nil).Once()
-				// s.mockConnectionsCtrlr.On("AddConnection", mock.Anything).Return().Once()
-				// s.mockConnectionsCtrlr.On("AddClient", mock.Anything, mock.Anything, mock.Anything).Return().Once()
 			},
 		},
 		{
@@ -250,10 +236,6 @@ func (s *ControlTowerSuite) TestsSetupClientConnectionV2() {
 				UserUUID: "uuid",
 			},
 			mocks: func() {
-				// s.mockConnectionsCtrlr.On("GetConnection", mock.Anything).Return(&records.Connection{
-				// 	Connections: map[string]*websocket.Conn{},
-				// }).Once()
-				// s.mockConnectionsCtrlr.On("AddClient", mock.Anything, mock.Anything, mock.Anything).Return().Once()
 			},
 		},
 	}
@@ -383,12 +365,10 @@ func (s *ControlTowerSuite) GetRoomsByUserUUID() {
 						},
 						Members: []*records.Member{
 							{
-								UUID:     "member-uuid",
 								RoomUUID: "room uuid",
 								UserUUID: "user-uuid",
 							},
 							{
-								UUID:     "member-uuid",
 								RoomUUID: "room uuid",
 								UserUUID: "user-uuid",
 							},

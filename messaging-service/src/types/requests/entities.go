@@ -12,32 +12,32 @@ type Websocket struct {
 	Outbound   chan interface{} // channel to send messages back to client socket
 }
 
-// type Member struct {
-// 	UUID     string `json:"uuid"`
-// 	UserUUID string `json:"userUuid"`
-// }
+type Member struct {
+	UserUUID string `json:"userUuid"`
+	RoomUUID string `json:"roomUuid"`
+}
 
-// type Room struct {
-// 	UUID          string     `json:"uuid"`
-// 	Members       []*Member  `json:"members"`
-// 	Messages      []*Message `json:"messages"`
-// 	CreatedAtNano float64    `json:"createdAtNano"`
-// }
+type Room struct {
+	UUID          string     `json:"uuid"`
+	Members       []*Member  `json:"members"`
+	Messages      []*Message `json:"messages"`
+	CreatedAtNano float64    `json:"createdAtNano"`
+}
 
-// type Message struct {
-// 	UUID          string    `json:"uuid"`
-// 	FromUUID      string    `json:"fromUuid"`
-// 	RoomUUID      string    `json:"roomUuid"`
-// 	MessageText   string    `json:"messageText"`
-// 	CreatedAtNano float64   `json:"createdAtNano"`
-// 	MessageStatus string    `json:"messageStatus"`
-// 	SeenBy        []*SeenBy `json:"seenBy"`
-// }
+type Message struct {
+	UUID          string    `json:"uuid"`
+	UserUUID      string    `json:"userUuid"`
+	RoomUUID      string    `json:"roomUuid"`
+	MessageText   string    `json:"messageText"`
+	CreatedAtNano float64   `json:"createdAtNano"`
+	MessageStatus string    `json:"messageStatus"`
+	SeenBy        []*SeenBy `json:"seenBy"`
+}
 
-// type SeenBy struct {
-// 	MessageUUID string `json:"messageUuid"`
-// 	UserUUID    string `json:"userUuid"`
-// }
+type SeenBy struct {
+	MessageUUID string `json:"messageUuid"`
+	UserUUID    string `json:"userUuid"`
+}
 
 type Connection struct {
 	UserUUID    string

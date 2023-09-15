@@ -29,13 +29,13 @@ var (
 	SocketURL  = fmt.Sprintf("ws://%s:9090/ws", ServerHost)
 )
 
-func (s *IntegrationTestSuite) SendSingleTextMessage(fromUserUUID string, deviceUUID string, roomUUID string, conn *websocket.Conn, token string) {
+func (s *IntegrationTestSuite) SendSingleTextMessage(UserUUID string, deviceUUID string, roomUUID string, conn *websocket.Conn, token string) {
 	msgText := "text"
 	msgEventOut := &requests.TextMessageEvent{
-		FromUUID:   fromUserUUID,
+		UserUUID:   UserUUID,
 		DeviceUUID: deviceUUID,
 		EventType:  enums.EVENT_TEXT_MESSAGE.String(),
-		Message: &records.Message{
+		Message: &requests.Message{
 			RoomUUID:    roomUUID,
 			MessageText: msgText,
 		},
@@ -45,14 +45,14 @@ func (s *IntegrationTestSuite) SendSingleTextMessage(fromUserUUID string, device
 
 }
 
-func (s *IntegrationTestSuite) SendMessages(fromUserUUID string, deviceUUID string, roomUUID string, conn *websocket.Conn, token string) {
+func (s *IntegrationTestSuite) SendMessages(UserUUID string, deviceUUID string, roomUUID string, conn *websocket.Conn, token string) {
 	for i := 0; i < 25; i++ {
 		msgText := fmt.Sprintf("Message %d", i)
 		msgEventOut := &requests.TextMessageEvent{
-			FromUUID:   fromUserUUID,
+			UserUUID:   UserUUID,
 			DeviceUUID: deviceUUID,
 			EventType:  enums.EVENT_TEXT_MESSAGE.String(),
-			Message: &records.Message{
+			Message: &requests.Message{
 				RoomUUID:    roomUUID,
 				MessageText: msgText,
 			},
@@ -65,7 +65,7 @@ func (s *IntegrationTestSuite) SendMessages(fromUserUUID string, deviceUUID stri
 
 func (s *IntegrationTestSuite) RecvMessages(conn *websocket.Conn) {
 	for i := 0; i < 25; i++ {
-		// conn.SetReadDeadline(time.Now().Add(1 * time.Second))
+		conn.SetReadDeadline(time.Now().Add(1 * time.Second))
 		resp := &requests.TextMessageEvent{}
 		s.RecvMessage(conn, resp)
 	}
@@ -78,7 +78,7 @@ func (s *IntegrationTestSuite) RecvMessage(conn *websocket.Conn, resp *requests.
 	s.NoError(err, string(p))
 	s.NotEmpty(resp.EventType, string(p))
 	s.Equal(enums.EVENT_TEXT_MESSAGE.String(), resp.EventType, string(p))
-	s.NotEmpty(resp.FromUUID, string(p))
+	s.NotEmpty(resp.UserUUID, string(p))
 	s.NotEmpty(resp.DeviceUUID, string(p))
 	s.NotEmpty(resp.Message.RoomUUID, string(p))
 	s.NotEmpty(resp.Message.MessageText, string(p))
@@ -109,7 +109,6 @@ func (s *IntegrationTestSuite) ReadOpenRoomResponse(conn *websocket.Conn, expect
 	s.Equal(expectedMembers, len(resp.Room.Members))
 
 	for _, m := range resp.Room.Members {
-		s.NotEmpty(m.UUID)
 		s.NotEmpty(m.UserUUID)
 	}
 
@@ -307,7 +306,7 @@ func (s *IntegrationTestSuite) RecvSeenMessageEvent(conn *websocket.Conn, messag
 	s.NotEmpty(seenMessageEvent.UserUUID)
 }
 
-func (s *IntegrationTestSuite) SendMessagesByRoomUUIDEvent(conn *websocket.Conn, event *requests.MessagesByRoomUUIDEvent) {
+func (s *IntegrationTestSuite) SendMessagesByRoomUUIDEvent(conn *websocket.Conn, event *requests.GetMessagesByRoomUUIDRequest) {
 	conn.SetWriteDeadline(time.Now().Add(time.Second * 2))
 	err := conn.WriteJSON(event)
 	s.NoError(err)
@@ -330,47 +329,47 @@ func (s *IntegrationTestSuite) GetValidAPIKey() string {
 	return key
 }
 
-func (s *IntegrationTestSuite) MakeGetUserConnectionRequest(userUUID string) *requests.GetUserConnectionResponse {
-	req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:9090/get-user-connection/%s", ServerHost, userUUID), nil)
-	s.NoError(err)
+// func (s *IntegrationTestSuite) MakeGetUserConnectionRequest(userUUID string) *requests.GetUserConnectionResponse {
+// 	req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:9090/get-user-connection/%s", ServerHost, userUUID), nil)
+// 	s.NoError(err)
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	s.NoError(err)
-	s.GreaterOrEqual(resp.StatusCode, 200)
-	s.Less(resp.StatusCode, 300)
+// 	client := &http.Client{}
+// 	resp, err := client.Do(req)
+// 	s.NoError(err)
+// 	s.GreaterOrEqual(resp.StatusCode, 200)
+// 	s.Less(resp.StatusCode, 300)
 
-	defer resp.Body.Close()
-	b, err := io.ReadAll(resp.Body)
-	s.NoError(err)
+// 	defer resp.Body.Close()
+// 	b, err := io.ReadAll(resp.Body)
+// 	s.NoError(err)
 
-	response := &requests.GetUserConnectionResponse{}
-	err = json.Unmarshal(b, response)
-	s.NoError(err)
+// 	response := &requests.GetUserConnectionResponse{}
+// 	err = json.Unmarshal(b, response)
+// 	s.NoError(err)
 
-	return response
-}
+// 	return response
+// }
 
-func (s *IntegrationTestSuite) MakeGetChannelConnectionRequest(channelUUID string) *requests.GetChannelResponse {
-	req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:9090/get-channel/%s", ServerHost, channelUUID), nil)
-	s.NoError(err)
+// func (s *IntegrationTestSuite) MakeGetChannelConnectionRequest(channelUUID string) *requests.GetChannelResponse {
+// 	req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:9090/get-channel/%s", ServerHost, channelUUID), nil)
+// 	s.NoError(err)
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	s.NoError(err)
-	s.GreaterOrEqual(resp.StatusCode, 200)
-	s.Less(resp.StatusCode, 300)
+// 	client := &http.Client{}
+// 	resp, err := client.Do(req)
+// 	s.NoError(err)
+// 	s.GreaterOrEqual(resp.StatusCode, 200)
+// 	s.Less(resp.StatusCode, 300)
 
-	defer resp.Body.Close()
-	b, err := io.ReadAll(resp.Body)
-	s.NoError(err)
+// 	defer resp.Body.Close()
+// 	b, err := io.ReadAll(resp.Body)
+// 	s.NoError(err)
 
-	response := &requests.GetChannelResponse{}
-	err = json.Unmarshal(b, response)
-	s.NoError(err)
+// 	response := &requests.GetChannelResponse{}
+// 	err = json.Unmarshal(b, response)
+// 	s.NoError(err)
 
-	return response
-}
+// 	return response
+// }
 
 func (s *IntegrationTestSuite) RecvDeletedRoomMsg(conn *websocket.Conn, resp *requests.DeleteRoomEvent) {
 	conn.SetReadDeadline(time.Now().Add(time.Second * 2))

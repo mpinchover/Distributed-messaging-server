@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	mappers "messaging-service/src/mappers/requests"
 	redisClient "messaging-service/src/redis"
 	"messaging-service/src/repo"
 	"messaging-service/src/serrors"
@@ -51,50 +52,24 @@ func (c *ControlTowerCtrlr) GetMessagesByRoomUUID(ctx context.Context, roomUUID 
 
 func (c *ControlTowerCtrlr) CreateRoom(
 	ctx context.Context,
-	members []*records.Member,
-) (*records.Room, error) {
-	for _, member := range members {
-		member.UUID = uuid.New().String()
-	}
-
+	members []*requests.Member,
+) (*requests.Room, error) {
 	roomUUID := uuid.New().String()
-	repoMembers := make([]*records.Member, len(members))
 
-	for i, member := range members {
-		repoMembers[i] = &records.Member{
-			UUID:     member.UUID,
-			RoomUUID: roomUUID,
-			UserUUID: member.UserUUID,
-		}
+	for _, m := range members {
+		m.RoomUUID = roomUUID
 	}
 
 	createdAtNano := float64(time.Now().UnixNano()) //  1e6
-	repoRoom := &records.Room{
-		UUID:          roomUUID,
-		Members:       repoMembers,
-		CreatedAtNano: createdAtNano,
-	}
-
-	// go func(room *records.Room) {
-	// 	err := c.Repo.SaveRoom(repoRoom)
-	// 	if err != nil {
-	// 		log.Println("failed to save room")
-	// 	}
-	// }(repoRoom)
-	err := c.Repo.SaveRoom(repoRoom)
-	if err != nil {
-		return nil, err
-	}
-
-	newRoom := &records.Room{
-		Members:       members,
+	room := &records.Room{
 		UUID:          roomUUID,
 		CreatedAtNano: createdAtNano,
+		Members:       mappers.ToRecordMembers(members),
 	}
 
 	openRoomEvent := requests.OpenRoomEvent{
 		EventType: enums.EVENT_OPEN_ROOM.String(),
-		Room:      newRoom,
+		Room:      mappers.ToRequestRoom(room),
 	}
 
 	bytes, err := json.Marshal(openRoomEvent)
@@ -106,6 +81,19 @@ func (c *ControlTowerCtrlr) CreateRoom(
 	if err != nil {
 		return nil, err
 	}
+
+	// TODO - save in go routine?
+	err = c.Repo.SaveRoom(room)
+	if err != nil {
+		return nil, err
+	}
+
+	newRoom := &requests.Room{
+		Members:       members,
+		UUID:          roomUUID,
+		CreatedAtNano: createdAtNano,
+	}
+
 	return newRoom, nil
 }
 

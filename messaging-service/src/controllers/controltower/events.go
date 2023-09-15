@@ -29,7 +29,7 @@ func (c *ControlTowerCtrlr) ProcessTextMessage(msg *requests.TextMessageEvent) (
 	createdAtNano := time.Now().UnixNano() // / 1e6
 
 	repoMessage := &records.Message{
-		FromUUID:      msg.FromUUID,
+		UserUUID:      msg.UserUUID,
 		RoomUUID:      msg.Message.RoomUUID,
 		RoomID:        int(room.Model.ID),
 		MessageText:   msg.Message.MessageText,
@@ -50,7 +50,6 @@ func (c *ControlTowerCtrlr) ProcessTextMessage(msg *requests.TextMessageEvent) (
 	if err != nil {
 		return nil, err
 	}
-
 	err = c.RedisClient.PublishToRedisChannel(msg.Message.RoomUUID, bytes)
 	if err != nil {
 		return nil, err
